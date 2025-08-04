@@ -31,7 +31,7 @@ app.use('/uploads', express.static('uploads'));
 // Swagger UI setup
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Lively API Documentation',
+  customSiteTitle: 'BuddyDesk API Documentation',
   customfavIcon: '/favicon.ico',
   swaggerOptions: {
     persistAuthorization: true,
