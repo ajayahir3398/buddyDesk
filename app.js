@@ -54,11 +54,13 @@ db.sequelize.sync()
 const userRoutes = require('./routes/user.routes');
 const skillsRoutes = require('./routes/skills.routes');
 const postRoutes = require('./routes/post.routes');
+const aadhaarRoutes = require('./routes/aadhaar.routes');
 const healthRoutes = require('./routes/health.js');
 
 app.use('/api/users', userRoutes);
 app.use('/api/skills', skillsRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/aadhaar', aadhaarRoutes);
 app.use('/health', healthRoutes);
 
 // Error handling middleware (must be last)

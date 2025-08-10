@@ -16,7 +16,7 @@ const getServers = () => {
 
     if (isProduction || process.env.PRODUCTION_URL) {
         servers.push({
-            url: process.env.PRODUCTION_URL || 'https://buddydesk-eumd.onrender.com/api',
+            url: process.env.PRODUCTION_URL || 'https://buddydesk.onrender.com/api',
             description: 'Production server'
         });
     }
@@ -29,7 +29,7 @@ const getServers = () => {
                 description: 'Development server'
             },
             {
-                url: 'https://buddydesk-eumd.onrender.com/api',
+                url: 'https://buddydesk.onrender.com/api',
                 description: 'Production server'
             }
         );
@@ -281,8 +281,8 @@ const options = {
                         id: { type: 'integer', example: 1, description: 'Attachment ID' },
                         file_path: { type: 'string', example: '/uploads/documents/file.pdf', description: 'File path' },
                         file_name: { type: 'string', example: 'document.pdf', description: 'Original file name' },
-                        file_type: { type: 'string', example: 'application/pdf', description: 'MIME type' },
-                        created_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
+                        mime_type: { type: 'string', example: 'application/pdf', description: 'MIME type' },
+                        uploaded_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
                     }
                 },
                 Post: {
@@ -621,6 +621,154 @@ const options = {
                             $ref: '#/components/schemas/PublicProfile'
                         }
                     }
+                },
+                // Aadhaar Verification Schemas
+                AadhaarXMLVerificationRequest: {
+                    type: 'object',
+                    required: ['xmlData', 'shareCode'],
+                    properties: {
+                        xmlData: {
+                            type: 'string',
+                            description: 'Base64 encoded XML data from Aadhaar',
+                            example: 'UDdGa1pT...base64_encoded_xml_data'
+                        },
+                        shareCode: {
+                            type: 'string',
+                            pattern: '^[0-9]{4}$',
+                            description: '4-digit share code for decryption',
+                            example: '1234'
+                        }
+                    }
+                },
+                AadhaarNumberValidationRequest: {
+                    type: 'object',
+                    required: ['aadhaarNumber'],
+                    properties: {
+                        aadhaarNumber: {
+                            type: 'string',
+                            pattern: '^[0-9]{4}\\s?[0-9]{4}\\s?[0-9]{4}$',
+                            description: '12-digit Aadhaar number (with or without spaces)',
+                            example: '1234 5678 9012'
+                        }
+                    }
+                },
+                AadhaarVerificationResult: {
+                    type: 'object',
+                    properties: {
+                        success: {
+                            type: 'boolean',
+                            example: true
+                        },
+                        requestId: {
+                            type: 'string',
+                            format: 'uuid',
+                            example: 'req-12345-uuid'
+                        },
+                        verificationId: {
+                            type: 'string',
+                            format: 'uuid',
+                            example: 'verification-12345-uuid'
+                        },
+                        data: {
+                            type: 'object',
+                            properties: {
+                                name: { type: 'string', example: 'John Doe' },
+                                dateOfBirth: { type: 'string', example: '01-01-1990' },
+                                gender: { type: 'string', example: 'M' },
+                                phone: { type: 'string', example: '9876543210' },
+                                email: { type: 'string', example: 'john@example.com' },
+                                maskedAadhaarNumber: { type: 'string', example: 'XXXX XXXX 1234' },
+                                address: {
+                                    type: 'object',
+                                    properties: {
+                                        careOf: { type: 'string', example: 'S/O ABC' },
+                                        house: { type: 'string', example: '123' },
+                                        street: { type: 'string', example: 'Main Street' },
+                                        locality: { type: 'string', example: 'Downtown' },
+                                        district: { type: 'string', example: 'Example District' },
+                                        state: { type: 'string', example: 'Example State' },
+                                        pincode: { type: 'string', example: '123456' }
+                                    }
+                                }
+                            }
+                        },
+                        signatureValid: {
+                            type: 'boolean',
+                            example: true
+                        },
+                        timestampValid: {
+                            type: 'boolean',
+                            example: true
+                        },
+                        checksumValid: {
+                            type: 'boolean',
+                            example: true
+                        },
+                        verificationTime: {
+                            type: 'string',
+                            format: 'date-time',
+                            example: '2024-01-15T10:30:00.000Z'
+                        }
+                    }
+                },
+                AadhaarVerificationHistory: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', example: true },
+                        requestId: { type: 'string', format: 'uuid' },
+                        data: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'string', format: 'uuid' },
+                                    verificationId: { type: 'string', format: 'uuid' },
+                                    verificationType: { type: 'string', enum: ['XML', 'QR', 'NUMBER'] },
+                                    verificationStatus: { type: 'string', enum: ['SUCCESS', 'FAILED', 'PENDING'] },
+                                    maskedAadhaarNumber: { type: 'string', example: 'XXXX XXXX 1234' },
+                                    signatureValid: { type: 'boolean', nullable: true },
+                                    timestampValid: { type: 'boolean', nullable: true },
+                                    checksumValid: { type: 'boolean', nullable: true },
+                                    verificationTime: { type: 'string', format: 'date-time' },
+                                    createdAt: { type: 'string', format: 'date-time' }
+                                }
+                            }
+                        },
+                        total: { type: 'integer', example: 25 },
+                        limit: { type: 'integer', example: 10 },
+                        offset: { type: 'integer', example: 0 }
+                    }
+                },
+                AadhaarErrorResponse: {
+                    type: 'object',
+                    properties: {
+                        success: {
+                            type: 'boolean',
+                            example: false
+                        },
+                        requestId: {
+                            type: 'string',
+                            format: 'uuid'
+                        },
+                        message: {
+                            type: 'string',
+                            example: 'Validation failed'
+                        },
+                        error: {
+                            type: 'string',
+                            example: 'Invalid XML format'
+                        },
+                        errors: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    field: { type: 'string', example: 'xmlData' },
+                                    message: { type: 'string', example: 'XML data is required' }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -636,6 +784,10 @@ const options = {
             {
                 name: 'Posts',
                 description: 'Post management operations'
+            },
+            {
+                name: 'Aadhaar Verification',
+                description: 'Offline Aadhaar verification APIs'
             }
         ],
         paths: {
@@ -1503,8 +1655,8 @@ const options = {
                                                             id: 1,
                                                             file_path: '/uploads/documents/requirements.pdf',
                                                             file_name: 'requirements.pdf',
-                                                            file_type: 'application/pdf',
-                                                            created_at: '2024-01-01T00:00:00.000Z'
+                                                            mime_type: 'application/pdf',
+                                                            uploaded_at: '2024-01-01T00:00:00.000Z'
                                                         }
                                                     ]
                                                 }
@@ -2821,6 +2973,351 @@ const options = {
                         },
                         '404': {
                             description: 'Attachment not found',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        },
+                        '500': {
+                            description: 'Internal server error',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            // Aadhaar Verification APIs
+            '/aadhaar/verify-xml': {
+                post: {
+                    summary: 'Verify Aadhaar XML file (offline eKYC)',
+                    description: 'Verifies offline eKYC XML files with share code decryption',
+                    tags: ['Aadhaar Verification'],
+                    security: [{ bearerAuth: [] }],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    $ref: '#/components/schemas/AadhaarXMLVerificationRequest'
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Verification completed successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/AadhaarVerificationResult'
+                                    }
+                                }
+                            }
+                        },
+                        '400': {
+                            description: 'Invalid request data',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/AadhaarErrorResponse'
+                                    }
+                                }
+                            }
+                        },
+                        '401': {
+                            description: 'Unauthorized',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        },
+                        '500': {
+                            description: 'Internal server error',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/aadhaar/verify-qr': {
+                post: {
+                    summary: 'Verify Aadhaar QR code',
+                    description: 'Verifies Aadhaar QR codes from image files',
+                    tags: ['Aadhaar Verification'],
+                    security: [{ bearerAuth: [] }],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'multipart/form-data': {
+                                schema: {
+                                    type: 'object',
+                                    required: ['qrImage'],
+                                    properties: {
+                                        qrImage: {
+                                            type: 'string',
+                                            format: 'binary',
+                                            description: 'QR code image file (JPEG, PNG, BMP, GIF, WebP - Max 5MB)'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'QR verification completed successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/AadhaarVerificationResult'
+                                    }
+                                }
+                            }
+                        },
+                        '400': {
+                            description: 'Invalid request data or file',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/AadhaarErrorResponse'
+                                    }
+                                }
+                            }
+                        },
+                        '401': {
+                            description: 'Unauthorized',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        },
+                        '500': {
+                            description: 'Internal server error',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/aadhaar/validate-number': {
+                post: {
+                    summary: 'Validate Aadhaar number format',
+                    description: 'Validates Aadhaar number format and Verhoeff checksum',
+                    tags: ['Aadhaar Verification'],
+                    security: [{ bearerAuth: [] }],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    $ref: '#/components/schemas/AadhaarNumberValidationRequest'
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Number validation completed',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/AadhaarVerificationResult'
+                                    }
+                                }
+                            }
+                        },
+                        '400': {
+                            description: 'Invalid request data',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/AadhaarErrorResponse'
+                                    }
+                                }
+                            }
+                        },
+                        '401': {
+                            description: 'Unauthorized',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        },
+                        '500': {
+                            description: 'Internal server error',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/aadhaar/verification-history': {
+                get: {
+                    summary: 'Get verification history',
+                    description: 'Retrieves verification history for the authenticated user',
+                    tags: ['Aadhaar Verification'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            name: 'limit',
+                            in: 'query',
+                            schema: {
+                                type: 'integer',
+                                minimum: 1,
+                                maximum: 100,
+                                default: 10
+                            },
+                            description: 'Number of records to return'
+                        },
+                        {
+                            name: 'offset',
+                            in: 'query',
+                            schema: {
+                                type: 'integer',
+                                minimum: 0,
+                                default: 0
+                            },
+                            description: 'Number of records to skip'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Verification history retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/AadhaarVerificationHistory'
+                                    }
+                                }
+                            }
+                        },
+                        '401': {
+                            description: 'Unauthorized',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        },
+                        '500': {
+                            description: 'Internal server error',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/aadhaar/verification/{verificationId}': {
+                get: {
+                    summary: 'Get verification details',
+                    description: 'Retrieves detailed information about a specific verification',
+                    tags: ['Aadhaar Verification'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            name: 'verificationId',
+                            in: 'path',
+                            required: true,
+                            schema: {
+                                type: 'string',
+                                format: 'uuid'
+                            },
+                            description: 'Verification ID'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Verification details retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean', example: true },
+                                            requestId: { type: 'string', format: 'uuid' },
+                                            data: {
+                                                type: 'object',
+                                                properties: {
+                                                    id: { type: 'string', format: 'uuid' },
+                                                    verificationId: { type: 'string', format: 'uuid' },
+                                                    verificationType: { type: 'string', enum: ['XML', 'QR', 'NUMBER'] },
+                                                    verificationStatus: { type: 'string', enum: ['SUCCESS', 'FAILED', 'PENDING'] },
+                                                    maskedAadhaarNumber: { type: 'string', example: 'XXXX XXXX 1234' },
+                                                    verificationData: { type: 'object' },
+                                                    signatureValid: { type: 'boolean', nullable: true },
+                                                    timestampValid: { type: 'boolean', nullable: true },
+                                                    checksumValid: { type: 'boolean', nullable: true },
+                                                    verificationTime: { type: 'string', format: 'date-time' },
+                                                    logs: {
+                                                        type: 'array',
+                                                        items: {
+                                                            type: 'object',
+                                                            properties: {
+                                                                action: { type: 'string' },
+                                                                status: { type: 'string', enum: ['SUCCESS', 'FAILED', 'WARNING'] },
+                                                                message: { type: 'string' },
+                                                                timestamp: { type: 'string', format: 'date-time' }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': {
+                            description: 'Unauthorized',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        },
+                        '404': {
+                            description: 'Verification not found',
                             content: {
                                 'application/json': {
                                     schema: {

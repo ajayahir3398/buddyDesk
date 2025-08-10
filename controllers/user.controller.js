@@ -339,7 +339,7 @@ exports.getProfile = async (req, res) => {
             {
               model: PostAttachment,
               as: 'attachments',
-              attributes: ['id', 'file_path', 'file_name', 'file_type', 'created_at']
+              attributes: ['id', 'file_path', 'file_name', 'mime_type', 'uploaded_at']
             }
           ],
           order: [['created_at', 'DESC']] // Most recent posts first
@@ -454,7 +454,7 @@ exports.getProfileById = async (req, res) => {
             {
               model: PostAttachment,
               as: 'attachments',
-              attributes: ['id', 'file_path', 'file_name', 'file_type', 'created_at']
+              attributes: ['id', 'file_path', 'file_name', 'mime_type', 'uploaded_at']
             }
           ],
           order: [['created_at', 'DESC']] // Most recent posts first

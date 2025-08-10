@@ -40,6 +40,7 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.SessionLog, { foreignKey: 'user_id', as: 'sessionLogs' });
     User.hasMany(models.Post, { foreignKey: 'user_id', as: 'posts' });
     User.hasMany(models.UserSkillReview, { foreignKey: 'reviewer_user_id', as: 'reviews' });
+    User.hasMany(models.AadhaarVerification, { foreignKey: 'user_id', as: 'aadhaarVerifications' });
   };
 
   return User;

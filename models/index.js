@@ -40,6 +40,8 @@ db.UserSkill = require("./userSkill.model")(sequelize, Sequelize.DataTypes);
 db.UserSkillReview = require("./userSkillReview.model")(sequelize, Sequelize.DataTypes);
 db.Post = require("./post.model")(sequelize, Sequelize.DataTypes);
 db.PostAttachment = require("./postAttachment.model")(sequelize, Sequelize.DataTypes);
+db.AadhaarVerification = require("./aadhaarVerification.model")(sequelize, Sequelize.DataTypes);
+db.AadhaarVerificationLog = require("./aadhaarVerificationLog.model")(sequelize, Sequelize.DataTypes);
 
 // Set up associations
 Object.keys(db).forEach(modelName => {
