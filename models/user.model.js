@@ -37,6 +37,7 @@ module.exports = (sequelize, DataTypes) => {
     User.hasOne(models.UserProfile, { foreignKey: 'user_id', as: 'profile' });
     User.hasMany(models.WorkProfile, { foreignKey: 'user_id', as: 'workProfiles' });
     User.hasMany(models.Address, { foreignKey: 'user_id', as: 'addresses' });
+    User.hasMany(models.TempAddress, { foreignKey: 'user_id', as: 'tempAddresses' });
     User.hasMany(models.SessionLog, { foreignKey: 'user_id', as: 'sessionLogs' });
     User.hasMany(models.Post, { foreignKey: 'user_id', as: 'posts' });
     User.hasMany(models.UserSkillReview, { foreignKey: 'reviewer_user_id', as: 'reviews' });

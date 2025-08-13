@@ -275,6 +275,23 @@ const options = {
                         updated_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
                     }
                 },
+                TempAddress: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1, description: 'Temporary address ID' },
+                        location_data: { type: 'string', example: 'GPS: 28.6139,77.2090', description: 'Raw location data or notes' },
+                        pincode: { type: 'string', example: '110001', description: '6-digit pincode' },
+                        selected_area: { type: 'string', example: 'Connaught Place', description: 'Selected locality/area' },
+                        city: { type: 'string', example: 'New Delhi', description: 'City', nullable: true },
+                        state: { type: 'string', example: 'Delhi', description: 'State/Province', nullable: true },
+                        country: { type: 'string', example: 'India', description: 'Country', nullable: true },
+                        location_permission: { type: 'boolean', example: true, description: 'Whether user granted location permission' },
+                        is_active: { type: 'boolean', example: true, description: 'Whether temp address is currently active' },
+                        expires_at: { type: 'string', format: 'date-time', example: '2024-02-01T00:00:00.000Z', description: 'Expiration timestamp', nullable: true },
+                        created_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' },
+                        updated_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
+                    }
+                },
                 PostAttachment: {
                     type: 'object',
                     properties: {
@@ -500,6 +517,13 @@ const options = {
                                 $ref: '#/components/schemas/Address'
                             },
                             description: 'User addresses'
+                        },
+                        temp_addresses: {
+                            type: 'array',
+                            items: {
+                                $ref: '#/components/schemas/TempAddress'
+                            },
+                            description: 'User temporary addresses'
                         },
                         posts: {
                             type: 'array',
@@ -1630,6 +1654,22 @@ const options = {
                                                     updated_at: '2024-01-01T00:00:00.000Z'
                                                 }
                                             ],
+                                             temp_addresses: [
+                                                 {
+                                                     id: 1,
+                                                     location_data: 'GPS: 28.6139,77.2090',
+                                                     pincode: '110001',
+                                                     selected_area: 'Connaught Place',
+                                                     city: 'New Delhi',
+                                                     state: 'Delhi',
+                                                     country: 'India',
+                                                     location_permission: true,
+                                                     is_active: true,
+                                                     expires_at: '2024-02-01T00:00:00.000Z',
+                                                     created_at: '2024-01-01T00:00:00.000Z',
+                                                     updated_at: '2024-01-01T00:00:00.000Z'
+                                                 }
+                                             ],
                                             posts: [
                                                 {
                                                     id: 1,

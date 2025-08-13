@@ -12,6 +12,7 @@ const Post = db.Post; // Added Post import
 const Skill = db.Skill; // Added Skill import
 const SubSkill = db.SubSkill; // Added SubSkill import
 const PostAttachment = db.PostAttachment; // Added PostAttachment import
+const TempAddress = db.TempAddress; // Added TempAddress import
 
 // Generate access token (short-lived)
 const generateAccessToken = (user) => {
@@ -322,6 +323,11 @@ exports.getProfile = async (req, res) => {
           attributes: ['id', 'street', 'city', 'state', 'zip_code', 'country', 'type', 'created_at', 'updated_at']
         },
         {
+          model: TempAddress,
+          as: 'tempAddresses',
+          attributes: ['id', 'location_data', 'pincode', 'selected_area', 'city', 'state', 'country', 'location_permission', 'is_active', 'expires_at', 'created_at', 'updated_at']
+        },
+        {
           model: Post,
           as: 'posts',
           attributes: ['id', 'title', 'description', 'medium', 'status', 'deadline', 'created_at', 'updated_at'],
@@ -368,6 +374,7 @@ exports.getProfile = async (req, res) => {
       profile: user.profile || null,
       work_profiles: user.workProfiles || [],
       addresses: user.addresses || [],
+      temp_addresses: user.tempAddresses || [],
       posts: user.posts || []
     };
 
@@ -437,6 +444,11 @@ exports.getProfileById = async (req, res) => {
           attributes: ['id', 'street', 'city', 'state', 'zip_code', 'country', 'type', 'created_at', 'updated_at']
         },
         {
+          model: TempAddress,
+          as: 'tempAddresses',
+          attributes: ['id', 'location_data', 'pincode', 'selected_area', 'city', 'state', 'country', 'location_permission', 'is_active', 'expires_at', 'created_at', 'updated_at']
+        },
+        {
           model: Post,
           as: 'posts',
           attributes: ['id', 'title', 'description', 'medium', 'status', 'deadline', 'created_at', 'updated_at'],
@@ -482,6 +494,7 @@ exports.getProfileById = async (req, res) => {
       profile: user.profile || null,
       work_profiles: user.workProfiles || [],
       addresses: user.addresses || [],
+      temp_addresses: user.tempAddresses || [],
       posts: user.posts || []
     };
 
