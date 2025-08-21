@@ -23,7 +23,7 @@ const generateAccessToken = (user) => {
       type: 'access'
     },
     process.env.JWT_SECRET,
-    { expiresIn: '15m' }
+    { expiresIn: '24h' }
   );
 };
 
