@@ -44,6 +44,14 @@ db.AadhaarVerification = require("./aadhaarVerification.model")(sequelize, Seque
 db.AadhaarVerificationLog = require("./aadhaarVerificationLog.model")(sequelize, Sequelize.DataTypes);
 db.TempAddress = require("./tempAddress.model")(sequelize, Sequelize.DataTypes);
 
+// Chat models
+db.Conversation = require("./conversation.model")(sequelize, Sequelize.DataTypes);
+db.ConversationMember = require("./conversationMember.model")(sequelize, Sequelize.DataTypes);
+db.Message = require("./message.model")(sequelize, Sequelize.DataTypes);
+db.MessageStatus = require("./messageStatus.model")(sequelize, Sequelize.DataTypes);
+db.TypingStatus = require("./typingStatus.model")(sequelize, Sequelize.DataTypes);
+db.Notification = require("./notification.model")(sequelize, Sequelize.DataTypes);
+
 // Set up associations
 Object.keys(db).forEach(modelName => {
     if (db[modelName].associate) {

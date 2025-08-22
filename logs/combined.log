@@ -81,3 +81,26 @@
 {"level":"info","message":"Database synced successfully.","timestamp":"2025-08-07T19:34:55.029Z"}
 {"level":"info","message":"Database synced successfully.","timestamp":"2025-08-07T19:42:35.054Z"}
 {"level":"info","message":"Database synced successfully.","timestamp":"2025-08-13T17:50:33.888Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T17:20:07.536Z"}
+{"level":"error","message":"DB Sync error: Connection terminated unexpectedly","name":"SequelizeConnectionError","original":{},"parent":{},"stack":"SequelizeConnectionError: Connection terminated unexpectedly\n    at Client._connectionCallback (E:\\Node\\buddyDesk\\node_modules\\sequelize\\lib\\dialects\\postgres\\connection-manager.js:149:20)\n    at Connection.<anonymous> (E:\\Node\\buddyDesk\\node_modules\\pg\\lib\\client.js:149:18)\n    at Object.onceWrapper (node:events:638:28)\n    at Connection.emit (node:events:524:28)\n    at Socket.<anonymous> (E:\\Node\\buddyDesk\\node_modules\\pg\\lib\\connection.js:62:12)\n    at Socket.emit (node:events:536:35)\n    at TCP.<anonymous> (node:net:343:12)","timestamp":"2025-08-22T17:20:10.785Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T17:26:27.206Z"}
+{"level":"error","message":"DB Sync error: Connection terminated unexpectedly","name":"SequelizeConnectionError","original":{},"parent":{},"stack":"SequelizeConnectionError: Connection terminated unexpectedly\n    at Client._connectionCallback (E:\\Node\\buddyDesk\\node_modules\\sequelize\\lib\\dialects\\postgres\\connection-manager.js:149:20)\n    at Connection.<anonymous> (E:\\Node\\buddyDesk\\node_modules\\pg\\lib\\client.js:149:18)\n    at Object.onceWrapper (node:events:638:28)\n    at Connection.emit (node:events:524:28)\n    at Socket.<anonymous> (E:\\Node\\buddyDesk\\node_modules\\pg\\lib\\connection.js:62:12)\n    at Socket.emit (node:events:536:35)\n    at TCP.<anonymous> (node:net:343:12)","timestamp":"2025-08-22T17:26:32.527Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T17:28:05.545Z"}
+{"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T17:28:22.200Z"}
+{"level":"info","message":"Health check passed","requestId":"dd8a0eb6-f06b-49d6-a45d-5a3bbe6038bb","timestamp":"2025-08-22T17:29:24.182Z"}
+{"level":"info","message":"Health check passed","requestId":"bc8dbf8b-3fa8-4548-8f5a-ac7e7e704aa8","timestamp":"2025-08-22T17:30:14.400Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T17:36:46.604Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T17:37:30.518Z"}
+{"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T17:37:41.907Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T17:40:07.490Z"}
+{"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T17:40:18.775Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T17:40:51.624Z"}
+{"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T17:41:03.361Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T17:46:32.886Z"}
+{"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T17:46:44.215Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T17:47:24.200Z"}
+{"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T17:47:34.744Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T17:48:12.241Z"}
+{"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T17:48:24.042Z"}
+{"level":"info","message":"Server started on port 3001 with Socket.io support","timestamp":"2025-08-22T18:44:14.980Z"}
+{"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T18:44:25.290Z"}

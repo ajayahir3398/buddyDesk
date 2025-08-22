@@ -199,6 +199,159 @@ const options = {
                         }
                     }
                 },
+                Conversation: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1, description: 'Unique identifier for the conversation' },
+                        type: { type: 'string', enum: ['private', 'group'], description: 'Type of conversation' },
+                        name: { type: 'string', example: 'Project Team', description: 'Name of the conversation (for group chats)' },
+                        description: { type: 'string', example: 'Discussion about project updates', description: 'Description of the conversation' },
+                        avatar_url: { type: 'string', example: 'https://example.com/avatar.jpg', description: 'Avatar URL for the conversation' },
+                        created_by: { type: 'integer', example: 1, description: 'ID of the user who created the conversation' },
+                        is_active: { type: 'boolean', example: true, description: 'Whether the conversation is active' },
+                        last_message_at: { type: 'string', format: 'date-time', example: '2024-01-01T12:00:00.000Z', description: 'Timestamp of the last message' },
+                        created_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z', description: 'Creation timestamp' },
+                        updated_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z', description: 'Last update timestamp' }
+                    }
+                },
+                Message: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1, description: 'Unique identifier for the message' },
+                        conversation_id: { type: 'integer', example: 1, description: 'ID of the conversation this message belongs to' },
+                        sender_id: { type: 'integer', example: 1, description: 'ID of the user who sent the message' },
+                        content: { type: 'string', example: 'Hello, how are you?', description: 'Message content (decrypted)' },
+                        message_type: { type: 'string', enum: ['text', 'image', 'video', 'audio', 'file', 'system'], description: 'Type of message' },
+                        attachment_url: { type: 'string', example: 'https://example.com/file.pdf', description: 'URL of attached file' },
+                        attachment_name: { type: 'string', example: 'document.pdf', description: 'Name of attached file' },
+                        attachment_size: { type: 'integer', example: 1024, description: 'Size of attached file in bytes' },
+                        attachment_mime_type: { type: 'string', example: 'application/pdf', description: 'MIME type of attached file' },
+                        reply_to_message_id: { type: 'integer', example: 5, description: 'ID of the message this is replying to' },
+                        forward_from_message_id: { type: 'integer', example: 3, description: 'ID of the original message if this is a forward' },
+                        is_edited: { type: 'boolean', example: false, description: 'Whether the message has been edited' },
+                        is_deleted: { type: 'boolean', example: false, description: 'Whether the message has been deleted' },
+                        deleted_at: { type: 'string', format: 'date-time', example: null, description: 'Deletion timestamp' },
+                        metadata: { type: 'object', example: {}, description: 'Additional message metadata' },
+                        created_at: { type: 'string', format: 'date-time', example: '2024-01-01T12:00:00.000Z', description: 'Creation timestamp' },
+                        updated_at: { type: 'string', format: 'date-time', example: '2024-01-01T12:00:00.000Z', description: 'Last update timestamp' }
+                    }
+                },
+                CreateConversationRequest: {
+                    type: 'object',
+                    required: ['type'],
+                    properties: {
+                        type: { type: 'string', enum: ['private', 'group'], description: 'Type of conversation to create' },
+                        name: { type: 'string', example: 'Project Team', description: 'Name for group conversations' },
+                        description: { type: 'string', example: 'Discussion about project updates', description: 'Description for group conversations' },
+                        avatar_url: { type: 'string', example: 'https://example.com/avatar.jpg', description: 'Avatar URL for the conversation' },
+                        participant_ids: { type: 'array', items: { type: 'integer' }, example: [2, 3], description: 'Array of user IDs to add to the conversation' }
+                    }
+                },
+                SendMessageRequest: {
+                    type: 'object',
+                    required: ['content'],
+                    properties: {
+                        content: { type: 'string', example: 'Hello, how are you?', description: 'Message content' },
+                        message_type: { type: 'string', enum: ['text', 'image', 'video', 'audio', 'file'], default: 'text', description: 'Type of message' },
+                        reply_to_message_id: { type: 'integer', example: 5, description: 'ID of the message to reply to' },
+                        forward_from_message_id: { type: 'integer', example: 3, description: 'ID of the message to forward' },
+                        metadata: { type: 'object', example: {}, description: 'Additional message metadata' }
+                    }
+                },
+                ConversationResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', example: true },
+                        message: { type: 'string', example: 'Conversation created successfully' },
+                        data: { $ref: '#/components/schemas/Conversation' }
+                    }
+                },
+                MessageResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', example: true },
+                        message: { type: 'string', example: 'Message sent successfully' },
+                        data: { $ref: '#/components/schemas/Message' }
+                    }
+                },
+                ConversationsListResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', example: true },
+                        message: { type: 'string', example: 'Conversations retrieved successfully' },
+                        data: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/Conversation' }
+                        },
+                        pagination: {
+                            type: 'object',
+                            properties: {
+                                page: { type: 'integer', example: 1 },
+                                limit: { type: 'integer', example: 20 },
+                                total: { type: 'integer', example: 50 },
+                                totalPages: { type: 'integer', example: 3 }
+                            }
+                        }
+                    }
+                },
+                MessagesListResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', example: true },
+                        message: { type: 'string', example: 'Messages retrieved successfully' },
+                        data: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/Message' }
+                        },
+                        pagination: {
+                            type: 'object',
+                            properties: {
+                                page: { type: 'integer', example: 1 },
+                                limit: { type: 'integer', example: 50 },
+                                total: { type: 'integer', example: 100 },
+                                totalPages: { type: 'integer', example: 2 }
+                            }
+                        }
+                    }
+                },
+                Notification: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1, description: 'Unique identifier for the notification' },
+                        user_id: { type: 'integer', example: 1, description: 'ID of the user receiving the notification' },
+                        message_id: { type: 'integer', example: 1, description: 'ID of the related message' },
+                        conversation_id: { type: 'integer', example: 1, description: 'ID of the related conversation' },
+                        type: { type: 'string', enum: ['message', 'mention', 'group_invite', 'system'], description: 'Type of notification' },
+                        title: { type: 'string', example: 'New Message', description: 'Notification title' },
+                        body: { type: 'string', example: 'You have a new message from John', description: 'Notification body' },
+                        data: { type: 'object', example: {}, description: 'Additional notification data' },
+                        is_seen: { type: 'boolean', example: false, description: 'Whether the notification has been seen' },
+                        is_read: { type: 'boolean', example: false, description: 'Whether the notification has been read' },
+                        seen_at: { type: 'string', format: 'date-time', example: null, description: 'Timestamp when notification was seen' },
+                        read_at: { type: 'string', format: 'date-time', example: null, description: 'Timestamp when notification was read' },
+                        created_at: { type: 'string', format: 'date-time', example: '2024-01-01T12:00:00.000Z', description: 'Creation timestamp' }
+                    }
+                },
+                NotificationsResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean', example: true },
+                        message: { type: 'string', example: 'Notifications retrieved successfully' },
+                        data: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/Notification' }
+                        },
+                        pagination: {
+                            type: 'object',
+                            properties: {
+                                page: { type: 'integer', example: 1 },
+                                limit: { type: 'integer', example: 20 },
+                                total: { type: 'integer', example: 10 },
+                                totalPages: { type: 'integer', example: 1 }
+                            }
+                        }
+                    }
+                },
                 SubSkillsResponse: {
                     type: 'object',
                     properties: {
@@ -3378,10 +3531,592 @@ const options = {
                         }
                     }
                 }
+            },
+            '/api/chat/conversations': {
+                post: {
+                    summary: 'Create a new conversation',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    required: ['type', 'memberIds'],
+                                    properties: {
+                                        type: {
+                                            type: 'string',
+                                            enum: ['private', 'group']
+                                        },
+                                        name: {
+                                            type: 'string',
+                                            description: 'Required for group conversations'
+                                        },
+                                        description: {
+                                            type: 'string'
+                                        },
+                                        memberIds: {
+                                            type: 'array',
+                                            items: {
+                                                type: 'integer'
+                                            },
+                                            description: 'Array of user IDs to add to conversation'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '201': {
+                            description: 'Conversation created successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean' },
+                                            message: { type: 'string' },
+                                            data: {
+                                                $ref: '#/components/schemas/Conversation'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': {
+                            description: 'Bad request'
+                        },
+                        '429': {
+                            description: 'Rate limit exceeded'
+                        }
+                    }
+                },
+                get: {
+                    summary: 'Get user\'s conversations',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    responses: {
+                        '200': {
+                            description: 'Conversations retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean' },
+                                            message: { type: 'string' },
+                                            data: {
+                                                type: 'array',
+                                                items: {
+                                                    $ref: '#/components/schemas/Conversation'
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/api/chat/conversations/{id}': {
+                get: {
+                    summary: 'Get conversation by ID',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'path',
+                            name: 'id',
+                            required: true,
+                            schema: {
+                                type: 'integer'
+                            },
+                            description: 'Conversation ID'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Conversation retrieved successfully'
+                        },
+                        '403': {
+                            description: 'Access denied'
+                        },
+                        '404': {
+                            description: 'Conversation not found'
+                        }
+                    }
+                }
+            },
+            '/api/chat/conversations/{id}/messages': {
+                get: {
+                    summary: 'Get conversation messages',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'path',
+                            name: 'id',
+                            required: true,
+                            schema: {
+                                type: 'integer'
+                            },
+                            description: 'Conversation ID'
+                        },
+                        {
+                            in: 'query',
+                            name: 'page',
+                            schema: {
+                                type: 'integer',
+                                minimum: 1,
+                                default: 1
+                            },
+                            description: 'Page number'
+                        },
+                        {
+                            in: 'query',
+                            name: 'limit',
+                            schema: {
+                                type: 'integer',
+                                minimum: 1,
+                                maximum: 100,
+                                default: 50
+                            },
+                            description: 'Number of messages per page'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Messages retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean' },
+                                            message: { type: 'string' },
+                                            data: {
+                                                type: 'object',
+                                                properties: {
+                                                    messages: {
+                                                        type: 'array',
+                                                        items: {
+                                                            $ref: '#/components/schemas/Message'
+                                                        }
+                                                    },
+                                                    pagination: {
+                                                        type: 'object',
+                                                        properties: {
+                                                            currentPage: { type: 'integer' },
+                                                            totalPages: { type: 'integer' },
+                                                            totalMessages: { type: 'integer' },
+                                                            hasNextPage: { type: 'boolean' },
+                                                            hasPreviousPage: { type: 'boolean' }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                post: {
+                    summary: 'Send a message to a conversation',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'path',
+                            name: 'id',
+                            required: true,
+                            schema: {
+                                type: 'integer'
+                            },
+                            description: 'Conversation ID'
+                        }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        content: {
+                                            type: 'string',
+                                            description: 'Message content (required if no attachment)'
+                                        },
+                                        messageType: {
+                                            type: 'string',
+                                            enum: ['text', 'image', 'video', 'audio', 'file'],
+                                            default: 'text'
+                                        },
+                                        replyToMessageId: {
+                                            type: 'integer',
+                                            description: 'ID of message being replied to'
+                                        },
+                                        attachmentUrl: {
+                                            type: 'string',
+                                            description: 'URL of attached file'
+                                        },
+                                        attachmentName: {
+                                            type: 'string',
+                                            description: 'Name of attached file'
+                                        },
+                                        attachmentSize: {
+                                            type: 'integer',
+                                            description: 'Size of attached file in bytes'
+                                        },
+                                        attachmentMimeType: {
+                                            type: 'string',
+                                            description: 'MIME type of attached file'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '201': {
+                            description: 'Message sent successfully'
+                        },
+                        '400': {
+                            description: 'Bad request'
+                        },
+                        '429': {
+                            description: 'Rate limit exceeded'
+                        }
+                    }
+                }
+            },
+            '/api/chat/conversations/{id}/stats': {
+                get: {
+                    summary: 'Get conversation statistics',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'path',
+                            name: 'id',
+                            required: true,
+                            schema: {
+                                type: 'integer'
+                            },
+                            description: 'Conversation ID'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Statistics retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean' },
+                                            message: { type: 'string' },
+                                            data: {
+                                                type: 'object',
+                                                properties: {
+                                                    messageCount: { type: 'integer' },
+                                                    memberCount: { type: 'integer' },
+                                                    unreadCount: { type: 'integer' }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/api/chat/conversations/{id}/typing': {
+                get: {
+                    summary: 'Get typing status for a conversation',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'path',
+                            name: 'id',
+                            required: true,
+                            schema: {
+                                type: 'integer'
+                            },
+                            description: 'Conversation ID'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Typing status retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean' },
+                                            message: { type: 'string' },
+                                            data: {
+                                                type: 'array',
+                                                items: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        userId: { type: 'integer' },
+                                                        userName: { type: 'string' },
+                                                        startedTypingAt: {
+                                                            type: 'string',
+                                                            format: 'date-time'
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/api/chat/messages/{id}/read': {
+                put: {
+                    summary: 'Mark a message as read',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'path',
+                            name: 'id',
+                            required: true,
+                            schema: {
+                                type: 'integer'
+                            },
+                            description: 'Message ID'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Message marked as read'
+                        },
+                        '400': {
+                            description: 'Failed to mark message as read'
+                        }
+                    }
+                }
+            },
+            '/api/chat/search': {
+                get: {
+                    summary: 'Search messages',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'query',
+                            name: 'q',
+                            required: true,
+                            schema: {
+                                type: 'string',
+                                minLength: 2,
+                                maxLength: 100
+                            },
+                            description: 'Search query'
+                        },
+                        {
+                            in: 'query',
+                            name: 'conversation_id',
+                            schema: {
+                                type: 'integer'
+                            },
+                            description: 'Limit search to specific conversation'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Search completed successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean' },
+                                            message: { type: 'string' },
+                                            data: {
+                                                type: 'array',
+                                                items: {
+                                                    $ref: '#/components/schemas/Message'
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': {
+                            description: 'Invalid search query'
+                        },
+                        '429': {
+                            description: 'Rate limit exceeded'
+                        }
+                    }
+                }
+            },
+            '/api/chat/users/{id}/status': {
+                get: {
+                    summary: 'Get user\'s online status',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'path',
+                            name: 'id',
+                            required: true,
+                            schema: {
+                                type: 'integer'
+                            },
+                            description: 'User ID'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'User status retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean' },
+                                            message: { type: 'string' },
+                                            data: {
+                                                type: 'object',
+                                                properties: {
+                                                    id: { type: 'integer' },
+                                                    name: { type: 'string' },
+                                                    is_online: { type: 'boolean' },
+                                                    last_seen: {
+                                                        type: 'string',
+                                                        format: 'date-time'
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '404': {
+                            description: 'User not found'
+                        }
+                    }
+                }
+            },
+            '/api/chat/notifications': {
+                get: {
+                    summary: 'Get user\'s notifications',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'query',
+                            name: 'page',
+                            schema: {
+                                type: 'integer',
+                                minimum: 1,
+                                default: 1
+                            },
+                            description: 'Page number'
+                        },
+                        {
+                            in: 'query',
+                            name: 'limit',
+                            schema: {
+                                type: 'integer',
+                                minimum: 1,
+                                maximum: 50,
+                                default: 20
+                            },
+                            description: 'Number of notifications per page'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Notifications retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean' },
+                                            message: { type: 'string' },
+                                            data: {
+                                                type: 'object',
+                                                properties: {
+                                                    notifications: {
+                                                        type: 'array',
+                                                        items: {
+                                                            type: 'object',
+                                                            properties: {
+                                                                id: { type: 'integer' },
+                                                                type: { type: 'string' },
+                                                                title: { type: 'string' },
+                                                                body: { type: 'string' },
+                                                                is_seen: { type: 'boolean' },
+                                                                is_read: { type: 'boolean' },
+                                                                created_at: {
+                                                                    type: 'string',
+                                                                    format: 'date-time'
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    pagination: {
+                                                        type: 'object'
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/api/chat/notifications/{id}/read': {
+                put: {
+                    summary: 'Mark a notification as read',
+                    tags: ['Chat'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'path',
+                            name: 'id',
+                            required: true,
+                            schema: {
+                                type: 'integer'
+                            },
+                            description: 'Notification ID'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Notification marked as read'
+                        },
+                        '404': {
+                            description: 'Notification not found'
+                        }
+                    }
+                }
             }
         }
     },
-    apis: []
+    apis: ['./routes/*.js']
 };
 
 const specs = swaggerJsdoc(options);

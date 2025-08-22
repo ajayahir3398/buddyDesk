@@ -56,11 +56,13 @@ const skillsRoutes = require('./routes/skills.routes');
 const postRoutes = require('./routes/post.routes');
 const aadhaarRoutes = require('./routes/aadhaar.routes');
 const healthRoutes = require('./routes/health.js');
+const chatRoutes = require('./routes/chatRoutes');
 
 app.use('/api/users', userRoutes);
 app.use('/api/skills', skillsRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/aadhaar', aadhaarRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/health', healthRoutes);
 
 // Error handling middleware (must be last)
