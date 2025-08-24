@@ -16,7 +16,7 @@ const getServers = () => {
 
     if (isProduction || process.env.PRODUCTION_URL) {
         servers.push({
-            url: process.env.PRODUCTION_URL || 'https://buddydesk.onrender.com/api',
+            url: process.env.PRODUCTION_URL || 'http://103.168.18.34:3000/api',
             description: 'Production server'
         });
     }
@@ -29,7 +29,7 @@ const getServers = () => {
                 description: 'Development server'
             },
             {
-                url: 'https://buddydesk.onrender.com/api',
+                url: 'http://103.168.18.34:3000/api',
                 description: 'Production server'
             }
         );
