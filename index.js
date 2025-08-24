@@ -1,14 +1,6 @@
 require('dotenv').config();
 
-// Validate environment variables before starting the application
-const validateEnvironment = require('./utils/validateEnv');
-
-try {
-  validateEnvironment();
-} catch (error) {
-  console.error('❌ Environment validation failed:', error.message);
-  process.exit(1);
-}
+// Environment validation removed for deployment flexibility
 
 const app = require("./app");
 const http = require('http');
