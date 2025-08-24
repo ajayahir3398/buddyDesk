@@ -104,3 +104,7 @@
 {"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T17:48:24.042Z"}
 {"level":"info","message":"Server started on port 3001 with Socket.io support","timestamp":"2025-08-22T18:44:14.980Z"}
 {"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T18:44:25.290Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-22T19:18:17.622Z"}
+{"level":"info","message":"Database synced successfully.","timestamp":"2025-08-22T19:18:28.471Z"}
+{"level":"info","message":"Server started on port 3000 with Socket.io support","timestamp":"2025-08-24T09:30:35.509Z"}
+{"level":"info","message":"Database synced successfully.","timestamp":"2025-08-24T09:30:50.250Z"}
