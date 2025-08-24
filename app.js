@@ -10,26 +10,26 @@ const logger = require('./utils/logger');
 const app = express();
 const db = require("./models");
 
+app.use(cookieParser());
+
+// Body parsing middleware with larger limits for mobile uploads
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 // Request ID middleware (must be first)
 app.use(requestIdMiddleware);
 
-// Security middleware
-app.use(helmet());
-
-// CORS configuration for React Native mobile app
-const getCorsOptions = require('./utils/corsConfig');
-const corsOptions = getCorsOptions();
-
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cors());
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static('uploads'));
 
 // Swagger UI setup
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+app.use('/api-docs', (req, res, next) => {
+  // Disable CSP for swagger docs
+  res.removeHeader('Content-Security-Policy');
+  next();
+}, swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'BuddyDesk API Documentation',
   customfavIcon: '/favicon.ico',
@@ -37,8 +37,28 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
     persistAuthorization: true,
     displayRequestDuration: true,
     filter: true,
-    deepLinking: true
+    deepLinking: true,
+    tryItOutEnabled: true,
+    requestInterceptor: (request) => {
+      if (!request.headers) {
+        request.headers = {};
+      }
+      request.headers['Access-Control-Allow-Origin'] = '*';
+      return request;
+    }
   }
+}));
+
+// Security middleware (AFTER swagger setup)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
 }));
 
 // Sync DB
@@ -49,6 +69,16 @@ db.sequelize.sync()
   .catch(err => {
     logger.error("DB Sync error:", err);
   });
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'BuddyDesk API Server', 
+    status: 'running',
+    documentation: '/api-docs',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Routes
 const userRoutes = require('./routes/user.routes');

@@ -14,11 +14,13 @@ const getServers = () => {
         });
     }
 
-    if (isProduction || process.env.PRODUCTION_URL) {
-        servers.push({
-            url: process.env.PRODUCTION_URL || 'http://103.168.18.34:3000/api',
-            description: 'Production server'
-        });
+    if (isProduction) {
+        if (process.env.PRODUCTION_URL) {
+            servers.push({
+                url: process.env.PRODUCTION_URL,
+                description: 'Production server'
+            });
+        }
     }
 
     // Fallback - show both if environment is not set
@@ -78,23 +80,23 @@ const options = {
                     type: 'object',
                     required: ['name', 'email', 'password'],
                     properties: {
-                        name: { 
-                            type: 'string', 
-                            example: 'John Doe', 
+                        name: {
+                            type: 'string',
+                            example: 'John Doe',
                             description: 'User full name (2-50 characters, letters and spaces only)',
                             minLength: 2,
                             maxLength: 50
                         },
-                        email: { 
-                            type: 'string', 
-                            example: 'john.doe@example.com', 
+                        email: {
+                            type: 'string',
+                            example: 'john.doe@example.com',
                             description: 'User email address (must be unique)',
                             format: 'email',
                             maxLength: 255
                         },
-                        password: { 
-                            type: 'string', 
-                            example: 'TestPass123!', 
+                        password: {
+                            type: 'string',
+                            example: 'TestPass123!',
                             description: 'Password (8-128 characters, must contain uppercase, lowercase, number, and special character)',
                             minLength: 8,
                             maxLength: 128
@@ -105,16 +107,16 @@ const options = {
                     type: 'object',
                     required: ['email', 'password'],
                     properties: {
-                        email: { 
-                            type: 'string', 
-                            example: 'john.doe@example.com', 
+                        email: {
+                            type: 'string',
+                            example: 'john.doe@example.com',
                             description: 'User email address',
                             format: 'email',
                             maxLength: 255
                         },
-                        password: { 
-                            type: 'string', 
-                            example: 'TestPass123!', 
+                        password: {
+                            type: 'string',
+                            example: 'TestPass123!',
                             description: 'User password',
                             minLength: 1
                         }
@@ -125,8 +127,8 @@ const options = {
                     properties: {
                         success: { type: 'boolean', example: true },
                         message: { type: 'string', example: 'Login successful' },
-                        access_token: { 
-                            type: 'string', 
+                        access_token: {
+                            type: 'string',
                             example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
                             description: 'Access token (15 minutes expiry)'
                         }
@@ -496,44 +498,44 @@ const options = {
                 PostCreation: {
                     type: 'object',
                     properties: {
-                        title: { 
-                            type: 'string', 
-                            example: 'Need help with React project', 
+                        title: {
+                            type: 'string',
+                            example: 'Need help with React project',
                             description: 'Post title (optional, 1-255 characters)',
                             minLength: 1,
                             maxLength: 255
                         },
-                        description: { 
-                            type: 'string', 
-                            example: 'Looking for someone to help with a React.js project involving state management and API integration.', 
+                        description: {
+                            type: 'string',
+                            example: 'Looking for someone to help with a React.js project involving state management and API integration.',
                             description: 'Post description (optional, 1-5000 characters)',
                             minLength: 1,
                             maxLength: 5000
                         },
-                        required_skill_id: { 
-                            type: 'integer', 
-                            example: 1, 
+                        required_skill_id: {
+                            type: 'integer',
+                            example: 1,
                             description: 'Required skill ID (optional, positive integer)',
                             minimum: 1,
                             nullable: true
                         },
-                        required_sub_skill_id: { 
-                            type: 'integer', 
-                            example: 2, 
+                        required_sub_skill_id: {
+                            type: 'integer',
+                            example: 2,
                             description: 'Required sub-skill ID (optional, positive integer)',
                             minimum: 1,
                             nullable: true
                         },
-                        medium: { 
-                            type: 'string', 
-                            enum: ['online', 'offline'], 
-                            example: 'online', 
+                        medium: {
+                            type: 'string',
+                            enum: ['online', 'offline'],
+                            example: 'online',
                             description: 'Collaboration medium (optional, defaults to online)'
                         },
-                        deadline: { 
-                            type: 'string', 
-                            format: 'date', 
-                            example: '2024-12-31', 
+                        deadline: {
+                            type: 'string',
+                            format: 'date',
+                            example: '2024-12-31',
                             description: 'Project deadline (optional, must be future date)',
                             nullable: true
                         }
@@ -575,50 +577,50 @@ const options = {
                 PostUpdate: {
                     type: 'object',
                     properties: {
-                        title: { 
-                            type: 'string', 
-                            example: 'Updated: Need help with React project', 
+                        title: {
+                            type: 'string',
+                            example: 'Updated: Need help with React project',
                             description: 'Post title (optional, 1-255 characters)',
                             minLength: 1,
                             maxLength: 255
                         },
-                        description: { 
-                            type: 'string', 
-                            example: 'Updated description: Looking for an experienced React.js developer for a complex project.', 
+                        description: {
+                            type: 'string',
+                            example: 'Updated description: Looking for an experienced React.js developer for a complex project.',
                             description: 'Post description (optional, 1-5000 characters)',
                             minLength: 1,
                             maxLength: 5000
                         },
-                        required_skill_id: { 
-                            type: 'integer', 
-                            example: 2, 
+                        required_skill_id: {
+                            type: 'integer',
+                            example: 2,
                             description: 'Required skill ID (optional, positive integer)',
                             minimum: 1,
                             nullable: true
                         },
-                        required_sub_skill_id: { 
-                            type: 'integer', 
-                            example: 3, 
+                        required_sub_skill_id: {
+                            type: 'integer',
+                            example: 3,
                             description: 'Required sub-skill ID (optional, positive integer)',
                             minimum: 1,
                             nullable: true
                         },
-                        medium: { 
-                            type: 'string', 
-                            enum: ['online', 'offline'], 
-                            example: 'offline', 
+                        medium: {
+                            type: 'string',
+                            enum: ['online', 'offline'],
+                            example: 'offline',
                             description: 'Collaboration medium (optional)'
                         },
-                        status: { 
-                            type: 'string', 
-                            enum: ['active', 'hold', 'discussed', 'completed', 'deleted'], 
-                            example: 'hold', 
+                        status: {
+                            type: 'string',
+                            enum: ['active', 'hold', 'discussed', 'completed', 'deleted'],
+                            example: 'hold',
                             description: 'Post status (optional)'
                         },
-                        deadline: { 
-                            type: 'string', 
-                            format: 'date', 
-                            example: '2025-01-15', 
+                        deadline: {
+                            type: 'string',
+                            format: 'date',
+                            example: '2025-01-15',
                             description: 'Project deadline (optional, can be null to clear deadline)',
                             nullable: true
                         }
@@ -729,31 +731,31 @@ const options = {
                 UpdateProfileRequest: {
                     type: 'object',
                     properties: {
-                        name: { 
-                            type: 'string', 
-                            example: 'John Doe', 
+                        name: {
+                            type: 'string',
+                            example: 'John Doe',
                             description: 'User full name (2-50 characters, letters and spaces only)',
                             minLength: 2,
                             maxLength: 50
                         },
-                        email: { 
-                            type: 'string', 
-                            example: 'john.doe@example.com', 
+                        email: {
+                            type: 'string',
+                            example: 'john.doe@example.com',
                             description: 'User email address (must be unique)',
                             format: 'email',
                             maxLength: 255
                         },
-                        phone: { 
-                            type: 'string', 
-                            example: '+1234567890', 
+                        phone: {
+                            type: 'string',
+                            example: '+1234567890',
                             description: 'Phone number (10-20 characters)',
                             minLength: 10,
                             maxLength: 20
                         },
-                        dob: { 
-                            type: 'string', 
-                            format: 'date', 
-                            example: '1990-01-01', 
+                        dob: {
+                            type: 'string',
+                            format: 'date',
+                            example: '1990-01-01',
                             description: 'Date of birth in YYYY-MM-DD format (must be at least 13 years old and not more than 120 years ago)'
                         }
                     },
@@ -1807,22 +1809,22 @@ const options = {
                                                     updated_at: '2024-01-01T00:00:00.000Z'
                                                 }
                                             ],
-                                             temp_addresses: [
-                                                 {
-                                                     id: 1,
-                                                     location_data: 'GPS: 28.6139,77.2090',
-                                                     pincode: '110001',
-                                                     selected_area: 'Connaught Place',
-                                                     city: 'New Delhi',
-                                                     state: 'Delhi',
-                                                     country: 'India',
-                                                     location_permission: true,
-                                                     is_active: true,
-                                                     expires_at: '2024-02-01T00:00:00.000Z',
-                                                     created_at: '2024-01-01T00:00:00.000Z',
-                                                     updated_at: '2024-01-01T00:00:00.000Z'
-                                                 }
-                                             ],
+                                            temp_addresses: [
+                                                {
+                                                    id: 1,
+                                                    location_data: 'GPS: 28.6139,77.2090',
+                                                    pincode: '110001',
+                                                    selected_area: 'Connaught Place',
+                                                    city: 'New Delhi',
+                                                    state: 'Delhi',
+                                                    country: 'India',
+                                                    location_permission: true,
+                                                    is_active: true,
+                                                    expires_at: '2024-02-01T00:00:00.000Z',
+                                                    created_at: '2024-01-01T00:00:00.000Z',
+                                                    updated_at: '2024-01-01T00:00:00.000Z'
+                                                }
+                                            ],
                                             posts: [
                                                 {
                                                     id: 1,
@@ -2322,30 +2324,30 @@ const options = {
                                 schema: {
                                     type: 'object',
                                     properties: {
-                                        title: { 
-                                            type: 'string', 
+                                        title: {
+                                            type: 'string',
                                             description: 'Post title (optional, 1-255 characters)'
                                         },
-                                        description: { 
-                                            type: 'string', 
+                                        description: {
+                                            type: 'string',
                                             description: 'Post description (optional, 1-5000 characters)'
                                         },
-                                        required_skill_id: { 
-                                            type: 'integer', 
+                                        required_skill_id: {
+                                            type: 'integer',
                                             description: 'Required skill ID (optional, positive integer)'
                                         },
-                                        required_sub_skill_id: { 
-                                            type: 'integer', 
+                                        required_sub_skill_id: {
+                                            type: 'integer',
                                             description: 'Required sub-skill ID (optional, positive integer)'
                                         },
-                                        medium: { 
-                                            type: 'string', 
-                                            enum: ['online', 'offline'], 
+                                        medium: {
+                                            type: 'string',
+                                            enum: ['online', 'offline'],
                                             description: 'Collaboration medium (optional, defaults to online)'
                                         },
-                                        deadline: { 
-                                            type: 'string', 
-                                            format: 'date', 
+                                        deadline: {
+                                            type: 'string',
+                                            format: 'date',
                                             description: 'Project deadline (optional, must be future date)'
                                         },
                                         attachments: {
