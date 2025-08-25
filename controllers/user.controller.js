@@ -513,12 +513,12 @@ exports.getProfileById = async (req, res) => {
   }
 };
 
-// Update user profile (name, email, phone, dob, addresses, temp_addresses)
+// Update user profile (name, email, phone, dob, addresses, temp_addresses, work_profiles)
 // Validation is handled by middleware
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, email, phone, dob, addresses, temp_addresses } = req.body;
+    const { name, email, phone, dob, addresses, temp_addresses, work_profiles } = req.body;
 
     // Prepare update data (validation already done by middleware)
     const fieldsToUpdate = {};
@@ -649,6 +649,57 @@ exports.updateProfile = async (req, res) => {
         }
       }
 
+      // Handle work_profiles update if provided
+      if (work_profiles !== undefined) {
+        // Delete existing work profiles and related data
+        const existingWorkProfiles = await WorkProfile.findAll({
+          where: { user_id: userId },
+          transaction
+        });
+
+        // Delete related user skills first (due to foreign key constraints)
+        for (const workProfile of existingWorkProfiles) {
+          await UserSkill.destroy({
+            where: { work_profile_id: workProfile.id },
+            transaction
+          });
+        }
+
+        // Delete existing work profiles
+        await WorkProfile.destroy({
+          where: { user_id: userId },
+          transaction
+        });
+
+        // Create new work profiles if provided
+        if (work_profiles && work_profiles.length > 0) {
+          for (const workProfile of work_profiles) {
+            // Create work profile
+            const newWorkProfile = await WorkProfile.create({
+              user_id: userId,
+              company_name: workProfile.company_name || null,
+              designation: workProfile.designation || null,
+              start_date: workProfile.start_date ? new Date(workProfile.start_date) : null,
+              end_date: workProfile.end_date ? new Date(workProfile.end_date) : null
+            }, { transaction });
+
+            // Create related user skills if provided
+            if (workProfile.user_skills && workProfile.user_skills.length > 0) {
+              const userSkillPromises = workProfile.user_skills.map(userSkill => {
+                return UserSkill.create({
+                  work_profile_id: newWorkProfile.id,
+                  skill_id: userSkill.skill_id,
+                  sub_skill_id: userSkill.sub_skill_id || null,
+                  proficiency_level: userSkill.proficiency_level || 'Beginner'
+                }, { transaction });
+              });
+
+              await Promise.all(userSkillPromises);
+            }
+          }
+        }
+      }
+
       await transaction.commit();
 
       // Fetch updated profile with all related data
@@ -658,6 +709,30 @@ exports.updateProfile = async (req, res) => {
             model: UserProfile,
             as: 'profile',
             attributes: ['id', 'phone', 'dob', 'gender', 'created_at', 'updated_at']
+          },
+          {
+            model: WorkProfile,
+            as: 'workProfiles',
+            attributes: ['id', 'company_name', 'designation', 'start_date', 'end_date', 'created_at', 'updated_at'],
+            include: [
+              {
+                model: UserSkill,
+                as: 'userSkills',
+                attributes: ['id', 'proficiency_level', 'created_at', 'updated_at'],
+                include: [
+                  {
+                    model: Skill,
+                    as: 'skill',
+                    attributes: ['id', 'name', 'description']
+                  },
+                  {
+                    model: SubSkill,
+                    as: 'subSkill',
+                    attributes: ['id', 'name', 'description']
+                  }
+                ]
+              }
+            ]
           },
           {
             model: Address,
@@ -670,7 +745,10 @@ exports.updateProfile = async (req, res) => {
             attributes: ['id', 'location_data', 'pincode', 'selected_area', 'city', 'state', 'country', 'location_permission', 'is_active', 'expires_at', 'created_at', 'updated_at']
           }
         ],
-        attributes: ['id', 'name', 'email', 'created_at', 'updated_at']
+        attributes: ['id', 'name', 'email', 'created_at', 'updated_at'],
+        order: [
+          [{ model: WorkProfile, as: 'workProfiles' }, 'start_date', 'DESC']
+        ]
       });
 
       const profileData = {
@@ -680,6 +758,7 @@ exports.updateProfile = async (req, res) => {
         created_at: updatedUser.created_at,
         updated_at: updatedUser.updated_at,
         profile: updatedUser.profile || null,
+        work_profiles: updatedUser.workProfiles || [],
         addresses: updatedUser.addresses || [],
         temp_addresses: updatedUser.tempAddresses || []
       };

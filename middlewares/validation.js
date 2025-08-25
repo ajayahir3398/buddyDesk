@@ -261,12 +261,12 @@ const validateDate = (fieldName) => [
 
 // Custom validation to check if at least one field is provided
 const validateAtLeastOneField = (req, res, next) => {
-  const { name, email, phone, dob } = req.body;
+  const { name, email, phone, dob, addresses, temp_addresses, work_profiles } = req.body;
   
-  if (!name && !email && !phone && !dob) {
+  if (!name && !email && !phone && !dob && !addresses && !temp_addresses && !work_profiles) {
     return res.status(400).json({
       success: false,
-      message: 'At least one field (name, email, phone, or dob) must be provided for update'
+      message: 'At least one field (name, email, phone, dob, addresses, temp_addresses, or work_profiles) must be provided for update'
     });
   }
   
@@ -446,6 +446,84 @@ const validateProfileUpdate = [
     .optional()
     .matches(patterns.date)
     .withMessage('Expiry date must be in YYYY-MM-DD format'),
+
+  // Work Profile validation (optional array)
+  body('work_profiles')
+    .optional()
+    .isArray()
+    .withMessage('Work profiles must be an array'),
+  
+  body('work_profiles.*.company_name')
+    .optional()
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('Company name is too long'),
+  
+  body('work_profiles.*.designation')
+    .optional()
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('Designation is too long'),
+  
+  body('work_profiles.*.start_date')
+    .optional()
+    .matches(patterns.date)
+    .withMessage('Start date must be in YYYY-MM-DD format')
+    .custom((value) => {
+      if (value) {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) {
+          throw new Error('Start date must be a valid date');
+        }
+        if (date > new Date()) {
+          throw new Error('Start date cannot be in the future');
+        }
+      }
+      return true;
+    }),
+  
+  body('work_profiles.*.end_date')
+    .optional()
+    .matches(patterns.date)
+    .withMessage('End date must be in YYYY-MM-DD format')
+    .custom((value, { req, path }) => {
+      if (value) {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) {
+          throw new Error('End date must be a valid date');
+        }
+        
+        // Get the index of the work profile being validated
+        const workProfileIndex = path.split('.')[1];
+        const startDate = req.body.work_profiles?.[workProfileIndex]?.start_date;
+        
+        if (startDate && date <= new Date(startDate)) {
+          throw new Error('End date must be after start date');
+        }
+      }
+      return true;
+    }),
+
+  // User Skills validation within work profiles
+  body('work_profiles.*.user_skills')
+    .optional()
+    .isArray()
+    .withMessage('User skills must be an array'),
+  
+  body('work_profiles.*.user_skills.*.skill_id')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Skill ID must be a positive integer'),
+  
+  body('work_profiles.*.user_skills.*.sub_skill_id')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Sub-skill ID must be a positive integer'),
+  
+  body('work_profiles.*.user_skills.*.proficiency_level')
+    .optional()
+    .isIn(['Beginner', 'Intermediate', 'Expert'])
+    .withMessage('Proficiency level must be one of: Beginner, Intermediate, Expert'),
   
   handleValidationErrors
 ];

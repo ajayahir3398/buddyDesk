@@ -46,7 +46,7 @@ const options = {
         info: {
             title: 'BuddyDesk API',
             version: '1.0.0',
-            description: 'Complete API for BuddyDesk platform including user authentication, enhanced profile management with addresses and temporary addresses, and skills management.',
+            description: 'Complete API for BuddyDesk platform including user authentication, enhanced profile management with addresses, temporary addresses, and work profiles with skills integration, and skills management.',
             contact: {
                 name: 'API Support',
                 email: 'support@buddydesk.com'
@@ -737,6 +737,52 @@ const options = {
                                     items: {
                                         $ref: '#/components/schemas/TempAddress'
                                     }
+                                },
+                                work_profiles: {
+                                    type: 'array',
+                                    description: 'Updated user work profiles with skills',
+                                    items: {
+                                        type: 'object',
+                                        properties: {
+                                            id: { type: 'integer', example: 1, description: 'Work profile ID' },
+                                            company_name: { type: 'string', example: 'Tech Solutions Inc.', description: 'Company name' },
+                                            designation: { type: 'string', example: 'Senior Software Engineer', description: 'Job designation' },
+                                            start_date: { type: 'string', format: 'date', example: '2022-01-15', description: 'Employment start date' },
+                                            end_date: { type: 'string', format: 'date', example: '2024-06-30', description: 'Employment end date', nullable: true },
+                                            created_at: { type: 'string', format: 'date-time', example: '2024-01-15T10:30:00.000Z' },
+                                            updated_at: { type: 'string', format: 'date-time', example: '2024-01-15T10:30:00.000Z' },
+                                            userSkills: {
+                                                type: 'array',
+                                                description: 'Skills associated with this work profile',
+                                                items: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        id: { type: 'integer', example: 1, description: 'User skill ID' },
+                                                        proficiency_level: { type: 'string', enum: ['Beginner', 'Intermediate', 'Expert'], example: 'Expert', description: 'Skill proficiency level' },
+                                                        created_at: { type: 'string', format: 'date-time', example: '2024-01-15T10:30:00.000Z' },
+                                                        updated_at: { type: 'string', format: 'date-time', example: '2024-01-15T10:30:00.000Z' },
+                                                        skill: {
+                                                            type: 'object',
+                                                            properties: {
+                                                                id: { type: 'integer', example: 1, description: 'Skill ID' },
+                                                                name: { type: 'string', example: 'JavaScript', description: 'Skill name' },
+                                                                description: { type: 'string', example: 'Programming language for web development', description: 'Skill description' }
+                                                            }
+                                                        },
+                                                        subSkill: {
+                                                            type: 'object',
+                                                            properties: {
+                                                                id: { type: 'integer', example: 2, description: 'Sub-skill ID' },
+                                                                name: { type: 'string', example: 'React.js', description: 'Sub-skill name' },
+                                                                description: { type: 'string', example: 'JavaScript library for building user interfaces', description: 'Sub-skill description' }
+                                                            },
+                                                            nullable: true
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -878,10 +924,72 @@ const options = {
                                     }
                                 }
                             }
+                        },
+                        work_profiles: {
+                            type: 'array',
+                            description: 'Array of work profiles. If provided, completely replaces existing work profiles.',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    company_name: {
+                                        type: 'string',
+                                        example: 'Tech Solutions Inc.',
+                                        description: 'Company/organization name (max 255 characters)',
+                                        maxLength: 255
+                                    },
+                                    designation: {
+                                        type: 'string',
+                                        example: 'Senior Software Engineer',
+                                        description: 'Job title/role (max 255 characters)',
+                                        maxLength: 255
+                                    },
+                                    start_date: {
+                                        type: 'string',
+                                        format: 'date',
+                                        example: '2022-01-15',
+                                        description: 'Employment start date (YYYY-MM-DD format, cannot be in future)'
+                                    },
+                                    end_date: {
+                                        type: 'string',
+                                        format: 'date',
+                                        example: '2024-06-30',
+                                        description: 'Employment end date (YYYY-MM-DD format, must be after start_date, null for current employment)',
+                                        nullable: true
+                                    },
+                                    user_skills: {
+                                        type: 'array',
+                                        description: 'Array of skills associated with this work profile',
+                                        items: {
+                                            type: 'object',
+                                            properties: {
+                                                skill_id: {
+                                                    type: 'integer',
+                                                    example: 1,
+                                                    description: 'Skill ID (positive integer)',
+                                                    minimum: 1
+                                                },
+                                                sub_skill_id: {
+                                                    type: 'integer',
+                                                    example: 3,
+                                                    description: 'Sub-skill ID (positive integer, optional)',
+                                                    minimum: 1,
+                                                    nullable: true
+                                                },
+                                                proficiency_level: {
+                                                    type: 'string',
+                                                    enum: ['Beginner', 'Intermediate', 'Expert'],
+                                                    example: 'Expert',
+                                                    description: 'Skill proficiency level'
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     },
                     additionalProperties: false,
-                    description: 'At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses and temp_addresses completely replace existing data when provided.'
+                    description: 'At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses, temp_addresses, and work_profiles completely replace existing data when provided.'
                 },
                 PublicProfile: {
                     type: 'object',
@@ -2016,7 +2124,7 @@ const options = {
                 },
                 put: {
                     summary: 'Update user profile',
-                    description: 'Update profile information including basic details, addresses, and temporary addresses. At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses and temp_addresses completely replace existing data when provided.',
+                    description: 'Update profile information including basic details, addresses, temporary addresses, and work profiles with skills. At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses, temp_addresses, and work_profiles completely replace existing data when provided.',
                     tags: ['Users'],
                     security: [
                         {
@@ -2100,6 +2208,31 @@ const options = {
                                             ]
                                         }
                                     },
+                                    work_profiles_only: {
+                                        summary: 'Update work profiles only',
+                                        value: {
+                                            work_profiles: [
+                                                {
+                                                    company_name: 'Tech Solutions Inc.',
+                                                    designation: 'Senior Software Engineer',
+                                                    start_date: '2022-01-15',
+                                                    end_date: '2024-06-30',
+                                                    user_skills: [
+                                                        {
+                                                            skill_id: 1,
+                                                            sub_skill_id: 3,
+                                                            proficiency_level: 'Expert'
+                                                        },
+                                                        {
+                                                            skill_id: 2,
+                                                            sub_skill_id: null,
+                                                            proficiency_level: 'Intermediate'
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    },
                                     complete_update: {
                                         summary: 'Complete profile update with all fields',
                                         value: {
@@ -2126,6 +2259,21 @@ const options = {
                                                     country: 'India',
                                                     location_permission: false,
                                                     is_active: true
+                                                }
+                                            ],
+                                            work_profiles: [
+                                                {
+                                                    company_name: 'New Tech Corp',
+                                                    designation: 'Lead Developer',
+                                                    start_date: '2024-07-01',
+                                                    end_date: null,
+                                                    user_skills: [
+                                                        {
+                                                            skill_id: 1,
+                                                            sub_skill_id: 2,
+                                                            proficiency_level: 'Expert'
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }
@@ -2186,6 +2334,35 @@ const options = {
                                                     expires_at: null,
                                                     created_at: '2024-01-15T10:30:00.000Z',
                                                     updated_at: '2024-01-15T10:30:00.000Z'
+                                                }
+                                            ],
+                                            work_profiles: [
+                                                {
+                                                    id: 1,
+                                                    company_name: 'New Tech Corp',
+                                                    designation: 'Lead Developer',
+                                                    start_date: '2024-07-01',
+                                                    end_date: null,
+                                                    created_at: '2024-01-15T10:30:00.000Z',
+                                                    updated_at: '2024-01-15T10:30:00.000Z',
+                                                    userSkills: [
+                                                        {
+                                                            id: 1,
+                                                            proficiency_level: 'Expert',
+                                                            created_at: '2024-01-15T10:30:00.000Z',
+                                                            updated_at: '2024-01-15T10:30:00.000Z',
+                                                            skill: {
+                                                                id: 1,
+                                                                name: 'JavaScript',
+                                                                description: 'Programming language for web development'
+                                                            },
+                                                            subSkill: {
+                                                                id: 2,
+                                                                name: 'React.js',
+                                                                description: 'JavaScript library for building user interfaces'
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }
@@ -2289,6 +2466,48 @@ const options = {
                                                         field: 'phone',
                                                         message: 'Phone number format is invalid',
                                                         value: 'abc123'
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        invalid_work_profile_start_date: {
+                                            summary: 'Invalid work profile start date',
+                                            value: {
+                                                success: false,
+                                                message: 'Validation failed',
+                                                errors: [
+                                                    {
+                                                        field: 'work_profiles.0.start_date',
+                                                        message: 'Start date cannot be in the future',
+                                                        value: '2025-01-01'
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        invalid_work_profile_end_date: {
+                                            summary: 'Invalid work profile end date',
+                                            value: {
+                                                success: false,
+                                                message: 'Validation failed',
+                                                errors: [
+                                                    {
+                                                        field: 'work_profiles.0.end_date',
+                                                        message: 'End date must be after start date',
+                                                        value: '2022-01-01'
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        invalid_skill_proficiency: {
+                                            summary: 'Invalid skill proficiency level',
+                                            value: {
+                                                success: false,
+                                                message: 'Validation failed',
+                                                errors: [
+                                                    {
+                                                        field: 'work_profiles.0.user_skills.0.proficiency_level',
+                                                        message: 'Proficiency level must be one of: Beginner, Intermediate, Expert',
+                                                        value: 'Advanced'
                                                     }
                                                 ]
                                             }
