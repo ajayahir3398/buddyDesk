@@ -25,7 +25,7 @@ exports.addPost = async (req, res) => {
     } = req.body;
 
     // Get user ID from authenticated token
-    const user_id = req.user.userId;
+    const user_id = req.user.id;
 
     // Validate that the user exists
     const user = await User.findByPk(user_id);
@@ -215,7 +215,7 @@ exports.getPosts = async (req, res) => {
 // Get matching posts for logged-in user
 exports.getMatchingPosts = async (req, res) => {
   try {
-    const user_id = req.user.userId;
+    const user_id = req.user.id;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
@@ -584,7 +584,7 @@ exports.getPostById = async (req, res) => {
 exports.updatePost = async (req, res) => {
   try {
     const { id } = req.params;
-    const user_id = req.user.userId;
+    const user_id = req.user.id;
     const {
       title,
       description,
@@ -701,7 +701,7 @@ exports.updatePost = async (req, res) => {
 exports.addAttachment = async (req, res) => {
   try {
     const { id } = req.params;
-    const user_id = req.user.userId;
+    const user_id = req.user.id;
 
     // Check if post exists and belongs to user
     const post = await Post.findOne({
@@ -833,7 +833,7 @@ exports.downloadAttachment = async (req, res) => {
 exports.deleteAttachment = async (req, res) => {
   try {
     const { attachmentId } = req.params;
-    const user_id = req.user.userId;
+    const user_id = req.user.id;
 
     const attachment = await PostAttachment.findByPk(attachmentId, {
       include: [{

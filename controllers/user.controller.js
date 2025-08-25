@@ -513,12 +513,12 @@ exports.getProfileById = async (req, res) => {
   }
 };
 
-// Update user profile (simplified for name, email, phone, dob only)
+// Update user profile (name, email, phone, dob, addresses, temp_addresses)
 // Validation is handled by middleware
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, email, phone, dob } = req.body;
+    const { name, email, phone, dob, addresses, temp_addresses } = req.body;
 
     // Prepare update data (validation already done by middleware)
     const fieldsToUpdate = {};
@@ -594,15 +594,80 @@ exports.updateProfile = async (req, res) => {
         }
       }
 
+      // Handle addresses update if provided
+      if (addresses !== undefined) {
+        // Delete existing addresses
+        await Address.destroy({
+          where: { user_id: userId },
+          transaction
+        });
+
+        // Create new addresses if provided
+        if (addresses && addresses.length > 0) {
+          const addressPromises = addresses.map(address => {
+            return Address.create({
+              user_id: userId,
+              street: address.street || null,
+              city: address.city || null,
+              state: address.state || null,
+              zip_code: address.zip_code || null,
+              country: address.country || null,
+              type: address.type || 'home'
+            }, { transaction });
+          });
+
+          await Promise.all(addressPromises);
+        }
+      }
+
+      // Handle temp_addresses update if provided
+      if (temp_addresses !== undefined) {
+        // Delete existing temp addresses
+        await TempAddress.destroy({
+          where: { user_id: userId },
+          transaction
+        });
+
+        // Create new temp addresses if provided
+        if (temp_addresses && temp_addresses.length > 0) {
+          const tempAddressPromises = temp_addresses.map(tempAddress => {
+            return TempAddress.create({
+              user_id: userId,
+              location_data: tempAddress.location_data || '',
+              pincode: tempAddress.pincode || '',
+              selected_area: tempAddress.selected_area || '',
+              city: tempAddress.city || null,
+              state: tempAddress.state || null,
+              country: tempAddress.country || 'India',
+              location_permission: tempAddress.location_permission || false,
+              is_active: tempAddress.is_active !== undefined ? tempAddress.is_active : true,
+              expires_at: tempAddress.expires_at ? new Date(tempAddress.expires_at) : null
+            }, { transaction });
+          });
+
+          await Promise.all(tempAddressPromises);
+        }
+      }
+
       await transaction.commit();
 
-      // Fetch updated profile
+      // Fetch updated profile with all related data
       const updatedUser = await User.findByPk(userId, {
         include: [
           {
             model: UserProfile,
             as: 'profile',
             attributes: ['id', 'phone', 'dob', 'gender', 'created_at', 'updated_at']
+          },
+          {
+            model: Address,
+            as: 'addresses',
+            attributes: ['id', 'street', 'city', 'state', 'zip_code', 'country', 'type', 'created_at', 'updated_at']
+          },
+          {
+            model: TempAddress,
+            as: 'tempAddresses',
+            attributes: ['id', 'location_data', 'pincode', 'selected_area', 'city', 'state', 'country', 'location_permission', 'is_active', 'expires_at', 'created_at', 'updated_at']
           }
         ],
         attributes: ['id', 'name', 'email', 'created_at', 'updated_at']
@@ -614,7 +679,9 @@ exports.updateProfile = async (req, res) => {
         email: updatedUser.email,
         created_at: updatedUser.created_at,
         updated_at: updatedUser.updated_at,
-        profile: updatedUser.profile || null
+        profile: updatedUser.profile || null,
+        addresses: updatedUser.addresses || [],
+        temp_addresses: updatedUser.tempAddresses || []
       };
 
       res.status(200).json({
