@@ -46,7 +46,7 @@ const options = {
         info: {
             title: 'BuddyDesk API',
             version: '1.0.0',
-            description: 'Complete API for BuddyDesk platform including user authentication, profile management, and skills management.',
+            description: 'Complete API for BuddyDesk platform including user authentication, enhanced profile management with addresses and temporary addresses, and skills management.',
             contact: {
                 name: 'API Support',
                 email: 'support@buddydesk.com'
@@ -723,6 +723,20 @@ const options = {
                                         updated_at: { type: 'string', format: 'date-time', example: '2024-01-15T10:30:00.000Z' }
                                     },
                                     nullable: true
+                                },
+                                addresses: {
+                                    type: 'array',
+                                    description: 'Updated user addresses',
+                                    items: {
+                                        $ref: '#/components/schemas/Address'
+                                    }
+                                },
+                                temp_addresses: {
+                                    type: 'array',
+                                    description: 'Updated user temporary addresses',
+                                    items: {
+                                        $ref: '#/components/schemas/TempAddress'
+                                    }
                                 }
                             }
                         }
@@ -757,10 +771,117 @@ const options = {
                             format: 'date',
                             example: '1990-01-01',
                             description: 'Date of birth in YYYY-MM-DD format (must be at least 13 years old and not more than 120 years ago)'
+                        },
+                        addresses: {
+                            type: 'array',
+                            description: 'Array of user addresses. If provided, completely replaces existing addresses.',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    street: {
+                                        type: 'string',
+                                        example: '123 Main Street',
+                                        description: 'Street address (max 255 characters)',
+                                        maxLength: 255
+                                    },
+                                    city: {
+                                        type: 'string',
+                                        example: 'Mumbai',
+                                        description: 'City name (max 100 characters)',
+                                        maxLength: 100
+                                    },
+                                    state: {
+                                        type: 'string',
+                                        example: 'Maharashtra',
+                                        description: 'State/province (max 100 characters)',
+                                        maxLength: 100
+                                    },
+                                    zip_code: {
+                                        type: 'string',
+                                        example: '400001',
+                                        description: 'Postal/ZIP code (max 20 characters)',
+                                        maxLength: 20
+                                    },
+                                    country: {
+                                        type: 'string',
+                                        example: 'India',
+                                        description: 'Country name (max 100 characters)',
+                                        maxLength: 100
+                                    },
+                                    type: {
+                                        type: 'string',
+                                        enum: ['home', 'office'],
+                                        example: 'home',
+                                        description: 'Address type: "home" or "office"'
+                                    }
+                                }
+                            }
+                        },
+                        temp_addresses: {
+                            type: 'array',
+                            description: 'Array of temporary addresses. If provided, completely replaces existing temp addresses.',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    location_data: {
+                                        type: 'string',
+                                        example: 'Near Central Station',
+                                        description: 'Location description (max 500 characters)',
+                                        maxLength: 500
+                                    },
+                                    pincode: {
+                                        type: 'string',
+                                        example: '400003',
+                                        description: '6-digit pincode',
+                                        minLength: 6,
+                                        maxLength: 6
+                                    },
+                                    selected_area: {
+                                        type: 'string',
+                                        example: 'Downtown',
+                                        description: 'Selected area name (max 255 characters)',
+                                        maxLength: 255
+                                    },
+                                    city: {
+                                        type: 'string',
+                                        example: 'Mumbai',
+                                        description: 'City name (max 100 characters)',
+                                        maxLength: 100
+                                    },
+                                    state: {
+                                        type: 'string',
+                                        example: 'Maharashtra',
+                                        description: 'State/province (max 100 characters)',
+                                        maxLength: 100
+                                    },
+                                    country: {
+                                        type: 'string',
+                                        example: 'India',
+                                        description: 'Country name (max 100 characters)',
+                                        maxLength: 100
+                                    },
+                                    location_permission: {
+                                        type: 'boolean',
+                                        example: true,
+                                        description: 'Location permission flag'
+                                    },
+                                    is_active: {
+                                        type: 'boolean',
+                                        example: true,
+                                        description: 'Active status flag'
+                                    },
+                                    expires_at: {
+                                        type: 'string',
+                                        format: 'date',
+                                        example: '2025-12-31',
+                                        description: 'Expiry date (YYYY-MM-DD format)'
+                                    }
+                                }
+                            }
                         }
                     },
                     additionalProperties: false,
-                    description: 'At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided.'
+                    description: 'At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses and temp_addresses completely replace existing data when provided.'
                 },
                 PublicProfile: {
                     type: 'object',
@@ -954,7 +1075,7 @@ const options = {
         tags: [
             {
                 name: 'Users',
-                description: 'User management operations'
+                description: 'User management operations including enhanced profile management with addresses and temporary addresses'
             },
             {
                 name: 'Skills',
@@ -1895,7 +2016,7 @@ const options = {
                 },
                 put: {
                     summary: 'Update user profile',
-                    description: 'Update basic profile information (name, email, phone, date of birth). At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided.',
+                    description: 'Update profile information including basic details, addresses, and temporary addresses. At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses and temp_addresses completely replace existing data when provided.',
                     tags: ['Users'],
                     security: [
                         {
@@ -1937,6 +2058,77 @@ const options = {
                                             phone: '+9876543210',
                                             dob: '1985-12-25'
                                         }
+                                    },
+                                    addresses_only: {
+                                        summary: 'Update addresses only',
+                                        value: {
+                                            addresses: [
+                                                {
+                                                    street: '123 Main Street',
+                                                    city: 'Mumbai',
+                                                    state: 'Maharashtra',
+                                                    zip_code: '400001',
+                                                    country: 'India',
+                                                    type: 'home'
+                                                },
+                                                {
+                                                    street: '456 Business Park',
+                                                    city: 'Mumbai',
+                                                    state: 'Maharashtra',
+                                                    zip_code: '400002',
+                                                    country: 'India',
+                                                    type: 'office'
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    temp_addresses_only: {
+                                        summary: 'Update temporary addresses only',
+                                        value: {
+                                            temp_addresses: [
+                                                {
+                                                    location_data: 'Near Central Station',
+                                                    pincode: '400003',
+                                                    selected_area: 'Downtown',
+                                                    city: 'Mumbai',
+                                                    state: 'Maharashtra',
+                                                    country: 'India',
+                                                    location_permission: true,
+                                                    is_active: true,
+                                                    expires_at: '2025-12-31'
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    complete_update: {
+                                        summary: 'Complete profile update with all fields',
+                                        value: {
+                                            name: 'John Smith Updated',
+                                            phone: '+1234567890',
+                                            dob: '1990-05-15',
+                                            addresses: [
+                                                {
+                                                    street: '789 New Street',
+                                                    city: 'Delhi',
+                                                    state: 'Delhi',
+                                                    zip_code: '110001',
+                                                    country: 'India',
+                                                    type: 'home'
+                                                }
+                                            ],
+                                            temp_addresses: [
+                                                {
+                                                    location_data: 'Near Airport',
+                                                    pincode: '110037',
+                                                    selected_area: 'Airport Area',
+                                                    city: 'Delhi',
+                                                    state: 'Delhi',
+                                                    country: 'India',
+                                                    location_permission: false,
+                                                    is_active: true
+                                                }
+                                            ]
+                                        }
                                     }
                                 }
                             }
@@ -1966,7 +2158,36 @@ const options = {
                                                 gender: 'Male',
                                                 created_at: '2024-01-01T00:00:00.000Z',
                                                 updated_at: '2024-01-15T10:30:00.000Z'
-                                            }
+                                            },
+                                            addresses: [
+                                                {
+                                                    id: 1,
+                                                    street: '789 New Street',
+                                                    city: 'Delhi',
+                                                    state: 'Delhi',
+                                                    zip_code: '110001',
+                                                    country: 'India',
+                                                    type: 'home',
+                                                    created_at: '2024-01-15T10:30:00.000Z',
+                                                    updated_at: '2024-01-15T10:30:00.000Z'
+                                                }
+                                            ],
+                                            temp_addresses: [
+                                                {
+                                                    id: 1,
+                                                    location_data: 'Near Airport',
+                                                    pincode: '110037',
+                                                    selected_area: 'Airport Area',
+                                                    city: 'Delhi',
+                                                    state: 'Delhi',
+                                                    country: 'India',
+                                                    location_permission: false,
+                                                    is_active: true,
+                                                    expires_at: null,
+                                                    created_at: '2024-01-15T10:30:00.000Z',
+                                                    updated_at: '2024-01-15T10:30:00.000Z'
+                                                }
+                                            ]
                                         }
                                     }
                                 }

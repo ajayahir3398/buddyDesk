@@ -285,7 +285,7 @@ const validateNotEmpty = (fieldName, fieldDisplayName) => {
     });
 };
 
-// Profile update validation (name, email, phone, dob only)
+// Profile update validation (name, email, phone, dob, addresses, temp_addresses)
 const validateProfileUpdate = [
   // Validate at least one field is provided
   validateAtLeastOneField,
@@ -348,6 +348,104 @@ const validateProfileUpdate = [
       }
       return true;
     }),
+
+  // Address validation (optional array)
+  body('addresses')
+    .optional()
+    .isArray()
+    .withMessage('Addresses must be an array'),
+  
+  body('addresses.*.street')
+    .optional()
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('Street address is too long'),
+  
+  body('addresses.*.city')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('City name is too long'),
+  
+  body('addresses.*.state')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('State name is too long'),
+  
+  body('addresses.*.zip_code')
+    .optional()
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('Zip code is too long'),
+  
+  body('addresses.*.country')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Country name is too long'),
+  
+  body('addresses.*.type')
+    .optional()
+    .isIn(['home', 'office'])
+    .withMessage('Address type must be either "home" or "office"'),
+
+  // Temp Address validation (optional array)
+  body('temp_addresses')
+    .optional()
+    .isArray()
+    .withMessage('Temporary addresses must be an array'),
+  
+  body('temp_addresses.*.location_data')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Location data is too long'),
+  
+  body('temp_addresses.*.pincode')
+    .optional()
+    .trim()
+    .isLength({ min: 6, max: 6 })
+    .withMessage('Pincode must be exactly 6 characters'),
+  
+  body('temp_addresses.*.selected_area')
+    .optional()
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('Selected area is too long'),
+  
+  body('temp_addresses.*.city')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('City name is too long'),
+  
+  body('temp_addresses.*.state')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('State name is too long'),
+  
+  body('temp_addresses.*.country')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Country name is too long'),
+  
+  body('temp_addresses.*.location_permission')
+    .optional()
+    .isBoolean()
+    .withMessage('Location permission must be a boolean'),
+  
+  body('temp_addresses.*.is_active')
+    .optional()
+    .isBoolean()
+    .withMessage('Active status must be a boolean'),
+  
+  body('temp_addresses.*.expires_at')
+    .optional()
+    .matches(patterns.date)
+    .withMessage('Expiry date must be in YYYY-MM-DD format'),
   
   handleValidationErrors
 ];
