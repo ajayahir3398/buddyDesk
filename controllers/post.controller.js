@@ -25,7 +25,7 @@ exports.addPost = async (req, res) => {
     } = req.body;
 
     // Get user ID from authenticated token
-    const user_id = req.user.userId;
+    const user_id = req.user.id;
 
     // Validate that the user exists
     const user = await User.findByPk(user_id);
