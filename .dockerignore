@@ -4,6 +4,5 @@ Dockerfile*
 .dockerignore
 .git
 .gitignore
-.env
 dist/*.map
 coverage
