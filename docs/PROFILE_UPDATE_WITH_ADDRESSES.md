@@ -6,11 +6,12 @@ The profile update functionality has been enhanced to support updating user addr
 
 ## Features
 
-- ✅ **Parallel Updates**: Update profile, addresses, and temp addresses simultaneously
+- ✅ **Parallel Updates**: Update profile, addresses, temp addresses, and work profiles simultaneously
 - ✅ **Transaction Safety**: All operations wrapped in database transactions
 - ✅ **Flexible Updates**: Update any combination of fields
-- ✅ **Data Validation**: Comprehensive validation for all address fields
+- ✅ **Data Validation**: Comprehensive validation for all fields including work profiles
 - ✅ **Atomic Operations**: Either all updates succeed or none do
+- ✅ **Skills Integration**: Work profiles can include associated skills with proficiency levels
 
 ## API Endpoint
 
@@ -29,6 +30,27 @@ Content-Type: application/json
   "email": "john.doe@example.com",
   "phone": "+91-9876543210",
   "dob": "1990-05-15"
+}
+```
+
+### Work Profile Fields
+```json
+{
+  "work_profiles": [
+    {
+      "company_name": "Tech Solutions Inc.",
+      "designation": "Senior Software Engineer",
+      "start_date": "2022-01-15",
+      "end_date": "2024-06-30",
+      "user_skills": [
+        {
+          "skill_id": 1,
+          "sub_skill_id": 3,
+          "proficiency_level": "Expert"
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -353,13 +375,19 @@ node scripts/testProfileUpdate.js
 3. **Validation**: All fields are validated according to the defined rules
 4. **Partial Updates**: Only provided fields are updated; others remain unchanged
 5. **Address Replacement**: Address and temp address updates completely replace existing data
-6. **Required Fields**: At least one field must be provided in the request
+6. **Work Profile Replacement**: Work profile updates completely replace existing work profiles when provided
+7. **Skills Integration**: Work profiles can include associated skills with proficiency levels
+8. **Required Fields**: At least one field must be provided in the request
 
 ## Database Schema
 
 The functionality works with the following database tables:
 - `user` - Basic user information
 - `user_profile` - Extended profile information
+- `work_profile` - Work experience records
+- `user_skills` - Skills associated with work profiles
+- `skills` - Available skills
+- `sub_skills` - Sub-categories of skills
 - `address` - User addresses
 - `temp_address` - Temporary user addresses
 
@@ -377,3 +405,7 @@ The system handles various error scenarios:
 - Input validation prevents malicious data injection
 - Database transactions ensure data integrity
 - Field-level validation prevents invalid data storage
+
+## Additional Information
+
+For comprehensive documentation on work profile updates with skills integration, see [PROFILE_UPDATE_WITH_WORK_PROFILES.md](./PROFILE_UPDATE_WITH_WORK_PROFILES.md).

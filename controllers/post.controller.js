@@ -116,6 +116,12 @@ exports.addPost = async (req, res) => {
           model: SubSkill,
           as: 'requiredSubSkill',
           attributes: ['id', 'name']
+        },
+        {
+          model: PostAttachment,
+          as: 'attachments',
+          attributes: ['id', 'file_name', 'file_path', 'mime_type', 'size', 'uploaded_at'],
+          order: [['uploaded_at', 'ASC']]
         }
       ]
     });
@@ -178,6 +184,12 @@ exports.getPosts = async (req, res) => {
           model: SubSkill,
           as: 'requiredSubSkill',
           attributes: ['id', 'name']
+        },
+        {
+          model: PostAttachment,
+          as: 'attachments',
+          attributes: ['id', 'file_name', 'file_path', 'mime_type', 'size', 'uploaded_at'],
+          order: [['uploaded_at', 'ASC']]
         }
       ],
       order: [['created_at', 'DESC']],
@@ -398,8 +410,9 @@ exports.getMatchingPosts = async (req, res) => {
           model: PostAttachment,
           as: 'attachments',
           where: { is_deleted: false },
-          required: false,
-          attributes: ['id', 'file_name', 'file_path', 'mime_type']
+          attributes: ['id', 'file_name', 'file_path', 'mime_type', 'size', 'uploaded_at'],
+          order: [['uploaded_at', 'ASC']],
+          required: false
         }
       ],
       order: [['created_at', 'DESC']],
@@ -547,7 +560,9 @@ exports.getPostById = async (req, res) => {
         },
         {
           model: PostAttachment,
-          as: 'attachments'
+          as: 'attachments',
+          attributes: ['id', 'file_name', 'file_path', 'mime_type', 'size', 'uploaded_at'],
+          order: [['uploaded_at', 'ASC']]
         }
       ]
     });
@@ -663,7 +678,8 @@ exports.updatePost = async (req, res) => {
         {
           model: PostAttachment,
           as: 'attachments',
-          where: { is_deleted: false },
+          attributes: ['id', 'file_name', 'file_path', 'mime_type', 'size', 'uploaded_at'],
+          order: [['uploaded_at', 'ASC']],
           required: false
         }
       ]
