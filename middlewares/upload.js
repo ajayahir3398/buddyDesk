@@ -115,8 +115,10 @@ const deleteFile = (filePath) => {
 
 // Helper function to get file URL
 const getFileUrl = (filePath) => {
-  // Remove the uploads directory prefix and return relative path
-  return filePath.replace(path.join(__dirname, '../'), '');
+  // Remove the uploads directory prefix and return relative path with forward slashes
+  const relativePath = filePath.replace(path.join(__dirname, '../'), '');
+  // Ensure forward slashes for web URLs (cross-platform compatibility)
+  return relativePath.replace(/\\/g, '/');
 };
 
 module.exports = {
