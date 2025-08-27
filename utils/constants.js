@@ -63,8 +63,24 @@ module.exports = {
 
   // File upload
   FILE_UPLOAD: {
-    MAX_SIZE: 5 * 1024 * 1024, // 5MB
-    ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']
+    MAX_SIZE: 25 * 1024 * 1024, // 25MB (increased from 5MB as per docs)
+    ALLOWED_TYPES: [
+      'image/jpeg', 
+      'image/png', 
+      'image/gif', 
+      'image/jpg',
+      'audio/mpeg',
+      'audio/mp3',
+      'audio/wav',
+      'audio/ogg',
+      'application/pdf'
+    ],
+    // File type categories for organization
+    CATEGORIES: {
+      IMAGE: ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'],
+      AUDIO: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg'],
+      DOCUMENT: ['application/pdf']
+    }
   },
 
   // Date formats

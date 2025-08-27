@@ -5,11 +5,16 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "dev:debug": "nodemon --inspect index.js",
+    "dev:watch": "nodemon --watch . --ext js,json --exec node index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "insert-skills": "node scripts/insertSkills.js",
     "insert-skills:upsert": "node scripts/insertSkills.js --upsert",
     "insert-sub-skills": "node scripts/insertSubSkills.js",
-    "insert-sub-skills:upsert": "node scripts/insertSubSkills.js --upsert"
+    "insert-sub-skills:upsert": "node scripts/insertSubSkills.js --upsert",
+    "db:migrate": "node scripts/add-file-category-migration.js",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up -d",
+    "docker:dev:down": "docker-compose -f docker-compose.dev.yml down"
   },
   "keywords": [],
   "author": "",
