@@ -9,14 +9,28 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
+# Check if .env file exists
+if [ ! -f .env ]; then
+    echo "❌ .env file not found! Please create it with your database credentials."
+    exit 1
+fi
+
 # Create necessary directories with proper permissions
 echo "📁 Creating directory structure..."
 mkdir -p uploads/images uploads/audio uploads/documents uploads/posts logs
 
-# Set proper permissions (adjust user/group as needed for your server)
-echo "🔐 Setting file permissions..."
+# Set proper permissions for Docker container (UID 1001 = nodejs user)
+echo "🔐 Setting file permissions for Docker container..."
 chmod -R 755 uploads logs
-chown -R $USER:$USER uploads logs 2>/dev/null || echo "⚠️  Could not set ownership (may need sudo)"
+chown -R 1001:1001 uploads logs 2>/dev/null || {
+    echo "⚠️  Using sudo to set ownership..."
+    sudo chown -R 1001:1001 uploads logs
+}
+
+# Verify permissions
+echo "📋 Verifying permissions..."
+ls -la uploads/ | head -5
+echo "..."
 
 # Stop and remove existing containers
 echo "🛑 Stopping existing containers..."
@@ -36,13 +50,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run the container
+# Run the container with proper environment and permissions
 echo "🚀 Starting new container..."
 docker run -d \
     --name buddydesk-app \
     -p 3000:3000 \
-    -e NODE_ENV=production \
-    -e PORT=3000 \
+    --env-file .env \
     -v "$(pwd)/uploads:/app/uploads" \
     -v "$(pwd)/logs:/app/logs" \
     --restart unless-stopped \
@@ -95,3 +108,6 @@ echo "  View logs: docker logs -f buddydesk-app"
 echo "  Stop app:  docker stop buddydesk-app"
 echo "  Restart:   docker restart buddydesk-app"
 echo "  Shell:     docker exec -it buddydesk-app sh"
+echo ""
+echo "📁 File permissions fixed for uploads directory"
+echo "🔑 Environment variables loaded from .env file"
