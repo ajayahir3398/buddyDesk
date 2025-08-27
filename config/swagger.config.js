@@ -453,7 +453,9 @@ const options = {
                         id: { type: 'integer', example: 1, description: 'Attachment ID' },
                         file_path: { type: 'string', example: '/uploads/documents/file.pdf', description: 'File path' },
                         file_name: { type: 'string', example: 'document.pdf', description: 'Original file name' },
+                        file_category: { type: 'string', enum: ['images', 'audio', 'documents', 'posts'], example: 'documents', description: 'File category for organized storage' },
                         mime_type: { type: 'string', example: 'application/pdf', description: 'MIME type' },
+                        size: { type: 'integer', example: 1024, description: 'File size in bytes' },
                         uploaded_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
                     }
                 },
@@ -4523,6 +4525,125 @@ const options = {
                                                 }
                                             }
                                         }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/posts/files/{category}/{filename}': {
+                get: {
+                    summary: 'Serve file by category and filename',
+                    description: 'Serve uploaded files based on their category (images, audio, documents, posts) and filename. Includes streaming support for audio files and proper security validation.',
+                    tags: ['Posts'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            in: 'path',
+                            name: 'category',
+                            required: true,
+                            schema: {
+                                type: 'string',
+                                enum: ['images', 'audio', 'documents', 'posts']
+                            },
+                            description: 'File category (images, audio, documents, posts)'
+                        },
+                        {
+                            in: 'path',
+                            name: 'filename',
+                            required: true,
+                            schema: {
+                                type: 'string'
+                            },
+                            description: 'Filename (UUID-based for security)'
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'File served successfully',
+                            content: {
+                                'application/octet-stream': {
+                                    schema: {
+                                        type: 'string',
+                                        format: 'binary'
+                                    }
+                                },
+                                'image/*': {
+                                    schema: {
+                                        type: 'string',
+                                        format: 'binary'
+                                    }
+                                },
+                                'audio/*': {
+                                    schema: {
+                                        type: 'string',
+                                        format: 'binary'
+                                    }
+                                }
+                            },
+                            headers: {
+                                'Content-Disposition': {
+                                    description: 'File download disposition',
+                                    schema: {
+                                        type: 'string'
+                                    }
+                                },
+                                'Content-Type': {
+                                    description: 'File MIME type',
+                                    schema: {
+                                        type: 'string'
+                                    }
+                                }
+                            }
+                        },
+                        '206': {
+                            description: 'Partial content (for audio streaming)',
+                            content: {
+                                'audio/*': {
+                                    schema: {
+                                        type: 'string',
+                                        format: 'binary'
+                                    }
+                                }
+                            }
+                        },
+                        '400': {
+                            description: 'Invalid category or filename',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        },
+                        '401': {
+                            description: 'Unauthorized - Invalid or missing access token',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        },
+                        '403': {
+                            description: 'Forbidden - User does not have access to this file',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        },
+                        '404': {
+                            description: 'File not found',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
                                     }
                                 }
                             }
