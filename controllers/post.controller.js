@@ -13,6 +13,23 @@ const path = require('path');
 const { Op } = require('sequelize');
 const fs = require('fs'); // Added for enhanced file serving
 
+// Helper function to generate full attachment URLs
+const generateAttachmentUrls = (attachments, baseUrl) => {
+  if (!attachments || attachments.length === 0) return [];
+  
+  return attachments.map(attachment => {
+    // Handle both Sequelize instances and plain objects
+    const attachmentData = attachment.toJSON ? attachment.toJSON() : attachment;
+    
+    return {
+      ...attachmentData,
+      url: `${baseUrl}/api/posts/files/${attachmentData.file_category}/${attachmentData.file_name}`,
+      // Keep original file_path for backward compatibility
+      file_path: attachmentData.file_path
+    };
+  });
+};
+
 // Create a new post
 exports.addPost = async (req, res) => {
   try {
@@ -206,10 +223,24 @@ exports.getPosts = async (req, res) => {
       offset
     });
 
+    // Generate full URLs for attachments AFTER all Sequelize processing
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Convert to plain objects and add URLs
+    const postsWithUrls = posts.map(post => {
+      const postData = post.toJSON ? post.toJSON() : post;
+      
+      if (postData.attachments && postData.attachments.length > 0) {
+        postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
+      }
+      
+      return postData;
+    });
+
     res.status(200).json({
       success: true,
       message: "Posts retrieved successfully",
-      data: posts,
+      data: postsWithUrls,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(count / limit),
@@ -495,6 +526,20 @@ exports.getMatchingPosts = async (req, res) => {
     // Sort by match score (highest first)
     filteredPosts.sort((a, b) => b.matchScore.percentage - a.matchScore.percentage);
 
+    // Generate full URLs for attachments AFTER all Sequelize processing
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Convert to plain objects and add URLs
+    const postsWithUrls = filteredPosts.map(post => {
+      const postData = post.toJSON ? post.toJSON() : post;
+      
+      if (postData.attachments && postData.attachments.length > 0) {
+        postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
+      }
+      
+      return postData;
+    });
+
     logger.info('Matching posts retrieved', {
       requestId: req.requestId,
       userId: user_id,
@@ -509,7 +554,7 @@ exports.getMatchingPosts = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Matching posts retrieved successfully",
-      data: filteredPosts,
+      data: postsWithUrls,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(count / limit),
@@ -583,10 +628,20 @@ exports.getPostById = async (req, res) => {
       });
     }
 
+    // Generate full URLs for attachments AFTER all Sequelize processing
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Convert to plain object and add URLs
+    const postWithUrls = post.toJSON ? post.toJSON() : post;
+    
+    if (postWithUrls.attachments && postWithUrls.attachments.length > 0) {
+      postWithUrls.attachments = generateAttachmentUrls(postWithUrls.attachments, baseUrl);
+    }
+
     res.status(200).json({
       success: true,
       message: "Post retrieved successfully",
-      data: post
+      data: postWithUrls
     });
 
   } catch (error) {
@@ -701,10 +756,20 @@ exports.updatePost = async (req, res) => {
       updatedFields: Object.keys(updateData)
     });
 
+    // Generate full URLs for attachments AFTER all Sequelize processing
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Convert to plain object and add URLs
+    const postWithUrls = updatedPost.toJSON ? updatedPost.toJSON() : updatedPost;
+    
+    if (postWithUrls.attachments && postWithUrls.attachments.length > 0) {
+      postWithUrls.attachments = generateAttachmentUrls(postWithUrls.attachments, baseUrl);
+    }
+
     res.status(200).json({
       success: true,
       message: "Post updated successfully",
-      data: updatedPost
+      data: postWithUrls
     });
 
   } catch (error) {
@@ -927,6 +992,15 @@ exports.deleteAttachment = async (req, res) => {
 exports.serveFileByCategory = async (req, res) => {
   try {
     const { category, filename } = req.params;
+    
+    // Ensure user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+    
     const user_id = req.user.id;
 
     // Validate category
