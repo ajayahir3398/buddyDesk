@@ -1,51 +1,87 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 const constants = require('../utils/constants');
 const logger = require('../utils/logger');
 
-// Ensure uploads directory exists
+// Base uploads directory
 const uploadsDir = path.join(__dirname, '../uploads');
-const postsUploadsDir = path.join(uploadsDir, 'posts');
+const imagesDir = path.join(uploadsDir, 'images');
+const audioDir = path.join(uploadsDir, 'audio');
+const documentsDir = path.join(uploadsDir, 'documents');
+const postsDir = path.join(uploadsDir, 'posts');
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// Ensure all directories exist
+const directories = [uploadsDir, imagesDir, audioDir, documentsDir, postsDir];
+directories.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
-if (!fs.existsSync(postsUploadsDir)) {
-  fs.mkdirSync(postsUploadsDir, { recursive: true });
-}
+// Helper function to determine file category and destination
+const getFileCategory = (mimetype) => {
+  if (constants.FILE_UPLOAD.CATEGORIES.IMAGE.includes(mimetype)) {
+    return { category: 'images', dir: imagesDir };
+  } else if (constants.FILE_UPLOAD.CATEGORIES.AUDIO.includes(mimetype)) {
+    return { category: 'audio', dir: audioDir };
+  } else if (constants.FILE_UPLOAD.CATEGORIES.DOCUMENT.includes(mimetype)) {
+    return { category: 'documents', dir: documentsDir };
+  }
+  return { category: 'posts', dir: postsDir }; // fallback
+};
 
-// Storage configuration
+// Enhanced storage configuration with organized structure
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, postsUploadsDir);
+    const { dir } = getFileCategory(file.mimetype);
+    cb(null, dir);
   },
   filename: (req, file, cb) => {
-    // Generate unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const fileExtension = path.extname(file.originalname);
-    const fileName = `post-${uniqueSuffix}${fileExtension}`;
+    // Use UUID for security (prevents filename guessing attacks)
+    const uniqueId = uuidv4();
+    const extension = path.extname(file.originalname).toLowerCase();
+    const fileName = `${uniqueId}${extension}`;
     cb(null, fileName);
   }
 });
 
-// File filter function
+// Enhanced file filter with better validation
 const fileFilter = (req, file, cb) => {
   // Check if file type is allowed
   if (constants.FILE_UPLOAD.ALLOWED_TYPES.includes(file.mimetype)) {
-    cb(null, true);
+    // Additional security check: validate file extension matches MIME type
+    const extension = path.extname(file.originalname).toLowerCase();
+    const allowedExtensions = {
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/gif': ['.gif'],
+      'image/jpg': ['.jpg', '.jpeg'],
+      'audio/mpeg': ['.mp3', '.mpeg'],
+      'audio/mp3': ['.mp3'],
+      'audio/wav': ['.wav'],
+      'audio/ogg': ['.ogg'],
+      'application/pdf': ['.pdf']
+    };
+    
+    const expectedExtensions = allowedExtensions[file.mimetype];
+    if (expectedExtensions && expectedExtensions.includes(extension)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File extension ${extension} doesn't match MIME type ${file.mimetype}`), false);
+    }
   } else {
     cb(new Error(`File type ${file.mimetype} is not allowed. Allowed types: ${constants.FILE_UPLOAD.ALLOWED_TYPES.join(', ')}`), false);
   }
 };
 
-// Configure multer
+// Configure multer with enhanced settings
 const upload = multer({
   storage: storage,
   limits: {
     fileSize: constants.FILE_UPLOAD.MAX_SIZE,
-    files: 5 // Maximum 5 files per post
+    files: 10 // Increased from 5 to 10 files per post
   },
   fileFilter: fileFilter
 });
@@ -54,9 +90,9 @@ const upload = multer({
 const uploadSingle = upload.single('attachment');
 
 // Middleware for handling multiple files upload
-const uploadMultiple = upload.array('attachments', 5);
+const uploadMultiple = upload.array('attachments', 10);
 
-// Error handling middleware for multer
+// Enhanced error handling middleware for multer
 const handleUploadError = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     logger.error('Multer upload error', {
@@ -74,7 +110,7 @@ const handleUploadError = (error, req, res, next) => {
       case 'LIMIT_FILE_COUNT':
         return res.status(400).json({
           success: false,
-          message: 'Too many files. Maximum 5 files allowed per post'
+          message: 'Too many files. Maximum 10 files allowed per post'
         });
       case 'LIMIT_UNEXPECTED_FILE':
         return res.status(400).json({
@@ -101,24 +137,52 @@ const handleUploadError = (error, req, res, next) => {
   next();
 };
 
-// Helper function to delete uploaded files
+// Enhanced helper function to delete uploaded files
 const deleteFile = (filePath) => {
   try {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
       logger.info('File deleted successfully', { filePath });
+      return true;
     }
   } catch (error) {
     logger.error('Error deleting file', { filePath, error: error.message });
   }
+  return false;
 };
 
-// Helper function to get file URL
+// Enhanced helper function to get file URL with proper categorization
 const getFileUrl = (filePath) => {
-  // Remove the uploads directory prefix and return relative path with forward slashes
-  const relativePath = filePath.replace(path.join(__dirname, '../'), '');
-  // Ensure forward slashes for web URLs (cross-platform compatibility)
-  return relativePath.replace(/\\/g, '/');
+  try {
+    // Extract the relative path from uploads directory
+    const relativePath = path.relative(uploadsDir, filePath);
+    // Ensure forward slashes for web URLs (cross-platform compatibility)
+    return relativePath.replace(/\\/g, '/');
+  } catch (error) {
+    logger.error('Error generating file URL', { filePath, error: error.message });
+    return null;
+  }
+};
+
+// New helper function to get file category from path
+const getFileCategoryFromPath = (filePath) => {
+  const relativePath = path.relative(uploadsDir, filePath);
+  const category = relativePath.split(path.sep)[0];
+  return category;
+};
+
+// New helper function to validate file exists and is accessible
+const validateFileAccess = (filePath) => {
+  try {
+    const fullPath = path.resolve(filePath);
+    // Security check: ensure file is within uploads directory
+    if (!fullPath.startsWith(path.resolve(uploadsDir))) {
+      return false;
+    }
+    return fs.existsSync(fullPath);
+  } catch (error) {
+    return false;
+  }
 };
 
 module.exports = {
@@ -127,7 +191,12 @@ module.exports = {
   handleUploadError,
   deleteFile,
   getFileUrl,
+  getFileCategoryFromPath,
+  validateFileAccess,
   storage,
   uploadsDir,
-  postsUploadsDir
+  imagesDir,
+  audioDir,
+  documentsDir,
+  postsDir
 };

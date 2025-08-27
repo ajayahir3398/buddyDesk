@@ -21,6 +21,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    file_category: {
+      type: DataTypes.ENUM('images', 'audio', 'documents', 'posts'),
+      allowNull: true,
+      defaultValue: 'posts'
+    },
     mime_type: {
       type: DataTypes.STRING,
       allowNull: true

@@ -8,9 +8,10 @@ const WorkProfile = db.WorkProfile;
 const UserSkill = db.UserSkill;
 const Address = db.Address;
 const logger = require('../utils/logger');
-const { deleteFile, getFileUrl } = require('../middlewares/upload');
+const { deleteFile, getFileUrl, getFileCategoryFromPath, validateFileAccess } = require('../middlewares/upload');
 const path = require('path');
 const { Op } = require('sequelize');
+const fs = require('fs'); // Added for enhanced file serving
 
 // Create a new post
 exports.addPost = async (req, res) => {
@@ -73,10 +74,14 @@ exports.addPost = async (req, res) => {
     // Handle file attachments if uploaded
     if (req.files && req.files.length > 0) {
       const attachmentPromises = req.files.map(file => {
+        // Determine file category based on the file path
+        const fileCategory = getFileCategoryFromPath(file.path);
+        
         return PostAttachment.create({
           post_id: post.id,
           file_name: file.originalname,
           file_path: getFileUrl(file.path),
+          file_category: fileCategory,
           mime_type: file.mimetype,
           size: file.size,
           uploaded_at: new Date()
@@ -88,7 +93,11 @@ exports.addPost = async (req, res) => {
         logger.info(`${req.files.length} attachments uploaded for post`, {
           requestId: req.requestId,
           postId: post.id,
-          files: req.files.map(f => f.originalname)
+          files: req.files.map(f => ({ 
+            originalname: f.originalname, 
+            category: getFileCategoryFromPath(f.path),
+            size: f.size 
+          }))
         });
       } catch (attachmentError) {
         // If attachment creation fails, delete uploaded files
@@ -120,7 +129,7 @@ exports.addPost = async (req, res) => {
         {
           model: PostAttachment,
           as: 'attachments',
-          attributes: ['id', 'file_name', 'file_path', 'mime_type', 'size', 'uploaded_at'],
+          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
           order: [['uploaded_at', 'ASC']]
         }
       ]
@@ -188,7 +197,7 @@ exports.getPosts = async (req, res) => {
         {
           model: PostAttachment,
           as: 'attachments',
-          attributes: ['id', 'file_name', 'file_path', 'mime_type', 'size', 'uploaded_at'],
+          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
           order: [['uploaded_at', 'ASC']]
         }
       ],
@@ -410,7 +419,7 @@ exports.getMatchingPosts = async (req, res) => {
           model: PostAttachment,
           as: 'attachments',
           where: { is_deleted: false },
-          attributes: ['id', 'file_name', 'file_path', 'mime_type', 'size', 'uploaded_at'],
+          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
           order: [['uploaded_at', 'ASC']],
           required: false
         }
@@ -561,7 +570,7 @@ exports.getPostById = async (req, res) => {
         {
           model: PostAttachment,
           as: 'attachments',
-          attributes: ['id', 'file_name', 'file_path', 'mime_type', 'size', 'uploaded_at'],
+          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
           order: [['uploaded_at', 'ASC']]
         }
       ]
@@ -678,7 +687,7 @@ exports.updatePost = async (req, res) => {
         {
           model: PostAttachment,
           as: 'attachments',
-          attributes: ['id', 'file_name', 'file_path', 'mime_type', 'size', 'uploaded_at'],
+          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
           order: [['uploaded_at', 'ASC']],
           required: false
         }
@@ -739,12 +748,16 @@ exports.addAttachment = async (req, res) => {
       });
     }
 
-    // Create attachments
+    // Create attachments with file categories
     const attachmentPromises = req.files.map(file => {
+      // Determine file category based on the file path
+      const fileCategory = getFileCategoryFromPath(file.path);
+      
       return PostAttachment.create({
         post_id: post.id,
         file_name: file.originalname,
         file_path: getFileUrl(file.path),
+        file_category: fileCategory,
         mime_type: file.mimetype,
         size: file.size,
         uploaded_at: new Date()
@@ -756,7 +769,11 @@ exports.addAttachment = async (req, res) => {
     logger.info(`${req.files.length} attachments added to post`, {
       requestId: req.requestId,
       postId: post.id,
-      files: req.files.map(f => f.originalname)
+      files: req.files.map(f => ({ 
+        originalname: f.originalname, 
+        category: getFileCategoryFromPath(f.path),
+        size: f.size 
+      }))
     });
 
     res.status(201).json({
@@ -904,4 +921,142 @@ exports.deleteAttachment = async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
+};
+
+// New enhanced file serving function with category-based organization
+exports.serveFileByCategory = async (req, res) => {
+  try {
+    const { category, filename } = req.params;
+    const user_id = req.user.id;
+
+    // Validate category
+    const validCategories = ['images', 'audio', 'documents', 'posts'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file category'
+      });
+    }
+
+    // Security: prevent directory traversal by using only the filename
+    const safeFilename = path.basename(filename);
+    
+    // Find the attachment to verify access permissions
+    const attachment = await PostAttachment.findOne({
+      where: {
+        file_path: `${category}/${safeFilename}`,
+        is_deleted: false
+      },
+      include: [{
+        model: Post,
+        as: 'post',
+        attributes: ['id', 'user_id']
+      }]
+    });
+
+    if (!attachment) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found'
+      });
+    }
+
+    // Check if user has access to this file (either owner of post or has permission)
+    if (attachment.post.user_id !== user_id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied to this file'
+      });
+    }
+
+    // Construct full file path
+    const filePath = path.join(__dirname, '..', 'uploads', category, safeFilename);
+    
+    // Validate file access (security check)
+    if (!validateFileAccess(filePath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not accessible'
+      });
+    }
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found on disk'
+      });
+    }
+
+    // Set appropriate headers based on file type
+    const mimeType = attachment.mime_type || 'application/octet-stream';
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${attachment.file_name}"`);
+    
+    // Add cache headers for better performance
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+    
+    // Handle audio files with Range support for streaming
+    if (category === 'audio' && mimeType.startsWith('audio/')) {
+      const stat = fs.statSync(filePath);
+      const range = req.headers.range;
+      
+      if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+        const chunkSize = end - start + 1;
+        
+        res.status(206);
+        res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Content-Length', chunkSize);
+        
+        const stream = fs.createReadStream(filePath, { start, end });
+        stream.pipe(res);
+      } else {
+        res.setHeader('Content-Length', stat.size);
+        res.setHeader('Accept-Ranges', 'bytes');
+        const stream = fs.createReadStream(filePath);
+        stream.pipe(res);
+      }
+    } else {
+      // For non-audio files, serve normally
+      const stream = fs.createReadStream(filePath);
+      stream.pipe(res);
+    }
+
+    logger.info('File served successfully', {
+      requestId: req.requestId,
+      userId: user_id,
+      category,
+      filename: safeFilename,
+      mimeType
+    });
+
+  } catch (error) {
+    logger.error('Error serving file', {
+      requestId: req.requestId,
+      error: error.message,
+      stack: error.stack
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+module.exports = {
+  addPost: exports.addPost,
+  getPosts: exports.getPosts,
+  getMatchingPosts: exports.getMatchingPosts,
+  getPostById: exports.getPostById,
+  updatePost: exports.updatePost,
+  addAttachment: exports.addAttachment,
+  downloadAttachment: exports.downloadAttachment,
+  deleteAttachment: exports.deleteAttachment,
+  serveFileByCategory: exports.serveFileByCategory
 };

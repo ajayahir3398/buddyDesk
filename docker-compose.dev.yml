@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  buddydesk-dev:
+    build: .
+    container_name: buddydesk-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    volumes:
+      # Mount source code for live reloading
+      - .:/app
+      # Exclude node_modules from host mounting
+      - /app/node_modules
+      # Persist uploads across container restarts
+      - ./uploads:/app/uploads
+      # Persist logs
+      - ./logs:/app/logs
+    restart: unless-stopped
+    command: npm run dev
+    networks:
+      - buddydesk-dev-network
+
+networks:
+  buddydesk-dev-network:
+    driver: bridge
