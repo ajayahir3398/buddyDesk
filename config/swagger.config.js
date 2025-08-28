@@ -1550,6 +1550,93 @@ const options = {
                     }
                 }
             },
+            '/notifications/token': {
+                post: {
+                    summary: 'Save or update device FCM token',
+                    description: 'Stores the Firebase Cloud Messaging registration token for the authenticated user',
+                    tags: ['Notifications'],
+                    security: [ { bearerAuth: [] } ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    required: ['fcmToken'],
+                                    properties: {
+                                        fcmToken: { type: 'string', description: 'FCM registration token', example: 'e6j...xyz' },
+                                        platform: { type: 'string', enum: ['ios','android','web','unknown'], example: 'android' },
+                                        deviceInfo: { type: 'object', additionalProperties: true }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Token saved',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean', example: true },
+                                            id: { type: 'integer', example: 123 }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '500': { description: 'Server error' }
+                    }
+                }
+            },
+            '/notifications/test': {
+                post: {
+                    summary: 'Send a test push notification',
+                    description: 'Sends a test FCM notification to the specified userId or the authenticated user',
+                    tags: ['Notifications'],
+                    security: [ { bearerAuth: [] } ],
+                    requestBody: {
+                        required: false,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        userId: { type: 'integer', example: 1 },
+                                        title: { type: 'string', example: 'Test' },
+                                        body: { type: 'string', example: 'Test notification' },
+                                        data: { type: 'object', additionalProperties: { type: 'string' } }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Push send result',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean', example: true },
+                                            successCount: { type: 'integer', example: 1 },
+                                            failureCount: { type: 'integer', example: 0 }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '500': { description: 'Server error' }
+                    }
+                }
+            },
             '/skills': {
                 get: {
                     summary: 'Get all skills with sub-skills',
@@ -3976,7 +4063,7 @@ const options = {
                     }
                 }
             },
-            '/api/chat/conversations': {
+            '/chat/conversations': {
                 post: {
                     summary: 'Create a new conversation',
                     tags: ['Chat'],
@@ -4066,7 +4153,7 @@ const options = {
                     }
                 }
             },
-            '/api/chat/conversations/{id}': {
+            '/chat/conversations/{id}': {
                 get: {
                     summary: 'Get conversation by ID',
                     tags: ['Chat'],
@@ -4095,7 +4182,7 @@ const options = {
                     }
                 }
             },
-            '/api/chat/conversations/{id}/messages': {
+            '/chat/conversations/{id}/messages': {
                 get: {
                     summary: 'Get conversation messages',
                     tags: ['Chat'],
@@ -4239,7 +4326,7 @@ const options = {
                     }
                 }
             },
-            '/api/chat/conversations/{id}/stats': {
+            '/chat/conversations/{id}/stats': {
                 get: {
                     summary: 'Get conversation statistics',
                     tags: ['Chat'],
@@ -4281,7 +4368,7 @@ const options = {
                     }
                 }
             },
-            '/api/chat/conversations/{id}/typing': {
+            '/chat/conversations/{id}/typing': {
                 get: {
                     summary: 'Get typing status for a conversation',
                     tags: ['Chat'],
@@ -4329,7 +4416,7 @@ const options = {
                     }
                 }
             },
-            '/api/chat/messages/{id}/read': {
+            '/chat/messages/{id}/read': {
                 put: {
                     summary: 'Mark a message as read',
                     tags: ['Chat'],
@@ -4355,7 +4442,7 @@ const options = {
                     }
                 }
             },
-            '/api/chat/search': {
+            '/chat/search': {
                 get: {
                     summary: 'Search messages',
                     tags: ['Chat'],
@@ -4411,7 +4498,7 @@ const options = {
                     }
                 }
             },
-            '/api/chat/users/{id}/status': {
+            '/chat/users/{id}/status': {
                 get: {
                     summary: 'Get user\'s online status',
                     tags: ['Chat'],
@@ -4460,7 +4547,7 @@ const options = {
                     }
                 }
             },
-            '/api/chat/notifications': {
+            '/chat/notifications': {
                 get: {
                     summary: 'Get user\'s notifications',
                     tags: ['Chat'],
@@ -4651,7 +4738,7 @@ const options = {
                     }
                 }
             },
-            '/api/chat/notifications/{id}/read': {
+            '/chat/notifications/{id}/read': {
                 put: {
                     summary: 'Mark a notification as read',
                     tags: ['Chat'],

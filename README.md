@@ -54,6 +54,10 @@ LOG_LEVEL=info
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
+
+# Firebase Notifications
+# Base64-encoded service account JSON (see README for instructions)
+FIREBASE_SERVICE_ACCOUNT_JSON=
 ```
 
 3. Start the server:
@@ -218,6 +222,15 @@ node test-registration.js
 ## API Documentation
 
 Access the Swagger documentation at: `http://localhost:3000/api-docs`
+
+### Notifications
+
+- POST `/api/notifications/token` (auth)
+  - body: `{ fcmToken: string, platform?: 'ios'|'android'|'web'|'unknown', deviceInfo?: object }`
+
+- POST `/api/notifications/test` (auth)
+  - body: `{ userId?: number, title?: string, body?: string, data?: object }`
+  - Sends a test push to provided userId or the current user
 
 ## Validation Middleware
 
