@@ -129,4 +129,4 @@ Thumbs.db
 
 # Application specific
 uploads/
-temp/ 
+temp/ logs/error.log
