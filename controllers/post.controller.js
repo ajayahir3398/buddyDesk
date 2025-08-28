@@ -18,12 +18,12 @@ const generateAttachmentUrls = (attachments, baseUrl) => {
   if (!attachments || attachments.length === 0) return [];
   
   return attachments.map(attachment => {
-    // Handle both Sequelize instances and plain objects
+    // Handle both Sequelize instances and plain objects 
     const attachmentData = attachment.toJSON ? attachment.toJSON() : attachment;
     
     return {
       ...attachmentData,
-      url: `${baseUrl}/api/posts/files/${attachmentData.file_category}/${attachmentData.file_name}`,
+      url: `${baseUrl}/api/posts/files/${attachmentData.file_path}`,
       // Keep original file_path for backward compatibility
       file_path: attachmentData.file_path
     };
@@ -994,14 +994,14 @@ exports.serveFileByCategory = async (req, res) => {
     const { category, filename } = req.params;
     
     // Ensure user is authenticated
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
-    }
+    // if (!req.user || !req.user.id) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: 'Authentication required'
+    //   });
+    // }
     
-    const user_id = req.user.id;
+    // const user_id = req.user.id;
 
     // Validate category
     const validCategories = ['images', 'audio', 'documents', 'posts'];
@@ -1036,12 +1036,12 @@ exports.serveFileByCategory = async (req, res) => {
     }
 
     // Check if user has access to this file (either owner of post or has permission)
-    if (attachment.post.user_id !== user_id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied to this file'
-      });
-    }
+    // if (attachment.post.user_id !== user_id) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: 'Access denied to this file'
+    //   });
+    // }
 
     // Construct full file path
     const filePath = path.join(__dirname, '..', 'uploads', category, safeFilename);

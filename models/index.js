@@ -43,6 +43,7 @@ db.PostAttachment = require("./postAttachment.model")(sequelize, Sequelize.DataT
 db.AadhaarVerification = require("./aadhaarVerification.model")(sequelize, Sequelize.DataTypes);
 db.AadhaarVerificationLog = require("./aadhaarVerificationLog.model")(sequelize, Sequelize.DataTypes);
 db.TempAddress = require("./tempAddress.model")(sequelize, Sequelize.DataTypes);
+db.DeviceToken = require("./deviceToken.model")(sequelize, Sequelize.DataTypes);
 
 // Chat models
 db.Conversation = require("./conversation.model")(sequelize, Sequelize.DataTypes);
