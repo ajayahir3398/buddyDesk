@@ -374,6 +374,7 @@ const options = {
                         phone: { type: 'string', example: '+1234567890', description: 'Phone number' },
                         dob: { type: 'string', format: 'date', example: '1990-01-01', description: 'Date of birth' },
                         gender: { type: 'string', enum: ['Male', 'Female', 'Other'], example: 'Male', description: 'Gender' },
+                        bio: { type: 'string', example: 'Software engineer with 5+ years of experience in web development', description: 'User biography', maxLength: 1000 },
                         created_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' },
                         updated_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
                     }
@@ -721,6 +722,7 @@ const options = {
                                         phone: { type: 'string', example: '+1234567890', description: 'Phone number', nullable: true },
                                         dob: { type: 'string', format: 'date', example: '1990-01-01', description: 'Date of birth', nullable: true },
                                         gender: { type: 'string', enum: ['Male', 'Female', 'Other'], example: 'Male', description: 'Gender', nullable: true },
+                                        bio: { type: 'string', example: 'Passionate software developer with 5+ years of experience in web technologies.', description: 'User biography', maxLength: 1000, nullable: true },
                                         created_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' },
                                         updated_at: { type: 'string', format: 'date-time', example: '2024-01-15T10:30:00.000Z' }
                                     },
@@ -819,6 +821,12 @@ const options = {
                             format: 'date',
                             example: '1990-01-01',
                             description: 'Date of birth in YYYY-MM-DD format (must be at least 13 years old and not more than 120 years ago)'
+                        },
+                        bio: {
+                            type: 'string',
+                            example: 'Software engineer with 5 years of experience in web development.',
+                            description: 'User biography (max 1000 characters)',
+                            maxLength: 1000
                         },
                         addresses: {
                             type: 'array',
@@ -1002,7 +1010,8 @@ const options = {
                         profile: {
                             type: 'object',
                             properties: {
-                                gender: { type: 'string', enum: ['Male', 'Female', 'Other'], example: 'Male', description: 'Gender (limited public info)', nullable: true }
+                                gender: { type: 'string', enum: ['Male', 'Female', 'Other'], example: 'Male', description: 'Gender (limited public info)', nullable: true },
+                                bio: { type: 'string', example: 'Passionate software developer with 5+ years of experience in web technologies.', description: 'User biography', maxLength: 1000, nullable: true }
                             },
                             description: 'Limited public profile information'
                         },
@@ -1555,7 +1564,7 @@ const options = {
                     summary: 'Save or update device FCM token',
                     description: 'Stores the Firebase Cloud Messaging registration token for the authenticated user',
                     tags: ['Notifications'],
-                    security: [ { bearerAuth: [] } ],
+                    security: [{ bearerAuth: [] }],
                     requestBody: {
                         required: true,
                         content: {
@@ -1565,7 +1574,7 @@ const options = {
                                     required: ['fcmToken'],
                                     properties: {
                                         fcmToken: { type: 'string', description: 'FCM registration token', example: 'e6j...xyz' },
-                                        platform: { type: 'string', enum: ['ios','android','web','unknown'], example: 'android' },
+                                        platform: { type: 'string', enum: ['ios', 'android', 'web', 'unknown'], example: 'android' },
                                         deviceInfo: { type: 'object', additionalProperties: true }
                                     }
                                 }
@@ -1598,7 +1607,7 @@ const options = {
                     summary: 'Send a test push notification',
                     description: 'Sends a test FCM notification to the specified userId or the authenticated user',
                     tags: ['Notifications'],
-                    security: [ { bearerAuth: [] } ],
+                    security: [{ bearerAuth: [] }],
                     requestBody: {
                         required: false,
                         content: {
@@ -2082,6 +2091,7 @@ const options = {
                                                 phone: '+1234567890',
                                                 dob: '1990-01-01',
                                                 gender: 'Male',
+                                                bio: 'Software engineer with 5+ years of experience in web development',
                                                 created_at: '2024-01-01T00:00:00.000Z',
                                                 updated_at: '2024-01-01T00:00:00.000Z'
                                             },
@@ -2240,7 +2250,8 @@ const options = {
                                             name: 'John Smith',
                                             email: 'john.smith@example.com',
                                             phone: '+1234567890',
-                                            dob: '1990-05-15'
+                                            dob: '1990-05-15',
+                                            bio: 'Software engineer with expertise in full-stack development and team leadership.'
                                         }
                                     },
                                     email_only: {
@@ -2254,6 +2265,12 @@ const options = {
                                         value: {
                                             phone: '+9876543210',
                                             dob: '1985-12-25'
+                                        }
+                                    },
+                                    bio_only: {
+                                        summary: 'Update bio only',
+                                        value: {
+                                            bio: 'Passionate developer with 8+ years of experience in creating scalable web applications and mentoring teams.'
                                         }
                                     },
                                     addresses_only: {
@@ -2328,6 +2345,7 @@ const options = {
                                             name: 'John Smith Updated',
                                             phone: '+1234567890',
                                             dob: '1990-05-15',
+                                            bio: 'Experienced software developer with 10+ years in full-stack development. Passionate about creating innovative solutions and mentoring junior developers.',
                                             addresses: [
                                                 {
                                                     street: '789 New Street',
@@ -2393,6 +2411,7 @@ const options = {
                                                 phone: '+1234567890',
                                                 dob: '1990-05-15',
                                                 gender: 'Male',
+                                                bio: 'Updated bio: Experienced software engineer specializing in full-stack development',
                                                 created_at: '2024-01-01T00:00:00.000Z',
                                                 updated_at: '2024-01-15T10:30:00.000Z'
                                             },
@@ -2486,7 +2505,7 @@ const options = {
                                             summary: 'No fields provided',
                                             value: {
                                                 success: false,
-                                                message: 'At least one field (name, email, phone, or dob) must be provided for update'
+                                                message: 'At least one field (name, email, phone, dob, or bio) must be provided for update'
                                             }
                                         },
                                         empty_name: {
@@ -2527,6 +2546,20 @@ const options = {
                                                         field: 'dob',
                                                         message: 'Date of birth must be in YYYY-MM-DD format',
                                                         value: '1990/01/01'
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        invalid_bio: {
+                                            summary: 'Bio too long',
+                                            value: {
+                                                success: false,
+                                                message: 'Validation failed',
+                                                errors: [
+                                                    {
+                                                        field: 'bio',
+                                                        message: 'Bio must not exceed 1000 characters',
+                                                        value: 'This is a very long bio that exceeds the maximum allowed length...'
                                                     }
                                                 ]
                                             }

@@ -261,12 +261,12 @@ const validateDate = (fieldName) => [
 
 // Custom validation to check if at least one field is provided
 const validateAtLeastOneField = (req, res, next) => {
-  const { name, email, phone, dob, addresses, temp_addresses, work_profiles } = req.body;
+  const { name, email, phone, dob, bio, addresses, temp_addresses, work_profiles } = req.body;
   
-  if (!name && !email && !phone && !dob && !addresses && !temp_addresses && !work_profiles) {
+  if (!name && !email && !phone && !dob && !bio && !addresses && !temp_addresses && !work_profiles) {
     return res.status(400).json({
       success: false,
-      message: 'At least one field (name, email, phone, dob, addresses, temp_addresses, or work_profiles) must be provided for update'
+      message: 'At least one field (name, email, phone, dob, bio, addresses, temp_addresses, or work_profiles) must be provided for update'
     });
   }
   
@@ -348,6 +348,14 @@ const validateProfileUpdate = [
       }
       return true;
     }),
+
+  // Bio validation (optional text)
+  validateNotEmpty('bio', 'Bio'),
+  body('bio')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Bio must not exceed 1000 characters'),
 
   // Address validation (optional array)
   body('addresses')
@@ -658,4 +666,4 @@ module.exports = {
   validatePostCreation,
   validatePostUpdate,
   patterns
-}; 
+};

@@ -23,7 +23,7 @@ const generateAccessToken = (user) => {
       type: 'access'
     },
     process.env.JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: '365d' }
   );
 };
 
@@ -36,7 +36,7 @@ const generateRefreshToken = (user) => {
       type: 'refresh'
     },
     process.env.JWT_SECRET,
-    { expiresIn: '30d' }
+    { expiresIn: '365d' }
   );
 };
 
@@ -291,7 +291,7 @@ exports.getProfile = async (req, res) => {
         {
           model: UserProfile,
           as: 'profile',
-          attributes: ['id', 'phone', 'dob', 'gender', 'created_at', 'updated_at']
+          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'created_at', 'updated_at']
         },
         {
           model: WorkProfile,
@@ -412,7 +412,7 @@ exports.getProfileById = async (req, res) => {
         {
           model: UserProfile,
           as: 'profile',
-          attributes: ['id', 'phone', 'dob', 'gender', 'created_at', 'updated_at']
+          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'created_at', 'updated_at']
         },
         {
           model: WorkProfile,
@@ -518,7 +518,7 @@ exports.getProfileById = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, email, phone, dob, addresses, temp_addresses, work_profiles } = req.body;
+    const { name, email, phone, dob, bio, addresses, temp_addresses, work_profiles } = req.body;
 
     // Prepare update data (validation already done by middleware)
     const fieldsToUpdate = {};
@@ -538,6 +538,10 @@ exports.updateProfile = async (req, res) => {
 
     if (dob !== undefined) {
       profileFieldsToUpdate.dob = dob;
+    }
+
+    if (bio !== undefined) {
+      profileFieldsToUpdate.bio = bio;
     }
 
     // Start a transaction to ensure data consistency
@@ -708,7 +712,7 @@ exports.updateProfile = async (req, res) => {
           {
             model: UserProfile,
             as: 'profile',
-            attributes: ['id', 'phone', 'dob', 'gender', 'created_at', 'updated_at']
+            attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'created_at', 'updated_at']
           },
           {
             model: WorkProfile,
