@@ -520,242 +520,141 @@ exports.updateProfile = async (req, res) => {
     const userId = req.user.id;
     const { name, email, phone, dob, bio, addresses, temp_addresses, work_profiles } = req.body;
 
-    // Prepare update data (validation already done by middleware)
     const fieldsToUpdate = {};
     const profileFieldsToUpdate = {};
-    
-    if (name !== undefined) {
-      fieldsToUpdate.name = name;
-    }
 
-    if (email !== undefined) {
-      fieldsToUpdate.email = email;
-    }
+    if (name !== undefined) fieldsToUpdate.name = name;
+    if (email !== undefined) fieldsToUpdate.email = email;
+    if (phone !== undefined) profileFieldsToUpdate.phone = phone;
+    if (dob !== undefined) profileFieldsToUpdate.dob = dob || null;
+    if (bio !== undefined) profileFieldsToUpdate.bio = bio;
 
-    if (phone !== undefined) {
-      profileFieldsToUpdate.phone = phone;
-    }
-
-    if (dob !== undefined) {
-      profileFieldsToUpdate.dob = dob;
-    }
-
-    if (bio !== undefined) {
-      profileFieldsToUpdate.bio = bio;
-    }
-
-    // Start a transaction to ensure data consistency
-    const transaction = await db.sequelize.transaction();
-
-    try {
-      // Update main user data if there are changes
+    // 🔑 Managed transaction (auto rollback on error)
+    await db.sequelize.transaction(async (transaction) => {
+      // --- USER TABLE ---
       if (Object.keys(fieldsToUpdate).length > 0) {
-        // Check if email already exists (if email is being updated)
         if (fieldsToUpdate.email) {
           const existingUser = await User.findOne({
-            where: { 
+            where: {
               email: fieldsToUpdate.email,
-              id: { [db.Sequelize.Op.ne]: userId } // Exclude current user
+              id: { [db.Sequelize.Op.ne]: userId }
             },
             transaction
           });
-          
           if (existingUser) {
-            await transaction.rollback();
-            return res.status(409).json({
-              success: false,
-              message: 'Email already exists. Please use a different email address.'
-            });
+            throw new Error("EMAIL_EXISTS"); // will trigger rollback
           }
         }
-
-        await User.update(fieldsToUpdate, {
-          where: { id: userId },
-          transaction
-        });
+        await User.update(fieldsToUpdate, { where: { id: userId }, transaction });
       }
 
-      // Update or create user profile if there are profile changes
+      // --- USER PROFILE ---
       if (Object.keys(profileFieldsToUpdate).length > 0) {
-        // Get existing profile first
-        const existingProfile = await UserProfile.findOne({
-          where: { user_id: userId },
-          transaction
-        });
-
+        const existingProfile = await UserProfile.findOne({ where: { user_id: userId }, transaction });
         if (existingProfile) {
-          // Update existing profile with only the provided fields
-          await UserProfile.update(profileFieldsToUpdate, {
-            where: { user_id: userId },
-            transaction
-          });
+          await UserProfile.update(profileFieldsToUpdate, { where: { user_id: userId }, transaction });
         } else {
-          // Create new profile with user_id and provided fields
-          await UserProfile.create({
-            user_id: userId,
-            ...profileFieldsToUpdate
-          }, { transaction });
+          await UserProfile.create({ user_id: userId, ...profileFieldsToUpdate }, { transaction });
         }
       }
 
-      // Handle addresses update if provided
+      // --- ADDRESSES ---
       if (addresses !== undefined) {
-        // Delete existing addresses
-        await Address.destroy({
-          where: { user_id: userId },
-          transaction
-        });
-
-        // Create new addresses if provided
+        await Address.destroy({ where: { user_id: userId }, transaction });
         if (addresses && addresses.length > 0) {
-          const addressPromises = addresses.map(address => {
-            return Address.create({
-              user_id: userId,
-              street: address.street || null,
-              city: address.city || null,
-              state: address.state || null,
-              zip_code: address.zip_code || null,
-              country: address.country || null,
-              type: address.type || 'home'
-            }, { transaction });
-          });
-
-          await Promise.all(addressPromises);
+          await Promise.all(addresses.map(address => Address.create({
+            user_id: userId,
+            street: address.street || null,
+            city: address.city || null,
+            state: address.state || null,
+            zip_code: address.zip_code || null,
+            country: address.country || null,
+            type: address.type || 'home'
+          }, { transaction })));
         }
       }
 
-      // Handle temp_addresses update if provided
+      // --- TEMP ADDRESSES ---
       if (temp_addresses !== undefined) {
-        // Delete existing temp addresses
-        await TempAddress.destroy({
-          where: { user_id: userId },
-          transaction
-        });
-
-        // Create new temp addresses if provided
+        await TempAddress.destroy({ where: { user_id: userId }, transaction });
         if (temp_addresses && temp_addresses.length > 0) {
-          const tempAddressPromises = temp_addresses.map(tempAddress => {
-            return TempAddress.create({
-              user_id: userId,
-              location_data: tempAddress.location_data || '',
-              pincode: tempAddress.pincode || '',
-              selected_area: tempAddress.selected_area || '',
-              city: tempAddress.city || null,
-              state: tempAddress.state || null,
-              country: tempAddress.country || 'India',
-              location_permission: tempAddress.location_permission || false,
-              is_active: tempAddress.is_active !== undefined ? tempAddress.is_active : true,
-              expires_at: tempAddress.expires_at ? new Date(tempAddress.expires_at) : null
-            }, { transaction });
-          });
-
-          await Promise.all(tempAddressPromises);
+          await Promise.all(temp_addresses.map(tempAddress => TempAddress.create({
+            user_id: userId,
+            location_data: tempAddress.location_data || '',
+            pincode: tempAddress.pincode || '',
+            selected_area: tempAddress.selected_area || '',
+            city: tempAddress.city || null,
+            state: tempAddress.state || null,
+            country: tempAddress.country || 'India',
+            location_permission: !!tempAddress.location_permission,
+            is_active: tempAddress.is_active !== undefined ? tempAddress.is_active : true,
+            expires_at: tempAddress.expires_at ? new Date(tempAddress.expires_at) : null
+          }, { transaction })));
         }
       }
 
-      // Handle work_profiles update if provided
+      // --- WORK PROFILES + SKILLS ---
       if (work_profiles !== undefined) {
-        // Delete existing work profiles and related data
-        const existingWorkProfiles = await WorkProfile.findAll({
-          where: { user_id: userId },
-          transaction
-        });
+        const existingWorkProfiles = await WorkProfile.findAll({ where: { user_id: userId }, transaction });
 
-        // Delete related user skills first (due to foreign key constraints)
-        for (const workProfile of existingWorkProfiles) {
-          await UserSkill.destroy({
-            where: { work_profile_id: workProfile.id },
-            transaction
-          });
+        // delete user skills first
+        for (const wp of existingWorkProfiles) {
+          await UserSkill.destroy({ where: { work_profile_id: wp.id }, transaction });
         }
+        await WorkProfile.destroy({ where: { user_id: userId }, transaction });
 
-        // Delete existing work profiles
-        await WorkProfile.destroy({
-          where: { user_id: userId },
-          transaction
-        });
-
-        // Create new work profiles if provided
         if (work_profiles && work_profiles.length > 0) {
-          for (const workProfile of work_profiles) {
-            // Create work profile
-            const newWorkProfile = await WorkProfile.create({
+          for (const wp of work_profiles) {
+            const newWP = await WorkProfile.create({
               user_id: userId,
-              company_name: workProfile.company_name || null,
-              designation: workProfile.designation || null,
-              start_date: workProfile.start_date ? new Date(workProfile.start_date) : null,
-              end_date: workProfile.end_date ? new Date(workProfile.end_date) : null
+              company_name: wp.company_name || null,
+              designation: wp.designation || null,
+              start_date: wp.start_date ? new Date(wp.start_date) : null,
+              end_date: wp.end_date ? new Date(wp.end_date) : null
             }, { transaction });
 
-            // Create related user skills if provided
-            if (workProfile.user_skills && workProfile.user_skills.length > 0) {
-              const userSkillPromises = workProfile.user_skills.map(userSkill => {
-                return UserSkill.create({
-                  work_profile_id: newWorkProfile.id,
-                  skill_id: userSkill.skill_id,
-                  sub_skill_id: userSkill.sub_skill_id || null,
-                  proficiency_level: userSkill.proficiency_level || 'Beginner'
-                }, { transaction });
-              });
-
-              await Promise.all(userSkillPromises);
+            if (wp.user_skills && wp.user_skills.length > 0) {
+              await Promise.all(wp.user_skills.map(us => UserSkill.create({
+                work_profile_id: newWP.id,
+                skill_id: us.skill_id,
+                sub_skill_id: us.sub_skill_id || null,
+                proficiency_level: us.proficiency_level || 'Beginner'
+              }, { transaction })));
             }
           }
         }
       }
+    }); // 👈 if any query throws → automatic rollback
 
-      await transaction.commit();
+    // --- FETCH UPDATED DATA ---
+    const updatedUser = await User.findByPk(userId, {
+      include: [
+        { model: UserProfile, as: 'profile', attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'created_at', 'updated_at'] },
+        {
+          model: WorkProfile, as: 'workProfiles',
+          attributes: ['id', 'company_name', 'designation', 'start_date', 'end_date', 'created_at', 'updated_at'],
+          include: [
+            {
+              model: UserSkill, as: 'userSkills',
+              attributes: ['id', 'proficiency_level', 'created_at', 'updated_at'],
+              include: [
+                { model: Skill, as: 'skill', attributes: ['id', 'name', 'description'] },
+                { model: SubSkill, as: 'subSkill', attributes: ['id', 'name', 'description'] }
+              ]
+            }
+          ]
+        },
+        { model: Address, as: 'addresses', attributes: ['id', 'street', 'city', 'state', 'zip_code', 'country', 'type', 'created_at', 'updated_at'] },
+        { model: TempAddress, as: 'tempAddresses', attributes: ['id', 'location_data', 'pincode', 'selected_area', 'city', 'state', 'country', 'location_permission', 'is_active', 'expires_at', 'created_at', 'updated_at'] }
+      ],
+      attributes: ['id', 'name', 'email', 'created_at', 'updated_at'],
+      order: [[{ model: WorkProfile, as: 'workProfiles' }, 'start_date', 'DESC']]
+    });
 
-      // Fetch updated profile with all related data
-      const updatedUser = await User.findByPk(userId, {
-        include: [
-          {
-            model: UserProfile,
-            as: 'profile',
-            attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'created_at', 'updated_at']
-          },
-          {
-            model: WorkProfile,
-            as: 'workProfiles',
-            attributes: ['id', 'company_name', 'designation', 'start_date', 'end_date', 'created_at', 'updated_at'],
-            include: [
-              {
-                model: UserSkill,
-                as: 'userSkills',
-                attributes: ['id', 'proficiency_level', 'created_at', 'updated_at'],
-                include: [
-                  {
-                    model: Skill,
-                    as: 'skill',
-                    attributes: ['id', 'name', 'description']
-                  },
-                  {
-                    model: SubSkill,
-                    as: 'subSkill',
-                    attributes: ['id', 'name', 'description']
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            model: Address,
-            as: 'addresses',
-            attributes: ['id', 'street', 'city', 'state', 'zip_code', 'country', 'type', 'created_at', 'updated_at']
-          },
-          {
-            model: TempAddress,
-            as: 'tempAddresses',
-            attributes: ['id', 'location_data', 'pincode', 'selected_area', 'city', 'state', 'country', 'location_permission', 'is_active', 'expires_at', 'created_at', 'updated_at']
-          }
-        ],
-        attributes: ['id', 'name', 'email', 'created_at', 'updated_at'],
-        order: [
-          [{ model: WorkProfile, as: 'workProfiles' }, 'start_date', 'DESC']
-        ]
-      });
-
-      const profileData = {
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
         id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
@@ -765,35 +664,18 @@ exports.updateProfile = async (req, res) => {
         work_profiles: updatedUser.workProfiles || [],
         addresses: updatedUser.addresses || [],
         temp_addresses: updatedUser.tempAddresses || []
-      };
-
-      res.status(200).json({
-        success: true,
-        message: 'Profile updated successfully',
-        data: profileData
-      });
-
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
-    }
+      }
+    });
 
   } catch (error) {
-    // Handle unique constraint errors for email
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(409).json({
-        success: false,
-        message: 'Email already exists. Please use a different email address.'
-      });
+    if (error.message === "EMAIL_EXISTS") {
+      return res.status(409).json({ success: false, message: 'Email already exists. Please use a different email address.' });
     }
-
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message
-    });
+    console.error("Update profile error:", error);
+    return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
   }
 };
+
 
 // Get public profile by user ID (limited details for other users)
 exports.getPublicProfile = async (req, res) => {
@@ -859,15 +741,15 @@ exports.getPublicProfile = async (req, res) => {
 // Helper function to calculate work duration
 const calculateWorkDuration = (startDate, endDate) => {
   if (!startDate) return null;
-  
+
   const start = new Date(startDate);
   const end = endDate ? new Date(endDate) : new Date();
-  
+
   const diffTime = Math.abs(end - start);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   const diffMonths = Math.floor(diffDays / 30);
   const diffYears = Math.floor(diffMonths / 12);
-  
+
   if (diffYears > 0) {
     const remainingMonths = diffMonths % 12;
     if (remainingMonths > 0) {
