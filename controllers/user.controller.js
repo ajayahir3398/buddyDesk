@@ -515,6 +515,19 @@ exports.getProfileById = async (req, res) => {
 
 // Update user profile (name, email, phone, dob, addresses, temp_addresses, work_profiles)
 // Validation is handled by middleware
+function CustomError(message, statusCode = 500) {
+  const error = new Error(message);
+  error.name = "CustomError";
+  error.statusCode = statusCode;
+
+  // Ensures proper stack trace (like class version)
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(error, CustomError);
+  }
+
+  return error;
+}
+
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -542,7 +555,7 @@ exports.updateProfile = async (req, res) => {
             transaction
           });
           if (existingUser) {
-            throw new Error("EMAIL_EXISTS"); // will trigger rollback
+            throw new CustomError("Email already exists. Please use a different email address.", 409);
           }
         }
         await User.update(fieldsToUpdate, { where: { id: userId }, transaction });
@@ -550,6 +563,19 @@ exports.updateProfile = async (req, res) => {
 
       // --- USER PROFILE ---
       if (Object.keys(profileFieldsToUpdate).length > 0) {
+        if (profileFieldsToUpdate.phone) {
+          const existingPhone = await UserProfile.findOne({
+            where: {
+              phone: profileFieldsToUpdate.phone,
+              user_id: { [db.Sequelize.Op.ne]: userId }
+            },
+            transaction
+          });
+          if (existingPhone) {
+            throw new CustomError("Phone number already exists. Please use a different phone.", 409);
+          }
+        }
+
         const existingProfile = await UserProfile.findOne({ where: { user_id: userId }, transaction });
         if (existingProfile) {
           await UserProfile.update(profileFieldsToUpdate, { where: { user_id: userId }, transaction });
@@ -597,7 +623,6 @@ exports.updateProfile = async (req, res) => {
       if (work_profiles !== undefined) {
         const existingWorkProfiles = await WorkProfile.findAll({ where: { user_id: userId }, transaction });
 
-        // delete user skills first
         for (const wp of existingWorkProfiles) {
           await UserSkill.destroy({ where: { work_profile_id: wp.id }, transaction });
         }
@@ -624,7 +649,7 @@ exports.updateProfile = async (req, res) => {
           }
         }
       }
-    }); // 👈 if any query throws → automatic rollback
+    }); // 👈 rollback auto on error
 
     // --- FETCH UPDATED DATA ---
     const updatedUser = await User.findByPk(userId, {
@@ -668,13 +693,14 @@ exports.updateProfile = async (req, res) => {
     });
 
   } catch (error) {
-    if (error.message === "EMAIL_EXISTS") {
-      return res.status(409).json({ success: false, message: 'Email already exists. Please use a different email address.' });
+    if (error instanceof CustomError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
     }
     console.error("Update profile error:", error);
     return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
   }
 };
+
 
 
 // Get public profile by user ID (limited details for other users)
