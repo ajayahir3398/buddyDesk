@@ -7,6 +7,7 @@ const PostAttachment = db.PostAttachment;
 const WorkProfile = db.WorkProfile;
 const UserSkill = db.UserSkill;
 const Address = db.Address;
+const TempAddress = db.TempAddress;
 const logger = require('../utils/logger');
 const { deleteFile, getFileUrl, getFileCategoryFromPath, validateFileAccess } = require('../middlewares/upload');
 const path = require('path');
@@ -1122,6 +1123,129 @@ exports.serveFileByCategory = async (req, res) => {
   }
 };
 
+// Get posts filtered by user's temporary address pincode
+exports.getPostsByTempAddressPincode = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const { status, medium, skill_id } = req.query;
+
+    // First, get the user's active temporary address
+    const tempAddress = await TempAddress.findOne({
+      where: {
+        user_id: userId,
+        is_active: true
+      },
+      order: [['created_at', 'DESC']]
+    });
+
+    if (!tempAddress) {
+      return res.status(404).json({
+        success: false,
+        message: "No active temporary address found for user"
+      });
+    }
+
+    // Build where clause for filtering posts
+    const where = {
+      user_id: { [Op.ne]: userId } // Exclude posts from the current user
+    };
+    if (status) where.status = status;
+    if (medium) where.medium = medium;
+    if (skill_id) where.required_skill_id = skill_id;
+
+    const { count, rows: posts } = await Post.findAndCountAll({
+      where,
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'email'],
+          include: [
+            {
+              model: TempAddress,
+              as: 'tempAddresses',
+              where: {
+                pincode: tempAddress.pincode,
+                is_active: true
+              },
+              attributes: ['pincode', 'selected_area', 'city', 'state'],
+              required: true
+            }
+          ]
+        },
+        {
+          model: Skill,
+          as: 'requiredSkill',
+          attributes: ['id', 'name']
+        },
+        {
+          model: SubSkill,
+          as: 'requiredSubSkill',
+          attributes: ['id', 'name']
+        },
+        {
+          model: PostAttachment,
+          as: 'attachments',
+          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
+          order: [['uploaded_at', 'ASC']]
+        }
+      ],
+      order: [['created_at', 'DESC']],
+      limit,
+      offset
+    });
+
+    // Generate full URLs for attachments AFTER all Sequelize processing
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Convert to plain objects and add URLs
+    const postsWithUrls = posts.map(post => {
+      const postData = post.toJSON ? post.toJSON() : post;
+      
+      if (postData.attachments && postData.attachments.length > 0) {
+        postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
+      }
+      
+      return postData;
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Posts retrieved successfully for pincode ${tempAddress.pincode}`,
+      data: postsWithUrls,
+      tempAddress: {
+        pincode: tempAddress.pincode,
+        selected_area: tempAddress.selected_area,
+        city: tempAddress.city,
+        state: tempAddress.state
+      },
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(count / limit),
+        totalItems: count,
+        itemsPerPage: limit
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error retrieving posts by temp address pincode', {
+      requestId: req.requestId,
+      userId: req.user?.id,
+      error: error.message,
+      stack: error.stack
+    });
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   addPost: exports.addPost,
   getPosts: exports.getPosts,
@@ -1131,5 +1255,6 @@ module.exports = {
   addAttachment: exports.addAttachment,
   downloadAttachment: exports.downloadAttachment,
   deleteAttachment: exports.deleteAttachment,
-  serveFileByCategory: exports.serveFileByCategory
+  serveFileByCategory: exports.serveFileByCategory,
+  getPostsByTempAddressPincode: exports.getPostsByTempAddressPincode
 };

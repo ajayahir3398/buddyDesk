@@ -15,6 +15,9 @@ router.get('/', authenticateToken, postController.getPosts);
 // Get matching posts for logged-in user (requires authentication)
 router.get('/matching', authenticateToken, postController.getMatchingPosts);
 
+// Get posts filtered by user's temporary address pincode (requires authentication)
+router.get('/temp-address', authenticateToken, postController.getPostsByTempAddressPincode);
+
 // Get specific post by ID (requires authentication)
 router.get('/:id', authenticateToken, postController.getPostById);
 

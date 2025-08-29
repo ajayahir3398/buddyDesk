@@ -18,7 +18,7 @@ router.post('/logout', userController.logout);
 // Profile routes (require authentication)
 router.get('/profile', authenticateToken, userController.getProfile);
 router.get('/profile/:id', authenticateToken, userController.getProfileById);
-router.put('/profile', authenticateToken, validateProfileUpdate, userController.updateProfile);
+router.put('/profile', authenticateToken, userController.updateProfile);
 
 // Public profile route (require authentication but allow viewing other users)
 router.get('/public-profile/:id', authenticateToken, userController.getPublicProfile);

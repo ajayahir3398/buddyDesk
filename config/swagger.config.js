@@ -498,6 +498,68 @@ const options = {
                         }
                     }
                 },
+                PostWithUserTempAddress: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 22, description: 'Post ID' },
+                        user_id: { type: 'integer', example: 17, description: 'User ID who created the post' },
+                        title: { type: 'string', example: 'Test', description: 'Post title' },
+                        description: { type: 'string', example: 'Tedting', description: 'Post description' },
+                        required_skill_id: { type: 'integer', example: 1, description: 'Required skill ID' },
+                        required_sub_skill_id: { type: 'integer', example: 2, description: 'Required sub-skill ID' },
+                        medium: { type: 'string', enum: ['online', 'offline'], example: 'online', description: 'Collaboration medium' },
+                        status: { type: 'string', enum: ['active', 'hold', 'discussed', 'completed', 'deleted'], example: 'active', description: 'Post status' },
+                        deadline: { type: 'string', format: 'date', example: '2025-09-02', description: 'Project deadline', nullable: true },
+                        created_at: { type: 'string', format: 'date-time', example: '2025-08-29T19:51:00.310Z' },
+                        updated_at: { type: 'string', format: 'date-time', example: '2025-08-29T19:51:00.315Z' },
+                        user: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'integer', example: 17, description: 'User ID' },
+                                name: { type: 'string', example: 'Ajay B', description: 'User full name' },
+                                email: { type: 'string', example: 'bandhiyaajay3398@gmail.com', description: 'User email address' },
+                                tempAddresses: {
+                                    type: 'array',
+                                    items: {
+                                        type: 'object',
+                                        properties: {
+                                            pincode: { type: 'string', example: '361004', description: 'Pincode' },
+                                            selected_area: { type: 'string', example: 'Udyognagar', description: 'Selected area' },
+                                            city: { type: 'string', example: 'Gujarat', description: 'City' },
+                                            state: { type: 'string', example: null, description: 'State', nullable: true }
+                                        }
+                                    },
+                                    description: 'User temporary addresses'
+                                }
+                            },
+                            description: 'User information with temporary addresses'
+                        },
+                        requiredSkill: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'integer', example: 1, description: 'Required skill ID' },
+                                name: { type: 'string', example: 'Academic Help', description: 'Required skill name' }
+                            },
+                            description: 'Required skill information'
+                        },
+                        requiredSubSkill: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'integer', example: 2, description: 'Required sub-skill ID' },
+                                name: { type: 'string', example: 'College Project Guidance', description: 'Required sub-skill name' }
+                            },
+                            description: 'Required sub-skill information'
+                        },
+                        attachments: {
+                            type: 'array',
+                            items: {
+                                $ref: '#/components/schemas/PostAttachment'
+                            },
+                            description: 'Post attachments',
+                            example: []
+                        }
+                    }
+                },
                 PostCreation: {
                     type: 'object',
                     properties: {
@@ -3478,6 +3540,145 @@ const options = {
                                                 }
                                             }
                                         }
+                                    }
+                                }
+                            }
+                        },
+                        '401': {
+                            description: 'Unauthorized - Invalid or missing token',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        },
+                        '500': {
+                            description: 'Internal server error',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/posts/temp-address': {
+                get: {
+                    summary: 'Get posts by user\'s temporary address pincode',
+                    description: 'Retrieve posts from users whose temporary address pincode matches the requesting user\'s temporary address pincode',
+                    tags: ['Posts'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        {
+                            name: 'page',
+                            in: 'query',
+                            description: 'Page number for pagination',
+                            required: false,
+                            schema: {
+                                type: 'integer',
+                                minimum: 1,
+                                default: 1,
+                                example: 1
+                            }
+                        },
+                        {
+                            name: 'limit',
+                            in: 'query',
+                            description: 'Number of items per page',
+                            required: false,
+                            schema: {
+                                type: 'integer',
+                                minimum: 1,
+                                maximum: 100,
+                                default: 10,
+                                example: 10
+                            }
+                        },
+                        {
+                            name: 'status',
+                            in: 'query',
+                            description: 'Filter by post status (default: active)',
+                            required: false,
+                            schema: {
+                                type: 'string',
+                                enum: ['active', 'hold', 'discussed', 'completed', 'deleted'],
+                                default: 'active',
+                                example: 'active'
+                            }
+                        },
+                        {
+                            name: 'medium',
+                            in: 'query',
+                            description: 'Filter by collaboration medium',
+                            required: false,
+                            schema: {
+                                type: 'string',
+                                enum: ['online', 'offline'],
+                                example: 'online'
+                            }
+                        },
+                        {
+                            name: 'skill_id',
+                            in: 'query',
+                            description: 'Filter by skill ID',
+                            required: false,
+                            schema: {
+                                type: 'integer',
+                                minimum: 1,
+                                example: 1
+                            }
+                        }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Posts retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean', example: true },
+                                            message: { type: 'string', example: 'Posts retrieved successfully for pincode 361004' },
+                                            data: {
+                                                type: 'array',
+                                                items: {
+                                                    $ref: '#/components/schemas/PostWithUserTempAddress'
+                                                }
+                                            },
+                                            tempAddress: {
+                                                type: 'object',
+                                                properties: {
+                                                    pincode: { type: 'string', example: '361004' },
+                                                    selected_area: { type: 'string', example: 'Udyognagar' },
+                                                    city: { type: 'string', example: 'Gujarat' },
+                                                    state: { type: 'string', nullable: true, example: null }
+                                                }
+                                            },
+                                            pagination: {
+                                                type: 'object',
+                                                properties: {
+                                                    currentPage: { type: 'integer', example: 1 },
+                                                    totalPages: { type: 'integer', example: 1 },
+                                                    totalItems: { type: 'integer', example: 4 },
+                                                    itemsPerPage: { type: 'integer', example: 10 }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': {
+                            description: 'Bad request - User has no active temporary address',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        $ref: '#/components/schemas/Error'
                                     }
                                 }
                             }
