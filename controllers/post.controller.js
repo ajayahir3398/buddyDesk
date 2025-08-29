@@ -1102,7 +1102,6 @@ exports.serveFileByCategory = async (req, res) => {
 
     logger.info('File served successfully', {
       requestId: req.requestId,
-      userId: user_id,
       category,
       filename: safeFilename,
       mimeType
