@@ -21,7 +21,7 @@ deploy-production.bat
 
 ```bash
 # Create directories
-mkdir -p uploads/images uploads/audio uploads/documents uploads/posts logs
+mkdir -p uploads/images uploads/audio uploads/documents logs
 
 # Set permissions
 chmod -R 755 uploads logs
@@ -31,8 +31,7 @@ docker build -t buddydesk .
 docker run -d \
     --name buddydesk-app \
     -p 3000:3000 \
-    -e NODE_ENV=production \
-    -e PORT=3000 \
+    --env-file .env \
     -v "$(pwd)/uploads:/app/uploads" \
     -v "$(pwd)/logs:/app/logs" \
     --restart unless-stopped \

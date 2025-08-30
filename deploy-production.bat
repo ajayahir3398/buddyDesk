@@ -15,7 +15,6 @@ echo 📁 Creating directory structure...
 if not exist "uploads\images" mkdir "uploads\images"
 if not exist "uploads\audio" mkdir "uploads\audio"
 if not exist "uploads\documents" mkdir "uploads\documents"
-if not exist "uploads\posts" mkdir "uploads\posts"
 if not exist "logs" mkdir "logs"
 
 REM Stop and remove existing containers
@@ -41,8 +40,7 @@ echo 🚀 Starting new container...
 docker run -d ^
     --name buddydesk-app ^
     -p 3000:3000 ^
-    -e NODE_ENV=production ^
-    -e PORT=3000 ^
+    --env-file .env ^
     -v "%cd%\uploads:/app/uploads" ^
     -v "%cd%\logs:/app/logs" ^
     --restart unless-stopped ^
@@ -65,7 +63,7 @@ if %errorlevel% equ 0 (
     
     REM Check application health
     echo 🏥 Checking application health...
-    powershell -Command "try { Invoke-WebRequest -Uri 'http://localhost:3000/health' -UseBasicParsing | Out-Null; Write-Host '✅ Application is healthy and responding!' } catch { Write-Host '⚠️  Application may still be starting up...' }"
+    powershell -Command "try { Invoke-WebRequest -Uri 'http://103.168.18.34:3000/health' -UseBasicParsing | Out-Null; Write-Host '✅ Application is healthy and responding!' } catch { Write-Host '⚠️  Application may still be starting up...' }"
     
     REM Show container info
     echo.
@@ -77,8 +75,8 @@ if %errorlevel% equ 0 (
     
     echo.
     echo 🎉 Deployment completed successfully!
-    echo 🌐 Application is available at: http://localhost:3000
-    echo 📚 API Documentation: http://localhost:3000/api-docs
+    echo 🌐 Application is available at: http://103.168.18.34:3000
+    echo 📚 API Documentation: http://103.168.18.34:3000/api-docs
     
 ) else (
     echo ❌ Container failed to start!
