@@ -16,16 +16,16 @@ function initializeFirebaseAdmin() {
 		throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON env var is required');
 	}
 
-	// let credentials;
-	// try {
-	// 	credentials = JSON.parse(Buffer.from(serviceAccountJson, 'base64').toString('utf8'));
-	// } catch (err) {
-	// 	throw new Error('Invalid FIREBASE_SERVICE_ACCOUNT_JSON. Must be base64-encoded JSON');
-	// }
+	let credentials;
+	try {
+		credentials = JSON.parse(Buffer.from(serviceAccountJson, 'base64').toString('utf8'));
+	} catch (err) {
+		throw new Error('Invalid FIREBASE_SERVICE_ACCOUNT_JSON. Must be base64-encoded JSON');
+	}
 
-	// admin.initializeApp({
-	// 	credential: admin.credential.cert(credentials)
-	// });
+	admin.initializeApp({
+		credential: admin.credential.cert(credentials)
+	});
 
 	initialized = true;
 	return admin;
