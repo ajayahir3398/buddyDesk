@@ -10,10 +10,9 @@ const uploadsDir = path.join(__dirname, '../uploads');
 const imagesDir = path.join(uploadsDir, 'images');
 const audioDir = path.join(uploadsDir, 'audio');
 const documentsDir = path.join(uploadsDir, 'documents');
-const postsDir = path.join(uploadsDir, 'posts');
 
 // Ensure all directories exist
-const directories = [uploadsDir, imagesDir, audioDir, documentsDir, postsDir];
+const directories = [uploadsDir, imagesDir, audioDir, documentsDir];
 directories.forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -29,7 +28,6 @@ const getFileCategory = (mimetype) => {
   } else if (constants.FILE_UPLOAD.CATEGORIES.DOCUMENT.includes(mimetype)) {
     return { category: 'documents', dir: documentsDir };
   }
-  return { category: 'posts', dir: postsDir }; // fallback
 };
 
 // Enhanced storage configuration with organized structure
@@ -64,7 +62,7 @@ const fileFilter = (req, file, cb) => {
       'audio/ogg': ['.ogg'],
       'application/pdf': ['.pdf']
     };
-    
+
     const expectedExtensions = allowedExtensions[file.mimetype];
     if (expectedExtensions && expectedExtensions.includes(extension)) {
       cb(null, true);
@@ -197,6 +195,5 @@ module.exports = {
   uploadsDir,
   imagesDir,
   audioDir,
-  documentsDir,
-  postsDir
+  documentsDir
 };
