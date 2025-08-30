@@ -291,7 +291,7 @@ exports.getProfile = async (req, res) => {
         {
           model: UserProfile,
           as: 'profile',
-          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'created_at', 'updated_at']
+          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'looking_skills', 'created_at', 'updated_at']
         },
         {
           model: WorkProfile,
@@ -412,7 +412,7 @@ exports.getProfileById = async (req, res) => {
         {
           model: UserProfile,
           as: 'profile',
-          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'created_at', 'updated_at']
+          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'looking_skills', 'created_at', 'updated_at']
         },
         {
           model: WorkProfile,
@@ -531,7 +531,7 @@ function CustomError(message, statusCode = 500) {
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, email, phone, dob, bio, addresses, temp_addresses, work_profiles } = req.body;
+    const { name, email, phone, dob, bio, looking_skills, addresses, temp_addresses, work_profiles } = req.body;
 
     const fieldsToUpdate = {};
     const profileFieldsToUpdate = {};
@@ -541,6 +541,7 @@ exports.updateProfile = async (req, res) => {
     if (phone !== undefined) profileFieldsToUpdate.phone = phone;
     if (dob !== undefined) profileFieldsToUpdate.dob = dob || null;
     if (bio !== undefined) profileFieldsToUpdate.bio = bio;
+    if (looking_skills !== undefined) profileFieldsToUpdate.looking_skills = looking_skills || [];
 
     // 🔑 Managed transaction (auto rollback on error)
     await db.sequelize.transaction(async (transaction) => {
@@ -654,7 +655,7 @@ exports.updateProfile = async (req, res) => {
     // --- FETCH UPDATED DATA ---
     const updatedUser = await User.findByPk(userId, {
       include: [
-        { model: UserProfile, as: 'profile', attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'created_at', 'updated_at'] },
+        { model: UserProfile, as: 'profile', attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'looking_skills', 'created_at', 'updated_at'] },
         {
           model: WorkProfile, as: 'workProfiles',
           attributes: ['id', 'company_name', 'designation', 'start_date', 'end_date', 'created_at', 'updated_at'],

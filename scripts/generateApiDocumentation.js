@@ -88,7 +88,7 @@ const apiEndpoints = [
     authentication: 'Bearer Token',
     requestBody: 'None',
     queryParams: 'None',
-    responseExample: '{"success": true, "message": "Profile retrieved successfully", "data": {"id": 1, "name": "John Doe", "email": "john.doe@example.com", "profile": {...}, "work_profiles": [...], "addresses": [...]}}',
+    responseExample: '{"success": true, "message": "Profile retrieved successfully", "data": {"id": 1, "name": "John Doe", "email": "john.doe@example.com", "profile": {"id": 1, "phone": "+1234567890", "dob": "1990-01-01", "gender": "Male", "bio": "Software engineer with 5+ years of experience", "looking_skills": [{"id": 1, "name": "JavaScript"}, {"id": 3, "name": "React"}, {"id": 5, "name": "Node.js"}]}, "work_profiles": [...], "addresses": [...]}}',
     statusCodes: '200 - OK, 401 - Unauthorized, 404 - User Not Found'
   },
   {
@@ -100,7 +100,7 @@ const apiEndpoints = [
     authentication: 'Bearer Token',
     requestBody: 'None',
     queryParams: 'None',
-    responseExample: '{"success": true, "message": "Profile retrieved successfully", "data": {"id": 1, "name": "John Doe", "email": "john.doe@example.com", "profile": {...}}}',
+    responseExample: '{"success": true, "message": "Profile retrieved successfully", "data": {"id": 1, "name": "John Doe", "email": "john.doe@example.com", "profile": {"id": 1, "phone": "+1234567890", "dob": "1990-01-01", "gender": "Male", "bio": "Software engineer", "looking_skills": [{"id": 1, "name": "JavaScript"}, {"id": 3, "name": "React"}, {"id": 5, "name": "Node.js"}]}}}',
     statusCodes: '200 - OK, 401 - Unauthorized, 404 - User Not Found'
   },
   {
@@ -110,9 +110,9 @@ const apiEndpoints = [
     fullUrl: 'https://buddydesk.onrender.com/api/users/profile',
     description: 'Update current user profile',
     authentication: 'Bearer Token',
-    requestBody: '{"name": "Updated Name", "profile": {"bio": "Updated bio", "phone": "+1234567890"}, "addresses": [...], "work_profiles": [...]}',
+    requestBody: '{"name": "Updated Name", "bio": "Updated bio", "phone": "+1234567890", "looking_skills": [{"id": 1, "name": "JavaScript"}, {"id": 3, "name": "React"}, {"id": 5, "name": "Node.js"}, {"id": 7, "name": "Python"}], "addresses": [...], "work_profiles": [...]}',
     queryParams: 'None',
-    responseExample: '{"success": true, "message": "Profile updated successfully", "data": {"id": 1, "name": "Updated Name", "profile": {...}}}',
+    responseExample: '{"success": true, "message": "Profile updated successfully", "data": {"id": 1, "name": "Updated Name", "profile": {"id": 1, "phone": "+1234567890", "bio": "Updated bio", "looking_skills": [{"id": 1, "name": "JavaScript"}, {"id": 3, "name": "React"}, {"id": 5, "name": "Node.js"}, {"id": 7, "name": "Python"}]}}}',
     statusCodes: '200 - OK, 400 - Validation Error, 401 - Unauthorized'
   },
   {
@@ -124,7 +124,7 @@ const apiEndpoints = [
     authentication: 'Bearer Token',
     requestBody: 'None',
     queryParams: 'None',
-    responseExample: '{"success": true, "message": "Public profile retrieved successfully", "data": {"id": 1, "name": "John Doe", "profile": {...}, "work_profiles": [...]}}',
+    responseExample: '{"success": true, "message": "Public profile retrieved successfully", "data": {"id": 1, "name": "John Doe", "profile": {"id": 1, "bio": "Software engineer", "looking_skills": [{"id": 1, "name": "JavaScript"}, {"id": 3, "name": "React"}, {"id": 5, "name": "Node.js"}]}, "work_profiles": [...]}}',
     statusCodes: '200 - OK, 401 - Unauthorized, 404 - User Not Found'
   },
 

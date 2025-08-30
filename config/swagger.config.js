@@ -375,6 +375,19 @@ const options = {
                         dob: { type: 'string', format: 'date', example: '1990-01-01', description: 'Date of birth' },
                         gender: { type: 'string', enum: ['Male', 'Female', 'Other'], example: 'Male', description: 'Gender' },
                         bio: { type: 'string', example: 'Software engineer with 5+ years of experience in web development', description: 'User biography', maxLength: 1000 },
+                        looking_skills: { 
+                            type: 'array', 
+                            items: { 
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'integer', description: 'Skill ID' },
+                                    name: { type: 'string', description: 'Skill name' }
+                                },
+                                required: ['id', 'name']
+                            }, 
+                            example: [{ id: 1, name: 'test' }, { id: 3, name: 'test1' }], 
+                            description: 'Array of skill objects that the user is looking for' 
+                        },
                         created_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' },
                         updated_at: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' }
                     }
@@ -889,6 +902,19 @@ const options = {
                             example: 'Software engineer with 5 years of experience in web development.',
                             description: 'User biography (max 1000 characters)',
                             maxLength: 1000
+                        },
+                        looking_skills: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    id: { type: 'integer', description: 'Skill ID' },
+                                    name: { type: 'string', description: 'Skill name' }
+                                },
+                                required: ['id', 'name']
+                            },
+                            example: [{ id: 1, name: 'test' }, { id: 3, name: 'test1' }],
+                            description: 'Array of skill objects that the user is looking for'
                         },
                         addresses: {
                             type: 'array',
@@ -2154,6 +2180,7 @@ const options = {
                                                 dob: '1990-01-01',
                                                 gender: 'Male',
                                                 bio: 'Software engineer with 5+ years of experience in web development',
+                                                looking_skills: [{ id: 1, name: 'JavaScript' }, { id: 3, name: 'React' }, { id: 5, name: 'Node.js' }],
                                                 created_at: '2024-01-01T00:00:00.000Z',
                                                 updated_at: '2024-01-01T00:00:00.000Z'
                                             },
@@ -2313,7 +2340,8 @@ const options = {
                                             email: 'john.smith@example.com',
                                             phone: '+1234567890',
                                             dob: '1990-05-15',
-                                            bio: 'Software engineer with expertise in full-stack development and team leadership.'
+                                            bio: 'Software engineer with expertise in full-stack development and team leadership.',
+                                            looking_skills: [{ id: 1, name: 'JavaScript' }, { id: 3, name: 'React' }, { id: 5, name: 'Node.js' }, { id: 7, name: 'Python' }]
                                         }
                                     },
                                     email_only: {
@@ -2333,6 +2361,12 @@ const options = {
                                         summary: 'Update bio only',
                                         value: {
                                             bio: 'Passionate developer with 8+ years of experience in creating scalable web applications and mentoring teams.'
+                                        }
+                                    },
+                                    looking_skills_only: {
+                                        summary: 'Update looking skills only',
+                                        value: {
+                                            looking_skills: [{ id: 2, name: 'CSS' }, { id: 4, name: 'Vue.js' }, { id: 6, name: 'Express.js' }, { id: 8, name: 'MongoDB' }]
                                         }
                                     },
                                     addresses_only: {

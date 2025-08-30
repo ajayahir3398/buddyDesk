@@ -31,6 +31,12 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    looking_skills: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: [],
+      comment: 'Array of skill IDs that the user is looking for'
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
