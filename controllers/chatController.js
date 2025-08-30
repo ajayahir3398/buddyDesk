@@ -35,20 +35,34 @@ class ChatController {
       if (result.success) {
         res.status(201).json({
           success: true,
-          message: 'Conversation created successfully',
+          message: result.message || 'Conversation created successfully',
           data: result.data
         });
       } else {
+        logger.error('Service returned error:', result.error);
         res.status(400).json({
           success: false,
-          message: result.error
+          message: result.error || 'Failed to create conversation'
         });
       }
     } catch (error) {
-      logger.error('Error in createConversation:', error);
-      res.status(500).json({
+      logger.error('Error in createConversation controller:', error);
+      
+      // Handle specific error types
+      let statusCode = 500;
+      let message = 'Internal server error';
+      
+      if (error.message.includes('Invalid') || error.message.includes('must have exactly')) {
+        statusCode = 400;
+        message = error.message;
+      } else if (error.message.includes('not found')) {
+        statusCode = 404;
+        message = error.message;
+      }
+      
+      res.status(statusCode).json({
         success: false,
-        message: 'Internal server error'
+        message: message
       });
     }
   }

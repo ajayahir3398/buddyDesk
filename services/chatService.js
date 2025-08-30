@@ -61,6 +61,24 @@ class ChatService {
         throw new Error('Private conversations must have exactly 2 members');
       }
 
+      // Validate that creator exists
+      const creator = await db.User.findByPk(createdBy);
+      if (!creator) {
+        throw new Error('Creator user not found');
+      }
+
+      // Validate that all member IDs exist
+      if (memberIds.length > 0) {
+        const existingUsers = await db.User.findAll({
+          where: { id: memberIds },
+          attributes: ['id']
+        });
+        
+        if (existingUsers.length !== memberIds.length) {
+          throw new Error('One or more member IDs are invalid');
+        }
+      }
+
       // Check if private conversation already exists
       if (type === 'private') {
         const existingConversation = await this.findPrivateConversation(createdBy, memberIds[0]);
@@ -115,10 +133,43 @@ class ChatService {
       };
     } catch (error) {
       await transaction.rollback();
-      logger.error('Error creating conversation:', error);
+      logger.error('Error creating conversation:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        data: data
+      });
+      
+      // Provide user-friendly error messages
+      let userMessage = 'Failed to create conversation';
+      
+      if (error.name === 'SequelizeValidationError') {
+        userMessage = `Invalid data: ${error.errors?.map(e => e.message).join(', ') || 'Validation failed'}`;
+      } else if (error.name === 'SequelizeForeignKeyConstraintError') {
+        userMessage = 'One or more member IDs are invalid';
+      } else if (error.name === 'SequelizeUniqueConstraintError') {
+        userMessage = 'Conversation with these members already exists';
+      } else if (error.name === 'SequelizeDatabaseError') {
+        userMessage = 'Database operation failed. Please try again';
+      } else if (error.message.includes('transaction')) {
+        userMessage = 'Database transaction failed. Please try again';
+      } else if (error.message.includes('Invalid conversation type')) {
+        userMessage = error.message;
+      } else if (error.message.includes('Private conversations must have exactly')) {
+        userMessage = error.message;
+      } else if (error.message.includes('Creator user not found')) {
+        userMessage = error.message;
+      } else if (error.message.includes('One or more member IDs are invalid')) {
+        userMessage = error.message;
+      } else {
+        // Log the actual error for debugging but return a generic message
+        logger.error('Unhandled error in createConversation:', error);
+        userMessage = `Failed to create conversation: ${error.message}`;
+      }
+      
       return {
         success: false,
-        error: error.message
+        error: userMessage
       };
     }
   }
@@ -388,7 +439,7 @@ class ChatService {
           }]
         }, {
           model: db.MessageStatus,
-          as: 'messageStatuses',
+          as: 'statuses',
           include: [{
             model: db.User,
             as: 'user',
