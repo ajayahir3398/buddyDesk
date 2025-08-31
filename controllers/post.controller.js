@@ -1,6 +1,7 @@
 const db = require("../models");
 const Post = db.Post;
 const User = db.User;
+const UserProfile = db.UserProfile;
 const Skill = db.Skill;
 const SubSkill = db.SubSkill;
 const PostAttachment = db.PostAttachment;
@@ -17,11 +18,11 @@ const fs = require('fs'); // Added for enhanced file serving
 // Helper function to generate full attachment URLs
 const generateAttachmentUrls = (attachments, baseUrl) => {
   if (!attachments || attachments.length === 0) return [];
-  
+
   return attachments.map(attachment => {
     // Handle both Sequelize instances and plain objects 
     const attachmentData = attachment.toJSON ? attachment.toJSON() : attachment;
-    
+
     return {
       ...attachmentData,
       url: `${baseUrl}/api/posts/files/${attachmentData.file_path}`,
@@ -94,7 +95,7 @@ exports.addPost = async (req, res) => {
       const attachmentPromises = req.files.map(file => {
         // Determine file category based on the file path
         const fileCategory = getFileCategoryFromPath(file.path);
-        
+
         return PostAttachment.create({
           post_id: post.id,
           file_name: file.originalname,
@@ -111,10 +112,10 @@ exports.addPost = async (req, res) => {
         logger.info(`${req.files.length} attachments uploaded for post`, {
           requestId: req.requestId,
           postId: post.id,
-          files: req.files.map(f => ({ 
-            originalname: f.originalname, 
+          files: req.files.map(f => ({
+            originalname: f.originalname,
             category: getFileCategoryFromPath(f.path),
-            size: f.size 
+            size: f.size
           }))
         });
       } catch (attachmentError) {
@@ -226,15 +227,15 @@ exports.getPosts = async (req, res) => {
 
     // Generate full URLs for attachments AFTER all Sequelize processing
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    
+
     // Convert to plain objects and add URLs
     const postsWithUrls = posts.map(post => {
       const postData = post.toJSON ? post.toJSON() : post;
-      
+
       if (postData.attachments && postData.attachments.length > 0) {
         postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
       }
-      
+
       return postData;
     });
 
@@ -272,9 +273,9 @@ exports.getMatchingPosts = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
-    const { 
-      status, 
-      medium, 
+    const {
+      status,
+      medium,
       min_match_score,
       match_skills,
       match_sub_skills,
@@ -529,15 +530,15 @@ exports.getMatchingPosts = async (req, res) => {
 
     // Generate full URLs for attachments AFTER all Sequelize processing
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    
+
     // Convert to plain objects and add URLs
     const postsWithUrls = filteredPosts.map(post => {
       const postData = post.toJSON ? post.toJSON() : post;
-      
+
       if (postData.attachments && postData.attachments.length > 0) {
         postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
       }
-      
+
       return postData;
     });
 
@@ -631,10 +632,10 @@ exports.getPostById = async (req, res) => {
 
     // Generate full URLs for attachments AFTER all Sequelize processing
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    
+
     // Convert to plain object and add URLs
     const postWithUrls = post.toJSON ? post.toJSON() : post;
-    
+
     if (postWithUrls.attachments && postWithUrls.attachments.length > 0) {
       postWithUrls.attachments = generateAttachmentUrls(postWithUrls.attachments, baseUrl);
     }
@@ -759,10 +760,10 @@ exports.updatePost = async (req, res) => {
 
     // Generate full URLs for attachments AFTER all Sequelize processing
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    
+
     // Convert to plain object and add URLs
     const postWithUrls = updatedPost.toJSON ? updatedPost.toJSON() : updatedPost;
-    
+
     if (postWithUrls.attachments && postWithUrls.attachments.length > 0) {
       postWithUrls.attachments = generateAttachmentUrls(postWithUrls.attachments, baseUrl);
     }
@@ -818,7 +819,7 @@ exports.addAttachment = async (req, res) => {
     const attachmentPromises = req.files.map(file => {
       // Determine file category based on the file path
       const fileCategory = getFileCategoryFromPath(file.path);
-      
+
       return PostAttachment.create({
         post_id: post.id,
         file_name: file.originalname,
@@ -835,10 +836,10 @@ exports.addAttachment = async (req, res) => {
     logger.info(`${req.files.length} attachments added to post`, {
       requestId: req.requestId,
       postId: post.id,
-      files: req.files.map(f => ({ 
-        originalname: f.originalname, 
+      files: req.files.map(f => ({
+        originalname: f.originalname,
         category: getFileCategoryFromPath(f.path),
-        size: f.size 
+        size: f.size
       }))
     });
 
@@ -993,7 +994,7 @@ exports.deleteAttachment = async (req, res) => {
 exports.serveFileByCategory = async (req, res) => {
   try {
     const { category, filename } = req.params;
-    
+
     // Ensure user is authenticated
     // if (!req.user || !req.user.id) {
     //   return res.status(401).json({
@@ -1001,7 +1002,7 @@ exports.serveFileByCategory = async (req, res) => {
     //     message: 'Authentication required'
     //   });
     // }
-    
+
     // const user_id = req.user.id;
 
     // Validate category
@@ -1015,7 +1016,7 @@ exports.serveFileByCategory = async (req, res) => {
 
     // Security: prevent directory traversal by using only the filename
     const safeFilename = path.basename(filename);
-    
+
     // Find the attachment to verify access permissions
     const attachment = await PostAttachment.findOne({
       where: {
@@ -1046,7 +1047,7 @@ exports.serveFileByCategory = async (req, res) => {
 
     // Construct full file path
     const filePath = path.join(__dirname, '..', 'uploads', category, safeFilename);
-    
+
     // Validate file access (security check)
     if (!validateFileAccess(filePath)) {
       return res.status(404).json({
@@ -1067,26 +1068,26 @@ exports.serveFileByCategory = async (req, res) => {
     const mimeType = attachment.mime_type || 'application/octet-stream';
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${attachment.file_name}"`);
-    
+
     // Add cache headers for better performance
     res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
-    
+
     // Handle audio files with Range support for streaming
     if (category === 'audio' && mimeType.startsWith('audio/')) {
       const stat = fs.statSync(filePath);
       const range = req.headers.range;
-      
+
       if (range) {
         const parts = range.replace(/bytes=/, '').split('-');
         const start = parseInt(parts[0], 10);
         const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
         const chunkSize = end - start + 1;
-        
+
         res.status(206);
         res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
         res.setHeader('Accept-Ranges', 'bytes');
         res.setHeader('Content-Length', chunkSize);
-        
+
         const stream = fs.createReadStream(filePath, { start, end });
         stream.pipe(res);
       } else {
@@ -1200,17 +1201,109 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
 
     // Generate full URLs for attachments AFTER all Sequelize processing
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    
+
     // Convert to plain objects and add URLs
-    const postsWithUrls = posts.map(post => {
-      const postData = post.toJSON ? post.toJSON() : post;
-      
-      if (postData.attachments && postData.attachments.length > 0) {
-        postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
-      }
-      
-      return postData;
+    // const postsWithUrls = []
+    // posts.forEach(async (post) => {
+    //   const postData = post.toJSON ? post.toJSON() : post;
+
+    //   if (postData.attachments && postData.attachments.length > 0) {
+    //     postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
+    //   }
+
+    //   const skills = await UserProfile.findOne({
+    //     where: {
+    //       user_id: postData.user_id
+    //     },
+    //     attributes: ['looking_skills']
+    //   })
+
+    //   const posts = await Post.findAll({
+    //     where: {
+    //       id: postData.user_id
+    //     },
+    //     attributes: ['id', 'title', 'user_id', 'required_skill_id']
+    //   })
+    //   if (posts.length > 0) {
+    //     const myPost = []
+    //     posts.forEach((post) => {
+    //       if (skills.looking_skills.find(skill => skill.id == post.required_skill_id)) {
+    //         postData['inExchangeSkillPost'] = post
+    //         myPost.push(postData);
+    //       }
+    //     })
+    //     if(myPost.length > 0) {
+    //       postsWithUrls = [...postsWithUrls, ...myPost]
+    //     } else {
+    //       postsWithUrls.push(postData);
+    //     }
+    //   } else {
+    //     postsWithUrls.push(postData);
+    //   }
+
+    // });
+
+    // Optimize: Extract unique user IDs for batch queries
+    const uniqueUserIds = [...new Set(posts.map(post => post.user_id))];
+    
+    // Batch fetch user profiles and posts to avoid N+1 queries
+    const [userProfiles, userPosts] = await Promise.all([
+      UserProfile.findAll({
+        where: {
+          user_id: { [Op.in]: uniqueUserIds }
+        },
+        attributes: ['user_id', 'looking_skills']
+      }),
+      Post.findAll({
+        where: {
+          user_id: { [Op.in]: uniqueUserIds }
+        },
+        attributes: ['id', 'title', 'user_id', 'required_skill_id']
+      })
+    ]);
+
+    // Create lookup maps for O(1) access
+    const profileMap = new Map();
+    userProfiles.forEach(profile => {
+      profileMap.set(profile.user_id, profile.looking_skills || []);
     });
+
+    const userPostsMap = new Map();
+    userPosts.forEach(post => {
+      if (!userPostsMap.has(post.user_id)) {
+        userPostsMap.set(post.user_id, []);
+      }
+      userPostsMap.get(post.user_id).push(post);
+    });
+
+    // Process posts efficiently using Promise.all
+    const postsWithUrls = await Promise.all(
+      posts.map(async (post) => {
+        const postData = post.toJSON ? post.toJSON() : post;
+
+        // Generate attachment URLs
+        if (postData.attachments && postData.attachments.length > 0) {
+          postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
+        }
+
+        // Get user skills from lookup map
+        const userSkills = profileMap.get(postData.user_id) || [];
+        const userPostsList = userPostsMap.get(postData.user_id) || [];
+
+        // Find matching exchange skill post
+        if (userPostsList.length > 0 && userSkills.length > 0) {
+          const matchingPost = userPostsList.find(userPost => 
+            userSkills.some(skill => skill.id == userPost.required_skill_id)
+          );
+          
+          if (matchingPost) {
+            postData.inExchangeSkillPost = matchingPost;
+          }
+        }
+
+        return postData;
+      })
+    );
 
     res.status(200).json({
       success: true,

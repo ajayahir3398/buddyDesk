@@ -570,6 +570,17 @@ const options = {
                             },
                             description: 'Post attachments',
                             example: []
+                        },
+                        inExchangeSkillPost: {
+                            type: 'object',
+                            properties: {
+                                id: { type: 'integer', example: 15, description: 'Exchange post ID' },
+                                title: { type: 'string', example: 'Web Development Services', description: 'Exchange post title' },
+                                user_id: { type: 'integer', example: 17, description: 'Exchange post user ID' },
+                                required_skill_id: { type: 'integer', example: 2, description: 'Exchange post required skill ID' }
+                            },
+                            description: 'Matching exchange skill post from the same user (if available)',
+                            nullable: true
                         }
                     }
                 },
@@ -3671,7 +3682,7 @@ const options = {
                     ],
                     responses: {
                         '200': {
-                            description: 'Posts retrieved successfully',
+                            description: 'Posts retrieved successfully with optimized exchange skill matching',
                             content: {
                                 'application/json': {
                                     schema: {
@@ -3703,6 +3714,65 @@ const options = {
                                                     itemsPerPage: { type: 'integer', example: 10 }
                                                 }
                                             }
+                                        }
+                                    },
+                                    example: {
+                                        success: true,
+                                        message: "Posts retrieved successfully for pincode 361004",
+                                        data: [
+                                            {
+                                                id: 22,
+                                                user_id: 17,
+                                                title: "Need React Development Help",
+                                                description: "Looking for React developer for project collaboration",
+                                                required_skill_id: 1,
+                                                required_sub_skill_id: 2,
+                                                medium: "online",
+                                                status: "active",
+                                                deadline: "2025-09-02",
+                                                created_at: "2025-08-29T19:51:00.310Z",
+                                                updated_at: "2025-08-29T19:51:00.315Z",
+                                                user: {
+                                                    id: 17,
+                                                    name: "Ajay B",
+                                                    email: "bandhiyaajay3398@gmail.com",
+                                                    tempAddresses: [
+                                                        {
+                                                            pincode: "361004",
+                                                            selected_area: "Udyognagar",
+                                                            city: "Gujarat",
+                                                            state: null
+                                                        }
+                                                    ]
+                                                },
+                                                requiredSkill: {
+                                                    id: 1,
+                                                    name: "Academic Help"
+                                                },
+                                                requiredSubSkill: {
+                                                    id: 2,
+                                                    name: "College Project Guidance"
+                                                },
+                                                attachments: [],
+                                                inExchangeSkillPost: {
+                                                    id: 15,
+                                                    title: "Web Development Services",
+                                                    user_id: 17,
+                                                    required_skill_id: 2
+                                                }
+                                            }
+                                        ],
+                                        tempAddress: {
+                                            pincode: "361004",
+                                            selected_area: "Udyognagar",
+                                            city: "Gujarat",
+                                            state: null
+                                        },
+                                        pagination: {
+                                            currentPage: 1,
+                                            totalPages: 1,
+                                            totalItems: 4,
+                                            itemsPerPage: 10
                                         }
                                     }
                                 }
