@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
         action: {
             type: DataTypes.ENUM(
                 'VERIFICATION_INITIATED',
+                'ZIP_EXTRACTED',
                 'XML_PARSED',
                 'DATA_DECRYPTED',
                 'SIGNATURE_VERIFIED',

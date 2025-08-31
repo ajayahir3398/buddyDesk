@@ -9,10 +9,10 @@ class AadhaarController {
     }
 
     /**
-     * Verify Aadhaar XML file (offline eKYC)
+     * Verify Aadhaar ZIP file (offline eKYC)
      * All Swagger documentation is defined in config/swagger.config.js
      */
-    async verifyXML(req, res) {
+    async verifyZIP(req, res) {
         try {
             // Check validation errors
             const errors = validationResult(req);
@@ -25,18 +25,28 @@ class AadhaarController {
                 });
             }
 
-            const { xmlData, shareCode } = req.body;
-            const userId = req.user.userId;
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    requestId: req.requestId,
+                    message: 'ZIP file is required'
+                });
+            }
+
+            const { shareCode } = req.body;
+            const zipFileBuffer = req.file.buffer;
+            const userId = req.user.id;
             const ipAddress = req.ip;
             const userAgent = req.get('User-Agent');
 
-            logger.info(`XML verification requested by user: ${userId}`, { 
+            logger.info(`ZIP verification requested by user: ${userId}`, { 
                 requestId: req.requestId,
-                userId 
+                userId,
+                fileSize: zipFileBuffer.length
             });
 
-            const result = await this.verificationService.verifyAadhaarXML(
-                xmlData, 
+            const result = await this.verificationService.verifyAadhaarZIP(
+                zipFileBuffer, 
                 shareCode, 
                 userId, 
                 ipAddress, 
@@ -45,7 +55,7 @@ class AadhaarController {
 
             const statusCode = result.success ? 200 : 400;
             
-            logger.info(`XML verification completed for user: ${userId}`, {
+            logger.info(`ZIP verification completed for user: ${userId}`, {
                 requestId: req.requestId,
                 userId,
                 success: result.success,
@@ -58,7 +68,7 @@ class AadhaarController {
             });
 
         } catch (error) {
-            logger.error('XML verification controller error:', {
+            logger.error('ZIP verification controller error:', {
                 error: error.message,
                 stack: error.stack,
                 requestId: req.requestId,
@@ -100,7 +110,7 @@ class AadhaarController {
             }
 
             const qrImageBuffer = req.file.buffer;
-            const userId = req.user.userId;
+            const userId = req.user.id;
             const ipAddress = req.ip;
             const userAgent = req.get('User-Agent');
 
@@ -166,7 +176,7 @@ class AadhaarController {
             }
 
             const { aadhaarNumber } = req.body;
-            const userId = req.user.userId;
+            const userId = req.user.id;
             const ipAddress = req.ip;
             const userAgent = req.get('User-Agent');
 
@@ -219,7 +229,7 @@ class AadhaarController {
      */
     async getVerificationHistory(req, res) {
         try {
-            const userId = req.user.userId;
+            const userId = req.user.id;
             const limit = parseInt(req.query.limit) || 10;
             const offset = parseInt(req.query.offset) || 0;
 
@@ -284,7 +294,7 @@ class AadhaarController {
     async getVerificationDetails(req, res) {
         try {
             const { verificationId } = req.params;
-            const userId = req.user.userId;
+            const userId = req.user.id;
 
             logger.info(`Verification details requested by user: ${userId}`, { 
                 requestId: req.requestId,

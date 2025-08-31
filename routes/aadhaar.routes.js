@@ -6,11 +6,13 @@ const router = express.Router();
 const { authenticateToken } = require('../middlewares/auth');
 const {
     validateXMLVerification,
+    validateZIPVerification,
     validateQRVerification,
     validateAadhaarNumber,
     validateVerificationHistory,
     validateVerificationId,
     validateQRImageFile,
+    validateZIPFile,
     validateVerificationRateLimit,
     sanitizeRequest,
     validateContentSecurity
@@ -19,8 +21,8 @@ const {
 // Import controller
 const aadhaarController = require('../controllers/aadhaar.controller');
 
-// Configure multer for QR image uploads
-const upload = multer({
+// Configure multer for QR image uploads and ZIP file uploads
+const qrUpload = multer({
     storage: multer.memoryStorage(),
     limits: {
         fileSize: 5 * 1024 * 1024, // 5MB limit
@@ -45,6 +47,29 @@ const upload = multer({
     }
 });
 
+// Configure multer for ZIP file uploads
+const zipUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB limit for ZIP files
+        files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        // Check file type for ZIP files
+        const allowedMimeTypes = [
+            'application/zip',
+            'application/x-zip-compressed',
+            'application/octet-stream'
+        ];
+        
+        if (allowedMimeTypes.includes(file.mimetype) || file.originalname.endsWith('.zip')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only ZIP files are allowed.'), false);
+        }
+    }
+});
+
 // All Swagger documentation for Aadhaar verification APIs is defined in config/swagger.config.js
 
 // Apply common middlewares to all routes
@@ -53,13 +78,16 @@ router.use(sanitizeRequest); // Sanitize sensitive data for logging
 router.use(validateVerificationRateLimit); // Rate limiting
 
 /**
- * POST /api/aadhaar/verify-xml
- * Verify Aadhaar XML file (offline eKYC)
+ * POST /api/aadhaar/verify-zip
+ * Verify Aadhaar ZIP file (offline eKYC)
  */
-router.post('/verify-xml',
+router.post('/verify-zip',
+    authenticateToken,
+    zipUpload.single('zipFile'),
+    validateZIPFile,
     validateContentSecurity,
-    validateXMLVerification,
-    aadhaarController.verifyXML.bind(aadhaarController)
+    validateZIPVerification,
+    aadhaarController.verifyZIP.bind(aadhaarController)
 );
 
 /**
@@ -67,7 +95,8 @@ router.post('/verify-xml',
  * Verify Aadhaar QR code from image
  */
 router.post('/verify-qr',
-    upload.single('qrImage'),
+    authenticateToken,
+    qrUpload.single('qrImage'),
     validateQRImageFile,
     validateQRVerification,
     aadhaarController.verifyQR.bind(aadhaarController)
@@ -87,6 +116,7 @@ router.post('/validate-number',
  * Get verification history for the authenticated user
  */
 router.get('/verification-history',
+    authenticateToken,
     validateVerificationHistory,
     aadhaarController.getVerificationHistory.bind(aadhaarController)
 );
@@ -96,6 +126,7 @@ router.get('/verification-history',
  * Get details of a specific verification
  */
 router.get('/verification/:verificationId',
+    authenticateToken,
     validateVerificationId,
     aadhaarController.getVerificationDetails.bind(aadhaarController)
 );

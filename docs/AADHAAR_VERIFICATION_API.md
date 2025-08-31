@@ -151,7 +151,7 @@ Authorization: Bearer <your-jwt-token>
     {
       "id": "verification-uuid",
       "verificationId": "verification-uuid",
-      "verificationType": "XML",
+      "verificationType": "ZIP",
       "verificationStatus": "SUCCESS",
       "maskedAadhaarNumber": "XXXX XXXX 1234",
       "signatureValid": true,
@@ -194,7 +194,7 @@ Authorization: Bearer <your-jwt-token>
       {
         "action": "VERIFICATION_INITIATED",
         "status": "SUCCESS",
-        "message": "XML verification started",
+        "message": "ZIP verification started",
         "timestamp": "2024-01-15T10:30:00.000Z"
       }
     ]
@@ -214,8 +214,8 @@ All endpoints return standardized error responses:
   "error": "Detailed error message",
   "errors": [
     {
-      "field": "xmlData",
-      "message": "XML data is required"
+      "field": "zipFile",
+      "message": "ZIP file is required"
     }
   ]
 }
@@ -293,14 +293,11 @@ async function validateNumber() {
 ### cURL Examples
 
 ```bash
-# XML Verification
-curl -X POST http://localhost:3000/api/aadhaar/verify-xml \
+# ZIP Verification
+curl -X POST http://localhost:3000/api/aadhaar/verify-zip \
   -H "Authorization: Bearer your-jwt-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "xmlData": "base64_encoded_xml_data",
-    "shareCode": "1234"
-  }'
+  -F "zipFile=@/path/to/aadhaar-file.zip" \
+  -F "shareCode=1234"
 
 # QR Code Verification
 curl -X POST http://localhost:3000/api/aadhaar/verify-qr \

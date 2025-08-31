@@ -22,6 +22,71 @@ const validateXMLVerification = [
 ];
 
 /**
+ * Validation middleware for Aadhaar ZIP verification
+ */
+const validateZIPVerification = [
+    body('shareCode')
+        .notEmpty()
+        .withMessage('Share code is required')
+        .isNumeric()
+        .withMessage('Share code must contain only numbers')
+        .isLength({ min: 4, max: 4 })
+        .withMessage('Share code must be exactly 4 digits'),
+];
+
+/**
+ * Security validation middleware to check file size and type for ZIP uploads
+ */
+const validateZIPFile = (req, res, next) => {
+    if (!req.file) {
+        return res.status(400).json({
+            success: false,
+            requestId: req.requestId,
+            message: 'ZIP file is required'
+        });
+    }
+
+    // Check file size (max 10MB for ZIP files)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (req.file.size > maxSize) {
+        return res.status(400).json({
+            success: false,
+            requestId: req.requestId,
+            message: 'File size too large. Maximum allowed size is 10MB'
+        });
+    }
+
+    // Check file type
+    const allowedMimeTypes = [
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/octet-stream'
+    ];
+
+    if (!allowedMimeTypes.includes(req.file.mimetype) && !req.file.originalname.endsWith('.zip')) {
+        return res.status(400).json({
+            success: false,
+            requestId: req.requestId,
+            message: 'Invalid file type. Only ZIP files are allowed'
+        });
+    }
+
+    // Check if file has valid ZIP header
+    const buffer = req.file.buffer;
+    const zipHeader = [0x50, 0x4B]; // 'PK' - ZIP file signature
+    
+    if (buffer.length < 2 || buffer[0] !== zipHeader[0] || buffer[1] !== zipHeader[1]) {
+        return res.status(400).json({
+            success: false,
+            requestId: req.requestId,
+            message: 'Invalid ZIP file format'
+        });
+    }
+
+    next();
+};
+
+/**
  * Validation middleware for QR code verification
  */
 const validateQRVerification = [
@@ -229,11 +294,13 @@ const validateContentSecurity = (req, res, next) => {
 
 module.exports = {
     validateXMLVerification,
+    validateZIPVerification,
     validateQRVerification,
     validateAadhaarNumber,
     validateVerificationHistory,
     validateVerificationId,
     validateQRImageFile,
+    validateZIPFile,
     validateVerificationRateLimit,
     sanitizeRequest,
     validateContentSecurity

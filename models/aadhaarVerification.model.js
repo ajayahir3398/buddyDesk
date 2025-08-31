@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
         verification_type: {
-            type: DataTypes.ENUM('XML', 'QR', 'NUMBER'),
+            type: DataTypes.ENUM('ZIP', 'QR', 'NUMBER'),
             allowNull: false
         },
         verification_status: {

@@ -1130,14 +1130,15 @@ const options = {
                     }
                 },
                 // Aadhaar Verification Schemas
-                AadhaarXMLVerificationRequest: {
+                AadhaarZIPVerificationRequest: {
                     type: 'object',
-                    required: ['xmlData', 'shareCode'],
+                    required: ['zipFile', 'shareCode'],
                     properties: {
-                        xmlData: {
+                        zipFile: {
                             type: 'string',
-                            description: 'Base64 encoded XML data from Aadhaar',
-                            example: 'UDdGa1pT...base64_encoded_xml_data'
+                            format: 'binary',
+                            description: 'ZIP file containing Aadhaar XML and certificate files',
+                            example: 'ZIP file upload'
                         },
                         shareCode: {
                             type: 'string',
@@ -3987,18 +3988,18 @@ const options = {
                 }
             },
             // Aadhaar Verification APIs
-            '/aadhaar/verify-xml': {
+            '/aadhaar/verify-zip': {
                 post: {
-                    summary: 'Verify Aadhaar XML file (offline eKYC)',
-                    description: 'Verifies offline eKYC XML files with share code decryption',
+                    summary: 'Verify Aadhaar ZIP file (offline eKYC)',
+                    description: 'Verifies offline eKYC ZIP files containing XML and certificate files with share code decryption',
                     tags: ['Aadhaar Verification'],
                     security: [{ bearerAuth: [] }],
                     requestBody: {
                         required: true,
                         content: {
-                            'application/json': {
+                            'multipart/form-data': {
                                 schema: {
-                                    $ref: '#/components/schemas/AadhaarXMLVerificationRequest'
+                                    $ref: '#/components/schemas/AadhaarZIPVerificationRequest'
                                 }
                             }
                         }
