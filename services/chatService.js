@@ -241,11 +241,30 @@ class ChatService {
    */
   async getUserConversations(userId) {
     try {
+      // First, get conversation IDs where user is a member
+      const userConversations = await db.ConversationMember.findAll({
+        where: { 
+          user_id: userId,
+          left_at: null // Only active memberships
+        },
+        attributes: ['conversation_id']
+      });
+
+      const conversationIds = userConversations.map(cm => cm.conversation_id);
+      
+      if (conversationIds.length === 0) {
+        return [];
+      }
+
+      // Then get full conversation details with ALL members
       const conversations = await db.Conversation.findAll({
+        where: {
+          id: { [Op.in]: conversationIds }
+        },
         include: [{
           model: db.ConversationMember,
           as: 'members',
-          where: { user_id: userId },
+          where: { left_at: null }, // Only active members
           include: [{
             model: db.User,
             as: 'user',
