@@ -274,7 +274,33 @@ class ChatService {
         order: [['last_message_at', 'DESC']]
       });
 
-      return conversations;
+      // Get last message for each conversation
+      const conversationsWithLastMessage = await Promise.all(
+        conversations.map(async (conversation) => {
+          const lastMessage = await db.Message.findOne({
+            where: { conversation_id: conversation.id },
+            include: [{
+              model: db.User,
+              as: 'sender',
+              attributes: ['id', 'name']
+            }],
+            order: [['created_at', 'DESC']]
+          });
+
+          return {
+             ...conversation.toJSON(),
+             lastMessage: lastMessage ? {
+               id: lastMessage.id,
+               content: this.decryptMessage(lastMessage.content),
+               message_type: lastMessage.message_type,
+               created_at: lastMessage.created_at,
+               sender: lastMessage.sender
+             } : null
+           };
+        })
+      );
+
+      return conversationsWithLastMessage;
     } catch (error) {
       logger.error('Error getting user conversations:', error);
       return [];
