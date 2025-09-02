@@ -18,7 +18,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request ID middleware (must be first)
 app.use(requestIdMiddleware);
-
 app.use(cors());
 
 // Serve static files from uploads directory
