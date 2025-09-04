@@ -31,6 +31,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    image_path: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Relative path for user profile image'
+    },
     looking_skills: {
       type: DataTypes.JSON,
       allowNull: true,

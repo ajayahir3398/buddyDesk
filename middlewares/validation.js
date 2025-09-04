@@ -289,6 +289,24 @@ const validateNotEmpty = (fieldName, fieldDisplayName) => {
 const validateProfileUpdate = [
   // Validate at least one field is provided
   validateAtLeastOneField,
+
+  // Profile image validation (optional)
+  body('profile_image')
+    .optional()
+    .custom((value, { req }) => {
+      // If there's a file uploaded, validate it
+      if (req.file) {
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg', 'image/webp'];
+        if (!allowedMimeTypes.includes(req.file.mimetype)) {
+          throw new Error('Profile image must be a valid image file (JPEG, PNG, GIF, WebP)');
+        }
+        // Check file size (25MB limit)
+        if (req.file.size > 25 * 1024 * 1024) {
+          throw new Error('Profile image must be less than 25MB');
+        }
+      }
+      return true;
+    }),
   
   // Name validation (optional but not empty if provided)
   validateNotEmpty('name', 'Name'),

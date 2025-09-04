@@ -90,6 +90,9 @@ const uploadSingle = upload.single('attachment');
 // Middleware for handling multiple files upload
 const uploadMultiple = upload.array('attachments', 10);
 
+// Middleware for handling profile image upload
+const uploadProfileImage = upload.single('profile_image');
+
 // Enhanced error handling middleware for multer
 const handleUploadError = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
@@ -155,7 +158,9 @@ const getFileUrl = (filePath) => {
     // Extract the relative path from uploads directory
     const relativePath = path.relative(uploadsDir, filePath);
     // Ensure forward slashes for web URLs (cross-platform compatibility)
-    return relativePath.replace(/\\/g, '/');
+    const normalizedPath = relativePath.replace(/\\/g, '/');
+    // Return full URL path that matches the static file serving route
+    return `/uploads/${normalizedPath}`;
   } catch (error) {
     logger.error('Error generating file URL', { filePath, error: error.message });
     return null;
@@ -186,6 +191,7 @@ const validateFileAccess = (filePath) => {
 module.exports = {
   uploadSingle,
   uploadMultiple,
+  uploadProfileImage,
   handleUploadError,
   deleteFile,
   getFileUrl,

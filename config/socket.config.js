@@ -12,7 +12,7 @@ const chatService = require('../services/chatService');
 function initializeSocket(server) {
   const io = socketIo(server, {
     cors: {
-      origin: process.env.NODE_ENV === 'production' 
+      origin: process.env.NODE_ENV === 'production'
         ? process.env.CORS_ORIGIN_PRODUCTION?.split(',') || []
         : process.env.CORS_ORIGIN_DEVELOPMENT?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
       methods: ['GET', 'POST'],
@@ -27,14 +27,14 @@ function initializeSocket(server) {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-      
+
       if (!token) {
         return next(new Error('Authentication token required'));
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await db.User.findByPk(decoded.userId);
-      
+
       if (!user) {
         return next(new Error('User not found'));
       }
@@ -52,13 +52,13 @@ function initializeSocket(server) {
   io.on('connection', async (socket) => {
     try {
       logger.info(`User connected: ${socket.user.name} (ID: ${socket.userId})`);
-      
+
       // Update user online status
       await db.User.update(
-        { 
-          is_online: true, 
+        {
+          is_online: true,
           last_seen: new Date(),
-          socket_id: socket.id 
+          socket_id: socket.id
         },
         { where: { id: socket.userId } }
       );
@@ -71,7 +71,7 @@ function initializeSocket(server) {
 
       // Emit user online status to contacts
       socket.broadcast.emit('user_online', {
-        userId: socket.userId,
+        userId: socket.user.id,
         name: socket.user.name,
         timestamp: new Date()
       });
@@ -80,7 +80,7 @@ function initializeSocket(server) {
       socket.on('join_conversation', async (data) => {
         try {
           const { conversationId } = data;
-          
+
           // Verify user is member of conversation
           const isMember = await chatService.isConversationMember(conversationId, socket.userId);
           if (!isMember) {
@@ -121,7 +121,7 @@ function initializeSocket(server) {
           if (result.success) {
             // Emit message to all conversation members
             io.to(`conversation_${data.conversationId}`).emit('new_message', result.data);
-            
+
             // Send push notifications to offline users
             await chatService.sendNotificationsForMessage(result.data);
           } else {
@@ -137,9 +137,9 @@ function initializeSocket(server) {
       socket.on('typing_start', async (data) => {
         try {
           const { conversationId } = data;
-          
+
           await chatService.updateTypingStatus(conversationId, socket.userId, true);
-          
+
           socket.to(`conversation_${conversationId}`).emit('user_typing', {
             userId: socket.userId,
             userName: socket.user.name,
@@ -154,9 +154,9 @@ function initializeSocket(server) {
       socket.on('typing_stop', async (data) => {
         try {
           const { conversationId } = data;
-          
+
           await chatService.updateTypingStatus(conversationId, socket.userId, false);
-          
+
           socket.to(`conversation_${conversationId}`).emit('user_typing', {
             userId: socket.userId,
             userName: socket.user.name,
@@ -172,9 +172,9 @@ function initializeSocket(server) {
       socket.on('mark_message_read', async (data) => {
         try {
           const { messageId, conversationId } = data;
-          
+
           await chatService.markMessageAsRead(messageId, socket.userId);
-          
+
           socket.to(`conversation_${conversationId}`).emit('message_read', {
             messageId,
             userId: socket.userId,
@@ -199,14 +199,14 @@ function initializeSocket(server) {
           if (result.success) {
             // Join creator to the new conversation
             socket.join(`conversation_${result.data.id}`);
-            
+
             // Notify other members
             result.data.members.forEach(member => {
               if (member.user_id !== socket.userId) {
                 io.to(`user_${member.user_id}`).emit('conversation_created', result.data);
               }
             });
-            
+
             socket.emit('conversation_created', result.data);
           } else {
             socket.emit('error', { message: result.error });
@@ -221,13 +221,13 @@ function initializeSocket(server) {
       socket.on('disconnect', async () => {
         try {
           logger.info(`User disconnected: ${socket.user.name} (ID: ${socket.userId})`);
-          
+
           // Update user offline status
           await db.User.update(
-            { 
-              is_online: false, 
+            {
+              is_online: false,
               last_seen: new Date(),
-              socket_id: null 
+              socket_id: null
             },
             { where: { id: socket.userId } }
           );
@@ -237,7 +237,7 @@ function initializeSocket(server) {
 
           // Emit user offline status
           socket.broadcast.emit('user_offline', {
-            userId: socket.userId,
+            userId: socket.user.id,
             name: socket.user.name,
             lastSeen: new Date()
           });

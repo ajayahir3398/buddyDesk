@@ -291,7 +291,7 @@ exports.getProfile = async (req, res) => {
         {
           model: UserProfile,
           as: 'profile',
-          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'looking_skills', 'created_at', 'updated_at']
+          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'image_path', 'looking_skills', 'created_at', 'updated_at']
         },
         {
           model: WorkProfile,
@@ -364,14 +364,18 @@ exports.getProfile = async (req, res) => {
       });
     }
 
-    // Transform the data for better response structure
+    // Generate full URL for profile image if it exists
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
     const profileData = {
       id: user.id,
       name: user.name,
       email: user.email,
       created_at: user.created_at,
       updated_at: user.updated_at,
-      profile: user.profile || null,
+      profile: user.profile ? {
+        ...user.profile.toJSON(),
+        image_url: user.profile.image_path ? `${baseUrl}/uploads/${user.profile.image_path}` : null
+      } : null,
       work_profiles: user.workProfiles || [],
       addresses: user.addresses || [],
       temp_addresses: user.tempAddresses || [],
@@ -412,7 +416,7 @@ exports.getProfileById = async (req, res) => {
         {
           model: UserProfile,
           as: 'profile',
-          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'looking_skills', 'created_at', 'updated_at']
+          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'image_path', 'looking_skills', 'created_at', 'updated_at']
         },
         {
           model: WorkProfile,
@@ -485,13 +489,18 @@ exports.getProfileById = async (req, res) => {
       });
     }
 
+    // Generate full URL for profile image if it exists
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
     const profileData = {
       id: user.id,
       name: user.name,
       email: user.email,
       created_at: user.created_at,
       updated_at: user.updated_at,
-      profile: user.profile || null,
+      profile: user.profile ? {
+        ...user.profile.toJSON(),
+        image_url: user.profile.image_path ? `${baseUrl}/uploads/${user.profile.image_path}` : null
+      } : null,
       work_profiles: user.workProfiles || [],
       addresses: user.addresses || [],
       temp_addresses: user.tempAddresses || [],
@@ -538,6 +547,15 @@ exports.updateProfile = async (req, res) => {
 
     if (name !== undefined) fieldsToUpdate.name = name;
     if (email !== undefined) fieldsToUpdate.email = email;
+
+    // Handle uploaded profile image
+    if (req.file) {
+      const path = require('path');
+      const uploadsDir = path.join(__dirname, '../uploads');
+      // Store relative path from uploads directory
+      const relativePath = path.relative(uploadsDir, req.file.path);
+      profileFieldsToUpdate.image_path = relativePath.replace(/\\/g, '/');
+    }
     if (phone !== undefined) profileFieldsToUpdate.phone = phone;
     if (dob !== undefined) profileFieldsToUpdate.dob = dob || null;
     if (bio !== undefined) profileFieldsToUpdate.bio = bio;
@@ -655,7 +673,7 @@ exports.updateProfile = async (req, res) => {
     // --- FETCH UPDATED DATA ---
     const updatedUser = await User.findByPk(userId, {
       include: [
-        { model: UserProfile, as: 'profile', attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'looking_skills', 'created_at', 'updated_at'] },
+        { model: UserProfile, as: 'profile', attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'image_path', 'looking_skills', 'created_at', 'updated_at'] },
         {
           model: WorkProfile, as: 'workProfiles',
           attributes: ['id', 'company_name', 'designation', 'start_date', 'end_date', 'created_at', 'updated_at'],
@@ -677,6 +695,8 @@ exports.updateProfile = async (req, res) => {
       order: [[{ model: WorkProfile, as: 'workProfiles' }, 'start_date', 'DESC']]
     });
 
+    // Generate full URL for profile image if it exists
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
     return res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
@@ -686,7 +706,10 @@ exports.updateProfile = async (req, res) => {
         email: updatedUser.email,
         created_at: updatedUser.created_at,
         updated_at: updatedUser.updated_at,
-        profile: updatedUser.profile || null,
+        profile: updatedUser.profile ? {
+          ...updatedUser.profile.toJSON(),
+          image_url: updatedUser.profile.image_path ? `${baseUrl}/uploads/${updatedUser.profile.image_path}` : null
+        } : null,
         work_profiles: updatedUser.workProfiles || [],
         addresses: updatedUser.addresses || [],
         temp_addresses: updatedUser.tempAddresses || []
@@ -714,7 +737,7 @@ exports.getPublicProfile = async (req, res) => {
         {
           model: UserProfile,
           as: 'profile',
-          attributes: ['gender'] // Only gender from personal profile for privacy
+          attributes: ['gender', 'image_path'] // Only gender and image_path from personal profile for privacy
         },
         {
           model: WorkProfile,
@@ -733,13 +756,16 @@ exports.getPublicProfile = async (req, res) => {
       });
     }
 
+    // Generate full URL for profile image if it exists
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
     // Transform the data for public profile
     const publicProfileData = {
       id: user.id,
       name: user.name,
       member_since: user.created_at,
       profile: {
-        gender: user.profile?.gender || null
+        gender: user.profile?.gender || null,
+        image_url: user.profile?.image_path ? `${baseUrl}/uploads/${user.profile.image_path}` : null
       },
       work_experience: user.workProfiles.map(work => ({
         company_name: work.company_name,
