@@ -4769,6 +4769,17 @@ const options = {
                 example: 1,
               },
             },
+            {
+              name: "skill_match",
+              in: "query",
+              description: "Enable skill matching filter. If true, posts are filtered by user's looking_skills. If false, uses only current zip code filtering.",
+              required: false,
+              schema: {
+                type: "string",
+                enum: ["true", "false"],
+                example: "true",
+              },
+            },
           ],
           responses: {
             200: {

@@ -9,25 +9,30 @@ const WorkProfile = db.WorkProfile;
 const UserSkill = db.UserSkill;
 const Address = db.Address;
 const TempAddress = db.TempAddress;
-const logger = require('../utils/logger');
-const { deleteFile, getFileUrl, getFileCategoryFromPath, validateFileAccess } = require('../middlewares/upload');
-const path = require('path');
-const { Op } = require('sequelize');
-const fs = require('fs'); // Added for enhanced file serving
+const logger = require("../utils/logger");
+const {
+  deleteFile,
+  getFileUrl,
+  getFileCategoryFromPath,
+  validateFileAccess,
+} = require("../middlewares/upload");
+const path = require("path");
+const { Op } = require("sequelize");
+const fs = require("fs"); // Added for enhanced file serving
 
 // Helper function to generate full attachment URLs
 const generateAttachmentUrls = (attachments, baseUrl) => {
   if (!attachments || attachments.length === 0) return [];
 
-  return attachments.map(attachment => {
-    // Handle both Sequelize instances and plain objects 
+  return attachments.map((attachment) => {
+    // Handle both Sequelize instances and plain objects
     const attachmentData = attachment.toJSON ? attachment.toJSON() : attachment;
 
     return {
       ...attachmentData,
       url: `${baseUrl}/api/posts/files/${attachmentData.file_path}`,
       // Keep original file_path for backward compatibility
-      file_path: attachmentData.file_path
+      file_path: attachmentData.file_path,
     };
   });
 };
@@ -41,7 +46,7 @@ exports.addPost = async (req, res) => {
       required_skill_id,
       required_sub_skill_id,
       medium,
-      deadline
+      deadline,
     } = req.body;
 
     // Get user ID from authenticated token
@@ -52,7 +57,7 @@ exports.addPost = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
@@ -62,7 +67,7 @@ exports.addPost = async (req, res) => {
       if (!skill) {
         return res.status(400).json({
           success: false,
-          message: "Invalid skill ID provided"
+          message: "Invalid skill ID provided",
         });
       }
     }
@@ -73,7 +78,7 @@ exports.addPost = async (req, res) => {
       if (!subSkill) {
         return res.status(400).json({
           success: false,
-          message: "Invalid sub-skill ID provided"
+          message: "Invalid sub-skill ID provided",
         });
       }
     }
@@ -85,14 +90,14 @@ exports.addPost = async (req, res) => {
       description,
       required_skill_id: required_skill_id || null,
       required_sub_skill_id: required_sub_skill_id || null,
-      medium: medium || 'online',
+      medium: medium || "online",
       deadline: deadline || null,
-      status: 'active'
+      status: "active",
     });
 
     // Handle file attachments if uploaded
     if (req.files && req.files.length > 0) {
-      const attachmentPromises = req.files.map(file => {
+      const attachmentPromises = req.files.map((file) => {
         // Determine file category based on the file path
         const fileCategory = getFileCategoryFromPath(file.path);
 
@@ -103,7 +108,7 @@ exports.addPost = async (req, res) => {
           file_category: fileCategory,
           mime_type: file.mimetype,
           size: file.size,
-          uploaded_at: new Date()
+          uploaded_at: new Date(),
         });
       });
 
@@ -112,18 +117,18 @@ exports.addPost = async (req, res) => {
         logger.info(`${req.files.length} attachments uploaded for post`, {
           requestId: req.requestId,
           postId: post.id,
-          files: req.files.map(f => ({
+          files: req.files.map((f) => ({
             originalname: f.originalname,
             category: getFileCategoryFromPath(f.path),
-            size: f.size
-          }))
+            size: f.size,
+          })),
         });
       } catch (attachmentError) {
         // If attachment creation fails, delete uploaded files
-        req.files.forEach(file => {
+        req.files.forEach((file) => {
           deleteFile(file.path);
         });
-        throw new Error('Failed to save file attachments');
+        throw new Error("Failed to save file attachments");
       }
     }
 
@@ -132,51 +137,58 @@ exports.addPost = async (req, res) => {
       include: [
         {
           model: User,
-          as: 'user',
-          attributes: ['id', 'name', 'email']
+          as: "user",
+          attributes: ["id", "name", "email"],
         },
         {
           model: Skill,
-          as: 'requiredSkill',
-          attributes: ['id', 'name']
+          as: "requiredSkill",
+          attributes: ["id", "name"],
         },
         {
           model: SubSkill,
-          as: 'requiredSubSkill',
-          attributes: ['id', 'name']
+          as: "requiredSubSkill",
+          attributes: ["id", "name"],
         },
         {
           model: PostAttachment,
-          as: 'attachments',
-          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
-          order: [['uploaded_at', 'ASC']]
-        }
-      ]
+          as: "attachments",
+          attributes: [
+            "id",
+            "file_name",
+            "file_path",
+            "file_category",
+            "mime_type",
+            "size",
+            "uploaded_at",
+          ],
+          order: [["uploaded_at", "ASC"]],
+        },
+      ],
     });
 
     logger.info(`Post created successfully`, {
       requestId: req.requestId,
       userId: user_id,
-      postId: post.id
+      postId: post.id,
     });
 
     res.status(201).json({
       success: true,
       message: "Post created successfully",
-      data: createdPost
+      data: createdPost,
     });
-
   } catch (error) {
-    logger.error('Error creating post', {
+    logger.error("Error creating post", {
       requestId: req.requestId,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -200,40 +212,51 @@ exports.getPosts = async (req, res) => {
       include: [
         {
           model: User,
-          as: 'user',
-          attributes: ['id', 'name', 'email']
+          as: "user",
+          attributes: ["id", "name", "email"],
         },
         {
           model: Skill,
-          as: 'requiredSkill',
-          attributes: ['id', 'name']
+          as: "requiredSkill",
+          attributes: ["id", "name"],
         },
         {
           model: SubSkill,
-          as: 'requiredSubSkill',
-          attributes: ['id', 'name']
+          as: "requiredSubSkill",
+          attributes: ["id", "name"],
         },
         {
           model: PostAttachment,
-          as: 'attachments',
-          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
-          order: [['uploaded_at', 'ASC']]
-        }
+          as: "attachments",
+          attributes: [
+            "id",
+            "file_name",
+            "file_path",
+            "file_category",
+            "mime_type",
+            "size",
+            "uploaded_at",
+          ],
+          order: [["uploaded_at", "ASC"]],
+        },
       ],
-      order: [['created_at', 'DESC']],
+      order: [["created_at", "DESC"]],
       limit,
-      offset
+      offset,
     });
 
     // Generate full URLs for attachments AFTER all Sequelize processing
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
 
     // Convert to plain objects and add URLs
-    const postsWithUrls = posts.map(post => {
+    const postsWithUrls = posts.map((post) => {
       const postData = post.toJSON ? post.toJSON() : post;
 
       if (postData.attachments && postData.attachments.length > 0) {
-        postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
+        postData.attachments = generateAttachmentUrls(
+          postData.attachments,
+          baseUrl
+        );
       }
 
       return postData;
@@ -247,21 +270,20 @@ exports.getPosts = async (req, res) => {
         currentPage: page,
         totalPages: Math.ceil(count / limit),
         totalItems: count,
-        itemsPerPage: limit
-      }
+        itemsPerPage: limit,
+      },
     });
-
   } catch (error) {
-    logger.error('Error retrieving posts', {
+    logger.error("Error retrieving posts", {
       requestId: req.requestId,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -279,19 +301,23 @@ exports.getMatchingPosts = async (req, res) => {
       min_match_score,
       match_skills,
       match_sub_skills,
-      match_location
+      match_location,
     } = req.query;
 
     // Parse matching criteria from query params (default: all true if none specified)
-    const shouldMatchSkills = match_skills !== undefined ? match_skills === 'true' : true;
-    const shouldMatchSubSkills = match_sub_skills !== undefined ? match_sub_skills === 'true' : true;
-    const shouldMatchLocation = match_location !== undefined ? match_location === 'true' : true;
+    const shouldMatchSkills =
+      match_skills !== undefined ? match_skills === "true" : true;
+    const shouldMatchSubSkills =
+      match_sub_skills !== undefined ? match_sub_skills === "true" : true;
+    const shouldMatchLocation =
+      match_location !== undefined ? match_location === "true" : true;
 
     // Validate that at least one matching criterion is enabled
     if (!shouldMatchSkills && !shouldMatchSubSkills && !shouldMatchLocation) {
       return res.status(400).json({
         success: false,
-        message: "At least one matching criterion must be enabled (skills, sub_skills, or location)"
+        message:
+          "At least one matching criterion must be enabled (skills, sub_skills, or location)",
       });
     }
 
@@ -299,13 +325,15 @@ exports.getMatchingPosts = async (req, res) => {
     let userSkills = [];
     if (shouldMatchSkills || shouldMatchSubSkills) {
       userSkills = await UserSkill.findAll({
-        include: [{
-          model: WorkProfile,
-          as: 'workProfile',
-          where: { user_id },
-          attributes: []
-        }],
-        attributes: ['skill_id', 'sub_skill_id']
+        include: [
+          {
+            model: WorkProfile,
+            as: "workProfile",
+            where: { user_id },
+            attributes: [],
+          },
+        ],
+        attributes: ["skill_id", "sub_skill_id"],
       });
     }
 
@@ -314,7 +342,7 @@ exports.getMatchingPosts = async (req, res) => {
     if (shouldMatchLocation) {
       userAddresses = await Address.findAll({
         where: { user_id },
-        attributes: ['zip_code']
+        attributes: ["zip_code"],
       });
     }
 
@@ -333,26 +361,36 @@ exports.getMatchingPosts = async (req, res) => {
     if (missingCriteria.length > 0) {
       return res.status(200).json({
         success: true,
-        message: `No matching posts found - please complete your profile with: ${missingCriteria.join(', ')}`,
+        message: `No matching posts found - please complete your profile with: ${missingCriteria.join(
+          ", "
+        )}`,
         data: [],
         pagination: {
           currentPage: page,
           totalPages: 0,
           totalItems: 0,
-          itemsPerPage: limit
+          itemsPerPage: limit,
         },
         enabledCriteria: {
           skills: shouldMatchSkills,
           subSkills: shouldMatchSubSkills,
-          location: shouldMatchLocation
-        }
+          location: shouldMatchLocation,
+        },
       });
     }
 
     // Extract skill IDs and sub-skill IDs
-    const userSkillIds = [...new Set(userSkills.map(us => us.skill_id))];
-    const userSubSkillIds = [...new Set(userSkills.map(us => us.sub_skill_id).filter(id => id !== null))];
-    const userZipCodes = [...new Set(userAddresses.map(addr => addr.zip_code).filter(zip => zip !== null))];
+    const userSkillIds = [...new Set(userSkills.map((us) => us.skill_id))];
+    const userSubSkillIds = [
+      ...new Set(
+        userSkills.map((us) => us.sub_skill_id).filter((id) => id !== null)
+      ),
+    ];
+    const userZipCodes = [
+      ...new Set(
+        userAddresses.map((addr) => addr.zip_code).filter((zip) => zip !== null)
+      ),
+    ];
 
     // Build matching conditions based on enabled criteria
     const matchingConditions = [];
@@ -361,8 +399,8 @@ exports.getMatchingPosts = async (req, res) => {
     if (shouldMatchSkills && userSkillIds.length > 0) {
       matchingConditions.push({
         required_skill_id: {
-          [Op.in]: userSkillIds
-        }
+          [Op.in]: userSkillIds,
+        },
       });
     }
 
@@ -370,48 +408,53 @@ exports.getMatchingPosts = async (req, res) => {
     if (shouldMatchSubSkills && userSubSkillIds.length > 0) {
       matchingConditions.push({
         required_sub_skill_id: {
-          [Op.in]: userSubSkillIds
-        }
+          [Op.in]: userSubSkillIds,
+        },
       });
     }
 
     // Location matching (only if enabled and user has zip codes)
     if (shouldMatchLocation && userZipCodes.length > 0) {
       matchingConditions.push({
-        '$user.addresses.zip_code$': {
-          [Op.in]: userZipCodes
-        }
+        "$user.addresses.zip_code$": {
+          [Op.in]: userZipCodes,
+        },
       });
     }
 
     if (matchingConditions.length === 0) {
       const enabledButMissingData = [];
-      if (shouldMatchSkills && userSkillIds.length === 0) enabledButMissingData.push("skills");
-      if (shouldMatchSubSkills && userSubSkillIds.length === 0) enabledButMissingData.push("sub-skills");
-      if (shouldMatchLocation && userZipCodes.length === 0) enabledButMissingData.push("location data");
+      if (shouldMatchSkills && userSkillIds.length === 0)
+        enabledButMissingData.push("skills");
+      if (shouldMatchSubSkills && userSubSkillIds.length === 0)
+        enabledButMissingData.push("sub-skills");
+      if (shouldMatchLocation && userZipCodes.length === 0)
+        enabledButMissingData.push("location data");
 
       return res.status(200).json({
         success: true,
-        message: `No matching criteria available. Missing data for enabled criteria: ${enabledButMissingData.join(', ')}`,
+        message: `No matching criteria available. Missing data for enabled criteria: ${enabledButMissingData.join(
+          ", "
+        )}`,
         data: [],
         pagination: {
           currentPage: page,
           totalPages: 0,
           totalItems: 0,
-          itemsPerPage: limit
+          itemsPerPage: limit,
         },
         enabledCriteria: {
           skills: shouldMatchSkills,
           subSkills: shouldMatchSubSkills,
-          location: shouldMatchLocation
-        }
+          location: shouldMatchLocation,
+        },
       });
     }
 
     // Build where clause for additional filters
     const additionalFilters = {
       user_id: { [Op.ne]: user_id }, // Exclude user's own posts
-      status: status || 'active' // Default to active posts
+      status: status || "active", // Default to active posts
     };
 
     if (medium) additionalFilters.medium = medium;
@@ -422,56 +465,68 @@ exports.getMatchingPosts = async (req, res) => {
         [Op.and]: [
           additionalFilters,
           {
-            [Op.or]: matchingConditions
-          }
-        ]
+            [Op.or]: matchingConditions,
+          },
+        ],
       },
       include: [
         {
           model: User,
-          as: 'user',
-          attributes: ['id', 'name', 'email'],
-          include: [{
-            model: Address,
-            as: 'addresses',
-            attributes: ['zip_code', 'city', 'state'],
-            required: false
-          }]
+          as: "user",
+          attributes: ["id", "name", "email"],
+          include: [
+            {
+              model: Address,
+              as: "addresses",
+              attributes: ["zip_code", "city", "state"],
+              required: false,
+            },
+          ],
         },
         {
           model: Skill,
-          as: 'requiredSkill',
-          attributes: ['id', 'name']
+          as: "requiredSkill",
+          attributes: ["id", "name"],
         },
         {
           model: SubSkill,
-          as: 'requiredSubSkill',
-          attributes: ['id', 'name']
+          as: "requiredSubSkill",
+          attributes: ["id", "name"],
         },
         {
           model: PostAttachment,
-          as: 'attachments',
+          as: "attachments",
           where: { is_deleted: false },
-          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
-          order: [['uploaded_at', 'ASC']],
-          required: false
-        }
+          attributes: [
+            "id",
+            "file_name",
+            "file_path",
+            "file_category",
+            "mime_type",
+            "size",
+            "uploaded_at",
+          ],
+          order: [["uploaded_at", "ASC"]],
+          required: false,
+        },
       ],
-      order: [['created_at', 'DESC']],
+      order: [["created_at", "DESC"]],
       limit,
       offset,
-      distinct: true
+      distinct: true,
     });
 
     // Calculate match scores for each post based on enabled criteria
-    const postsWithMatchScore = posts.map(post => {
+    const postsWithMatchScore = posts.map((post) => {
       let matchScore = 0;
       let maxScore = 0;
       const reasons = {};
 
       // Skill match scoring (only if enabled)
       if (shouldMatchSkills) {
-        const skillMatches = post.required_skill_id && userSkillIds.includes(post.required_skill_id);
+        const skillMatches =
+          post.required_skill_id &&
+          userSkillIds.includes(post.required_skill_id);
         if (skillMatches) {
           matchScore += 3;
         }
@@ -481,7 +536,9 @@ exports.getMatchingPosts = async (req, res) => {
 
       // Sub-skill match scoring (only if enabled)
       if (shouldMatchSubSkills) {
-        const subSkillMatches = post.required_sub_skill_id && userSubSkillIds.includes(post.required_sub_skill_id);
+        const subSkillMatches =
+          post.required_sub_skill_id &&
+          userSubSkillIds.includes(post.required_sub_skill_id);
         if (subSkillMatches) {
           matchScore += 2;
         }
@@ -491,8 +548,11 @@ exports.getMatchingPosts = async (req, res) => {
 
       // Location match scoring (only if enabled)
       if (shouldMatchLocation) {
-        const postUserZipCodes = post.user.addresses?.map(addr => addr.zip_code) || [];
-        const hasLocationMatch = postUserZipCodes.some(zip => userZipCodes.includes(zip));
+        const postUserZipCodes =
+          post.user.addresses?.map((addr) => addr.zip_code) || [];
+        const hasLocationMatch = postUserZipCodes.some((zip) =>
+          userZipCodes.includes(zip)
+        );
         if (hasLocationMatch) {
           matchScore += 1;
         }
@@ -500,7 +560,8 @@ exports.getMatchingPosts = async (req, res) => {
         reasons.locationMatch = hasLocationMatch;
       }
 
-      const matchPercentage = maxScore > 0 ? Math.round((matchScore / maxScore) * 100) : 0;
+      const matchPercentage =
+        maxScore > 0 ? Math.round((matchScore / maxScore) * 100) : 0;
 
       return {
         ...post.toJSON(),
@@ -512,9 +573,9 @@ exports.getMatchingPosts = async (req, res) => {
           enabledCriteria: {
             skills: shouldMatchSkills,
             subSkills: shouldMatchSubSkills,
-            location: shouldMatchLocation
-          }
-        }
+            location: shouldMatchLocation,
+          },
+        },
       };
     });
 
@@ -522,35 +583,48 @@ exports.getMatchingPosts = async (req, res) => {
     let filteredPosts = postsWithMatchScore;
     if (min_match_score) {
       const minScore = parseInt(min_match_score);
-      filteredPosts = postsWithMatchScore.filter(post => post.matchScore.percentage >= minScore);
+      filteredPosts = postsWithMatchScore.filter(
+        (post) => post.matchScore.percentage >= minScore
+      );
     }
 
     // Sort by match score (highest first)
-    filteredPosts.sort((a, b) => b.matchScore.percentage - a.matchScore.percentage);
+    filteredPosts.sort(
+      (a, b) => b.matchScore.percentage - a.matchScore.percentage
+    );
 
     // Generate full URLs for attachments AFTER all Sequelize processing
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
 
     // Convert to plain objects and add URLs
-    const postsWithUrls = filteredPosts.map(post => {
+    const postsWithUrls = filteredPosts.map((post) => {
       const postData = post.toJSON ? post.toJSON() : post;
 
       if (postData.attachments && postData.attachments.length > 0) {
-        postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
+        postData.attachments = generateAttachmentUrls(
+          postData.attachments,
+          baseUrl
+        );
       }
 
       return postData;
     });
 
-    logger.info('Matching posts retrieved', {
+    logger.info("Matching posts retrieved", {
       requestId: req.requestId,
       userId: user_id,
       totalPosts: count,
       filteredCount: filteredPosts.length,
-      enabledCriteria: { skills: shouldMatchSkills, subSkills: shouldMatchSubSkills, location: shouldMatchLocation },
-      userSkillIds: shouldMatchSkills ? userSkillIds.length : 'disabled',
-      userSubSkillIds: shouldMatchSubSkills ? userSubSkillIds.length : 'disabled',
-      userZipCodes: shouldMatchLocation ? userZipCodes.length : 'disabled'
+      enabledCriteria: {
+        skills: shouldMatchSkills,
+        subSkills: shouldMatchSubSkills,
+        location: shouldMatchLocation,
+      },
+      userSkillIds: shouldMatchSkills ? userSkillIds.length : "disabled",
+      userSubSkillIds: shouldMatchSubSkills
+        ? userSubSkillIds.length
+        : "disabled",
+      userZipCodes: shouldMatchLocation ? userZipCodes.length : "disabled",
     });
 
     res.status(200).json({
@@ -561,33 +635,32 @@ exports.getMatchingPosts = async (req, res) => {
         currentPage: page,
         totalPages: Math.ceil(count / limit),
         totalItems: count,
-        itemsPerPage: limit
+        itemsPerPage: limit,
       },
       matchingCriteria: {
         enabled: {
           skills: shouldMatchSkills,
           subSkills: shouldMatchSubSkills,
-          location: shouldMatchLocation
+          location: shouldMatchLocation,
         },
         userDataCounts: {
           skills: shouldMatchSkills ? userSkillIds.length : null,
           subSkills: shouldMatchSubSkills ? userSubSkillIds.length : null,
-          locations: shouldMatchLocation ? userZipCodes.length : null
-        }
-      }
+          locations: shouldMatchLocation ? userZipCodes.length : null,
+        },
+      },
     });
-
   } catch (error) {
-    logger.error('Error retrieving matching posts', {
+    logger.error("Error retrieving matching posts", {
       requestId: req.requestId,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -601,62 +674,72 @@ exports.getPostById = async (req, res) => {
       include: [
         {
           model: User,
-          as: 'user',
-          attributes: ['id', 'name', 'email']
+          as: "user",
+          attributes: ["id", "name", "email"],
         },
         {
           model: Skill,
-          as: 'requiredSkill',
-          attributes: ['id', 'name']
+          as: "requiredSkill",
+          attributes: ["id", "name"],
         },
         {
           model: SubSkill,
-          as: 'requiredSubSkill',
-          attributes: ['id', 'name']
+          as: "requiredSubSkill",
+          attributes: ["id", "name"],
         },
         {
           model: PostAttachment,
-          as: 'attachments',
-          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
-          order: [['uploaded_at', 'ASC']]
-        }
-      ]
+          as: "attachments",
+          attributes: [
+            "id",
+            "file_name",
+            "file_path",
+            "file_category",
+            "mime_type",
+            "size",
+            "uploaded_at",
+          ],
+          order: [["uploaded_at", "ASC"]],
+        },
+      ],
     });
 
     if (!post) {
       return res.status(404).json({
         success: false,
-        message: "Post not found"
+        message: "Post not found",
       });
     }
 
     // Generate full URLs for attachments AFTER all Sequelize processing
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
 
     // Convert to plain object and add URLs
     const postWithUrls = post.toJSON ? post.toJSON() : post;
 
     if (postWithUrls.attachments && postWithUrls.attachments.length > 0) {
-      postWithUrls.attachments = generateAttachmentUrls(postWithUrls.attachments, baseUrl);
+      postWithUrls.attachments = generateAttachmentUrls(
+        postWithUrls.attachments,
+        baseUrl
+      );
     }
 
     res.status(200).json({
       success: true,
       message: "Post retrieved successfully",
-      data: postWithUrls
+      data: postWithUrls,
     });
-
   } catch (error) {
-    logger.error('Error retrieving post', {
+    logger.error("Error retrieving post", {
       requestId: req.requestId,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -673,18 +756,18 @@ exports.updatePost = async (req, res) => {
       required_sub_skill_id,
       medium,
       status,
-      deadline
+      deadline,
     } = req.body;
 
     // Find the post and check ownership
     const post = await Post.findOne({
-      where: { id, user_id }
+      where: { id, user_id },
     });
 
     if (!post) {
       return res.status(404).json({
         success: false,
-        message: "Post not found or you don't have permission to update it"
+        message: "Post not found or you don't have permission to update it",
       });
     }
 
@@ -694,7 +777,7 @@ exports.updatePost = async (req, res) => {
       if (!skill) {
         return res.status(400).json({
           success: false,
-          message: "Invalid skill ID provided"
+          message: "Invalid skill ID provided",
         });
       }
     }
@@ -705,7 +788,7 @@ exports.updatePost = async (req, res) => {
       if (!subSkill) {
         return res.status(400).json({
           success: false,
-          message: "Invalid sub-skill ID provided"
+          message: "Invalid sub-skill ID provided",
         });
       }
     }
@@ -714,8 +797,10 @@ exports.updatePost = async (req, res) => {
     const updateData = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
-    if (required_skill_id !== undefined) updateData.required_skill_id = required_skill_id || null;
-    if (required_sub_skill_id !== undefined) updateData.required_sub_skill_id = required_sub_skill_id || null;
+    if (required_skill_id !== undefined)
+      updateData.required_skill_id = required_skill_id || null;
+    if (required_sub_skill_id !== undefined)
+      updateData.required_sub_skill_id = required_sub_skill_id || null;
     if (medium !== undefined) updateData.medium = medium;
     if (status !== undefined) updateData.status = status;
     if (deadline !== undefined) updateData.deadline = deadline || null;
@@ -728,63 +813,75 @@ exports.updatePost = async (req, res) => {
       include: [
         {
           model: User,
-          as: 'user',
-          attributes: ['id', 'name', 'email']
+          as: "user",
+          attributes: ["id", "name", "email"],
         },
         {
           model: Skill,
-          as: 'requiredSkill',
-          attributes: ['id', 'name']
+          as: "requiredSkill",
+          attributes: ["id", "name"],
         },
         {
           model: SubSkill,
-          as: 'requiredSubSkill',
-          attributes: ['id', 'name']
+          as: "requiredSubSkill",
+          attributes: ["id", "name"],
         },
         {
           model: PostAttachment,
-          as: 'attachments',
-          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
-          order: [['uploaded_at', 'ASC']],
-          required: false
-        }
-      ]
+          as: "attachments",
+          attributes: [
+            "id",
+            "file_name",
+            "file_path",
+            "file_category",
+            "mime_type",
+            "size",
+            "uploaded_at",
+          ],
+          order: [["uploaded_at", "ASC"]],
+          required: false,
+        },
+      ],
     });
 
-    logger.info('Post updated successfully', {
+    logger.info("Post updated successfully", {
       requestId: req.requestId,
       userId: user_id,
       postId: post.id,
-      updatedFields: Object.keys(updateData)
+      updatedFields: Object.keys(updateData),
     });
 
     // Generate full URLs for attachments AFTER all Sequelize processing
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
 
     // Convert to plain object and add URLs
-    const postWithUrls = updatedPost.toJSON ? updatedPost.toJSON() : updatedPost;
+    const postWithUrls = updatedPost.toJSON
+      ? updatedPost.toJSON()
+      : updatedPost;
 
     if (postWithUrls.attachments && postWithUrls.attachments.length > 0) {
-      postWithUrls.attachments = generateAttachmentUrls(postWithUrls.attachments, baseUrl);
+      postWithUrls.attachments = generateAttachmentUrls(
+        postWithUrls.attachments,
+        baseUrl
+      );
     }
 
     res.status(200).json({
       success: true,
       message: "Post updated successfully",
-      data: postWithUrls
+      data: postWithUrls,
     });
-
   } catch (error) {
-    logger.error('Error updating post', {
+    logger.error("Error updating post", {
       requestId: req.requestId,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -797,13 +894,13 @@ exports.addAttachment = async (req, res) => {
 
     // Check if post exists and belongs to user
     const post = await Post.findOne({
-      where: { id, user_id }
+      where: { id, user_id },
     });
 
     if (!post) {
       return res.status(404).json({
         success: false,
-        message: "Post not found or you don't have permission to modify it"
+        message: "Post not found or you don't have permission to modify it",
       });
     }
 
@@ -811,12 +908,12 @@ exports.addAttachment = async (req, res) => {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "No files uploaded"
+        message: "No files uploaded",
       });
     }
 
     // Create attachments with file categories
-    const attachmentPromises = req.files.map(file => {
+    const attachmentPromises = req.files.map((file) => {
       // Determine file category based on the file path
       const fileCategory = getFileCategoryFromPath(file.path);
 
@@ -827,7 +924,7 @@ exports.addAttachment = async (req, res) => {
         file_category: fileCategory,
         mime_type: file.mimetype,
         size: file.size,
-        uploaded_at: new Date()
+        uploaded_at: new Date(),
       });
     });
 
@@ -836,37 +933,36 @@ exports.addAttachment = async (req, res) => {
     logger.info(`${req.files.length} attachments added to post`, {
       requestId: req.requestId,
       postId: post.id,
-      files: req.files.map(f => ({
+      files: req.files.map((f) => ({
         originalname: f.originalname,
         category: getFileCategoryFromPath(f.path),
-        size: f.size
-      }))
+        size: f.size,
+      })),
     });
 
     res.status(201).json({
       success: true,
       message: "Attachments uploaded successfully",
-      data: attachments
+      data: attachments,
     });
-
   } catch (error) {
     // Clean up uploaded files if database operation fails
     if (req.files) {
-      req.files.forEach(file => {
+      req.files.forEach((file) => {
         deleteFile(file.path);
       });
     }
 
-    logger.error('Error adding attachments', {
+    logger.error("Error adding attachments", {
       requestId: req.requestId,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -877,54 +973,58 @@ exports.downloadAttachment = async (req, res) => {
     const { attachmentId } = req.params;
 
     const attachment = await PostAttachment.findByPk(attachmentId, {
-      include: [{
-        model: Post,
-        as: 'post'
-      }]
+      include: [
+        {
+          model: Post,
+          as: "post",
+        },
+      ],
     });
 
     if (!attachment) {
       return res.status(404).json({
         success: false,
-        message: "Attachment not found"
+        message: "Attachment not found",
       });
     }
 
     if (attachment.is_deleted) {
       return res.status(404).json({
         success: false,
-        message: "Attachment has been deleted"
+        message: "Attachment has been deleted",
       });
     }
 
-    const filePath = path.join(__dirname, '../', attachment.file_path);
+    const filePath = path.join(__dirname, "../", attachment.file_path);
 
     // Check if file exists
-    if (!require('fs').existsSync(filePath)) {
+    if (!require("fs").existsSync(filePath)) {
       return res.status(404).json({
         success: false,
-        message: "File not found on server"
+        message: "File not found on server",
       });
     }
 
     // Set appropriate headers
-    res.setHeader('Content-Type', attachment.mime_type);
-    res.setHeader('Content-Disposition', `attachment; filename="${attachment.file_name}"`);
+    res.setHeader("Content-Type", attachment.mime_type);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${attachment.file_name}"`
+    );
 
     // Send file
     res.sendFile(filePath);
-
   } catch (error) {
-    logger.error('Error downloading attachment', {
+    logger.error("Error downloading attachment", {
       requestId: req.requestId,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -936,16 +1036,18 @@ exports.deleteAttachment = async (req, res) => {
     const user_id = req.user.id;
 
     const attachment = await PostAttachment.findByPk(attachmentId, {
-      include: [{
-        model: Post,
-        as: 'post'
-      }]
+      include: [
+        {
+          model: Post,
+          as: "post",
+        },
+      ],
     });
 
     if (!attachment) {
       return res.status(404).json({
         success: false,
-        message: "Attachment not found"
+        message: "Attachment not found",
       });
     }
 
@@ -953,7 +1055,7 @@ exports.deleteAttachment = async (req, res) => {
     if (attachment.post.user_id !== user_id) {
       return res.status(403).json({
         success: false,
-        message: "You don't have permission to delete this attachment"
+        message: "You don't have permission to delete this attachment",
       });
     }
 
@@ -961,31 +1063,30 @@ exports.deleteAttachment = async (req, res) => {
     await attachment.update({ is_deleted: true });
 
     // Optionally delete the physical file
-    const filePath = path.join(__dirname, '../', attachment.file_path);
+    const filePath = path.join(__dirname, "../", attachment.file_path);
     deleteFile(filePath);
 
-    logger.info('Attachment deleted', {
+    logger.info("Attachment deleted", {
       requestId: req.requestId,
       attachmentId: attachment.id,
-      postId: attachment.post_id
+      postId: attachment.post_id,
     });
 
     res.status(200).json({
       success: true,
-      message: "Attachment deleted successfully"
+      message: "Attachment deleted successfully",
     });
-
   } catch (error) {
-    logger.error('Error deleting attachment', {
+    logger.error("Error deleting attachment", {
       requestId: req.requestId,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -1006,11 +1107,11 @@ exports.serveFileByCategory = async (req, res) => {
     // const user_id = req.user.id;
 
     // Validate category
-    const validCategories = ['images', 'audio', 'documents', 'posts'];
+    const validCategories = ["images", "audio", "documents", "posts"];
     if (!validCategories.includes(category)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid file category'
+        message: "Invalid file category",
       });
     }
 
@@ -1021,19 +1122,21 @@ exports.serveFileByCategory = async (req, res) => {
     const attachment = await PostAttachment.findOne({
       where: {
         file_path: `${category}/${safeFilename}`,
-        is_deleted: false
+        is_deleted: false,
       },
-      include: [{
-        model: Post,
-        as: 'post',
-        attributes: ['id', 'user_id']
-      }]
+      include: [
+        {
+          model: Post,
+          as: "post",
+          attributes: ["id", "user_id"],
+        },
+      ],
     });
 
     if (!attachment) {
       return res.status(404).json({
         success: false,
-        message: 'File not found'
+        message: "File not found",
       });
     }
 
@@ -1046,13 +1149,19 @@ exports.serveFileByCategory = async (req, res) => {
     // }
 
     // Construct full file path
-    const filePath = path.join(__dirname, '..', 'uploads', category, safeFilename);
+    const filePath = path.join(
+      __dirname,
+      "..",
+      "uploads",
+      category,
+      safeFilename
+    );
 
     // Validate file access (security check)
     if (!validateFileAccess(filePath)) {
       return res.status(404).json({
         success: false,
-        message: 'File not accessible'
+        message: "File not accessible",
       });
     }
 
@@ -1060,39 +1169,42 @@ exports.serveFileByCategory = async (req, res) => {
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({
         success: false,
-        message: 'File not found on disk'
+        message: "File not found on disk",
       });
     }
 
     // Set appropriate headers based on file type
-    const mimeType = attachment.mime_type || 'application/octet-stream';
-    res.setHeader('Content-Type', mimeType);
-    res.setHeader('Content-Disposition', `inline; filename="${attachment.file_name}"`);
+    const mimeType = attachment.mime_type || "application/octet-stream";
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${attachment.file_name}"`
+    );
 
     // Add cache headers for better performance
-    res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
+    res.setHeader("Cache-Control", "public, max-age=3600"); // 1 hour cache
 
     // Handle audio files with Range support for streaming
-    if (category === 'audio' && mimeType.startsWith('audio/')) {
+    if (category === "audio" && mimeType.startsWith("audio/")) {
       const stat = fs.statSync(filePath);
       const range = req.headers.range;
 
       if (range) {
-        const parts = range.replace(/bytes=/, '').split('-');
+        const parts = range.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
         const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
         const chunkSize = end - start + 1;
 
         res.status(206);
-        res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
-        res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Content-Length', chunkSize);
+        res.setHeader("Content-Range", `bytes ${start}-${end}/${stat.size}`);
+        res.setHeader("Accept-Ranges", "bytes");
+        res.setHeader("Content-Length", chunkSize);
 
         const stream = fs.createReadStream(filePath, { start, end });
         stream.pipe(res);
       } else {
-        res.setHeader('Content-Length', stat.size);
-        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader("Content-Length", stat.size);
+        res.setHeader("Accept-Ranges", "bytes");
         const stream = fs.createReadStream(filePath);
         stream.pipe(res);
       }
@@ -1102,24 +1214,23 @@ exports.serveFileByCategory = async (req, res) => {
       stream.pipe(res);
     }
 
-    logger.info('File served successfully', {
+    logger.info("File served successfully", {
       requestId: req.requestId,
       category,
       filename: safeFilename,
-      mimeType
+      mimeType,
     });
-
   } catch (error) {
-    logger.error('Error serving file', {
+    logger.error("Error serving file", {
       requestId: req.requestId,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -1131,145 +1242,182 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
-    const { status, medium, skill_id } = req.query;
+    const { status, medium, skill_id, skill_match } = req.query;
+
+    // Parse skill_match flag (optional parameter)
+    const shouldMatchSkills = skill_match === "true";
 
     // First, get the user's active temporary address
     const tempAddress = await TempAddress.findOne({
       where: {
         user_id: userId,
-        is_active: true
+        is_active: true,
       },
-      order: [['created_at', 'DESC']]
+      order: [["created_at", "DESC"]],
     });
 
     if (!tempAddress) {
       return res.status(404).json({
         success: false,
-        message: "No active temporary address found for user"
+        message: "No active temporary address found for user",
       });
+    }
+
+    // If skill matching is enabled, get user's looking_skills
+    let userLookingSkills = [];
+    if (shouldMatchSkills) {
+      const userProfile = await UserProfile.findOne({
+        where: { user_id: userId },
+        attributes: ["looking_skills"],
+      });
+
+      if (
+        !userProfile ||
+        !userProfile.looking_skills ||
+        userProfile.looking_skills.length === 0
+      ) {
+        return res.status(200).json({
+          success: true,
+          message: "No looking skills found for skill matching",
+          data: [],
+          tempAddress: {
+            pincode: tempAddress.pincode,
+            selected_area: tempAddress.selected_area,
+            city: tempAddress.city,
+            state: tempAddress.state,
+          },
+          pagination: {
+            currentPage: page,
+            totalPages: 0,
+            totalItems: 0,
+            itemsPerPage: limit,
+          },
+        });
+      }
+
+      userLookingSkills = userProfile.looking_skills.map((skill) => skill.id);
     }
 
     // Build where clause for filtering posts
     const where = {
-      user_id: { [Op.ne]: userId } // Exclude posts from the current user
+      user_id: { [Op.ne]: userId }, // Exclude posts from the current user
     };
     if (status) where.status = status;
     if (medium) where.medium = medium;
-    if (skill_id) where.required_skill_id = skill_id;
 
-    const { count, rows: posts } = await Post.findAndCountAll({
+    // Handle skill filtering logic
+    if (shouldMatchSkills && userLookingSkills.length > 0) {
+      // When skill_match=true, use user's looking_skills for filtering
+      where.required_skill_id = { [Op.in]: userLookingSkills };
+    }
+    if (skill_id) {
+      // When skill_match=false or not provided, use skill_id if provided
+      where.required_skill_id = skill_id;
+    }
+
+    // First, get the count with a simpler query to ensure accuracy
+    const count = await Post.count({
       where,
       include: [
         {
           model: User,
-          as: 'user',
-          attributes: ['id', 'name', 'email'],
+          as: "user",
           include: [
             {
               model: TempAddress,
-              as: 'tempAddresses',
+              as: "tempAddresses",
               where: {
                 pincode: tempAddress.pincode,
-                is_active: true
+                is_active: true,
               },
-              attributes: ['pincode', 'selected_area', 'city', 'state'],
-              required: true
-            }
-          ]
+              required: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    // Then get the actual posts with full includes
+    const posts = await Post.findAll({
+      where,
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email"],
+          include: [
+            {
+              model: TempAddress,
+              as: "tempAddresses",
+              where: {
+                pincode: tempAddress.pincode,
+                is_active: true,
+              },
+              attributes: ["pincode", "selected_area", "city", "state"],
+              required: true,
+            },
+          ],
         },
         {
           model: Skill,
-          as: 'requiredSkill',
-          attributes: ['id', 'name']
+          as: "requiredSkill",
+          attributes: ["id", "name"],
         },
         {
           model: SubSkill,
-          as: 'requiredSubSkill',
-          attributes: ['id', 'name']
+          as: "requiredSubSkill",
+          attributes: ["id", "name"],
         },
         {
           model: PostAttachment,
-          as: 'attachments',
-          attributes: ['id', 'file_name', 'file_path', 'file_category', 'mime_type', 'size', 'uploaded_at'],
-          order: [['uploaded_at', 'ASC']]
-        }
+          as: "attachments",
+          attributes: [
+            "id",
+            "file_name",
+            "file_path",
+            "file_category",
+            "mime_type",
+            "size",
+            "uploaded_at",
+          ],
+          order: [["uploaded_at", "ASC"]],
+        },
       ],
-      order: [['created_at', 'DESC']],
+      order: [["created_at", "DESC"]],
       limit,
-      offset
+      offset,
     });
 
     // Generate full URLs for attachments AFTER all Sequelize processing
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-
-    // Convert to plain objects and add URLs
-    // const postsWithUrls = []
-    // posts.forEach(async (post) => {
-    //   const postData = post.toJSON ? post.toJSON() : post;
-
-    //   if (postData.attachments && postData.attachments.length > 0) {
-    //     postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
-    //   }
-
-    //   const skills = await UserProfile.findOne({
-    //     where: {
-    //       user_id: postData.user_id
-    //     },
-    //     attributes: ['looking_skills']
-    //   })
-
-    //   const posts = await Post.findAll({
-    //     where: {
-    //       id: postData.user_id
-    //     },
-    //     attributes: ['id', 'title', 'user_id', 'required_skill_id']
-    //   })
-    //   if (posts.length > 0) {
-    //     const myPost = []
-    //     posts.forEach((post) => {
-    //       if (skills.looking_skills.find(skill => skill.id == post.required_skill_id)) {
-    //         postData['inExchangeSkillPost'] = post
-    //         myPost.push(postData);
-    //       }
-    //     })
-    //     if(myPost.length > 0) {
-    //       postsWithUrls = [...postsWithUrls, ...myPost]
-    //     } else {
-    //       postsWithUrls.push(postData);
-    //     }
-    //   } else {
-    //     postsWithUrls.push(postData);
-    //   }
-
-    // });
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
 
     // Optimize: Extract unique user IDs for batch queries
-    const uniqueUserIds = [...new Set(posts.map(post => post.user_id))];
-    
+    const uniqueUserIds = [...new Set(posts.map((post) => post.user_id))];
+
     // Batch fetch user profiles and posts to avoid N+1 queries
     const [userProfiles, userPosts] = await Promise.all([
       UserProfile.findAll({
         where: {
-          user_id: { [Op.in]: uniqueUserIds }
+          user_id: { [Op.in]: uniqueUserIds },
         },
-        attributes: ['user_id', 'looking_skills']
+        attributes: ["user_id", "looking_skills"],
       }),
       Post.findAll({
         where: {
-          user_id: { [Op.in]: uniqueUserIds }
+          user_id: { [Op.in]: uniqueUserIds },
         },
-        attributes: ['id', 'title', 'user_id', 'required_skill_id']
-      })
+        attributes: ["id", "title", "user_id", "required_skill_id"],
+      }),
     ]);
 
     // Create lookup maps for O(1) access
     const profileMap = new Map();
-    userProfiles.forEach(profile => {
+    userProfiles.forEach((profile) => {
       profileMap.set(profile.user_id, profile.looking_skills || []);
     });
 
     const userPostsMap = new Map();
-    userPosts.forEach(post => {
+    userPosts.forEach((post) => {
       if (!userPostsMap.has(post.user_id)) {
         userPostsMap.set(post.user_id, []);
       }
@@ -1283,7 +1431,10 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
 
         // Generate attachment URLs
         if (postData.attachments && postData.attachments.length > 0) {
-          postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
+          postData.attachments = generateAttachmentUrls(
+            postData.attachments,
+            baseUrl
+          );
         }
 
         // Get user skills from lookup map
@@ -1292,10 +1443,10 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
 
         // Find matching exchange skill post
         if (userPostsList.length > 0 && userSkills.length > 0) {
-          const matchingPost = userPostsList.find(userPost => 
-            userSkills.some(skill => skill.id == userPost.required_skill_id)
+          const matchingPost = userPostsList.find((userPost) =>
+            userSkills.some((skill) => skill.id == userPost.required_skill_id)
           );
-          
+
           if (matchingPost) {
             postData.inExchangeSkillPost = matchingPost;
           }
@@ -1313,28 +1464,27 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
         pincode: tempAddress.pincode,
         selected_area: tempAddress.selected_area,
         city: tempAddress.city,
-        state: tempAddress.state
+        state: tempAddress.state,
       },
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(count / limit),
         totalItems: count,
-        itemsPerPage: limit
-      }
+        itemsPerPage: limit,
+      },
     });
-
   } catch (error) {
-    logger.error('Error retrieving posts by temp address pincode', {
+    logger.error("Error retrieving posts by temp address pincode", {
       requestId: req.requestId,
       userId: req.user?.id,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -1349,5 +1499,5 @@ module.exports = {
   downloadAttachment: exports.downloadAttachment,
   deleteAttachment: exports.deleteAttachment,
   serveFileByCategory: exports.serveFileByCategory,
-  getPostsByTempAddressPincode: exports.getPostsByTempAddressPincode
+  getPostsByTempAddressPincode: exports.getPostsByTempAddressPincode,
 };
