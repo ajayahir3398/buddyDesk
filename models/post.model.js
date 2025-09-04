@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     medium: {
-      type: DataTypes.ENUM('online', 'offline'),
+      type: DataTypes.ENUM('online', 'offline', 'hybrid'),
       defaultValue: 'online'
     },
     status: {
