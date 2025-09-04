@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     conversation_id: {
       type: DataTypes.BIGINT,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'conversations',
         key: 'id'
@@ -35,8 +35,18 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE'
     },
+    post_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'posts',
+        key: 'id'
+      },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
+    },
     type: {
-      type: DataTypes.ENUM('message', 'mention', 'group_invite', 'system'),
+      type: DataTypes.ENUM('message', 'mention', 'group_invite', 'system', 'post'),
       allowNull: false,
       defaultValue: 'message'
     },
@@ -125,6 +135,7 @@ module.exports = (sequelize, DataTypes) => {
     Notification.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
     Notification.belongsTo(models.Message, { foreignKey: 'message_id', as: 'message' });
     Notification.belongsTo(models.Conversation, { foreignKey: 'conversation_id', as: 'conversation' });
+    Notification.belongsTo(models.Post, { foreignKey: 'post_id', as: 'post' });
   };
 
   return Notification;
