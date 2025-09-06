@@ -158,9 +158,7 @@ const getFileUrl = (filePath) => {
     // Extract the relative path from uploads directory
     const relativePath = path.relative(uploadsDir, filePath);
     // Ensure forward slashes for web URLs (cross-platform compatibility)
-    const normalizedPath = relativePath.replace(/\\/g, '/');
-    // Return full URL path that matches the static file serving route
-    return `/uploads/${normalizedPath}`;
+    return relativePath.replace(/\\/g, '/');
   } catch (error) {
     logger.error('Error generating file URL', { filePath, error: error.message });
     return null;

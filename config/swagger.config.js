@@ -6104,12 +6104,12 @@ const options = {
           },
         },
       },
-      "/posts/files/{category}/{filename}": {
+      "/files/{category}/{filename}": {
         get: {
           summary: "Serve file by category and filename",
           description:
-            "Serve uploaded files based on their category (images, audio, documents, posts) and filename. Includes streaming support for audio files and proper security validation.",
-          tags: ["Posts"],
+            "Serve uploaded files based on their category (images, audio, documents, posts) and filename. Includes streaming support for audio files and proper security validation. Works for all file types including post attachments and profile images.",
+          tags: ["Files"],
           security: [{ bearerAuth: [] }],
           parameters: [
             {

@@ -364,8 +364,40 @@ exports.getProfile = async (req, res) => {
       });
     }
 
-    // Generate full URL for profile image if it exists
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Helper function to generate full attachment URLs
+    const generateAttachmentUrls = (attachments, baseUrl) => {
+      if (!attachments || attachments.length === 0) return [];
+
+      return attachments.map((attachment) => {
+        // Handle both Sequelize instances and plain objects
+        const attachmentData = attachment.toJSON ? attachment.toJSON() : attachment;
+
+        return {
+          ...attachmentData,
+          url: `${baseUrl}/api/files/${attachmentData.file_path}`,
+          // Keep original file_path for backward compatibility
+          file_path: attachmentData.file_path,
+        };
+      });
+    };
+
+    // Generate full URLs for attachments AFTER all Sequelize processing
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    // Convert to plain objects and add URLs
+    const postsWithUrls = (user.posts || []).map((post) => {
+      const postData = post.toJSON ? post.toJSON() : post;
+
+      if (postData.attachments && postData.attachments.length > 0) {
+        postData.attachments = generateAttachmentUrls(
+          postData.attachments,
+          baseUrl
+        );
+      }
+
+      return postData;
+    });
+    
     const profileData = {
       id: user.id,
       name: user.name,
@@ -374,12 +406,12 @@ exports.getProfile = async (req, res) => {
       updated_at: user.updated_at,
       profile: user.profile ? {
         ...user.profile.toJSON(),
-        image_url: user.profile.image_path ? `${baseUrl}/uploads/${user.profile.image_path}` : null
+        image_url: user.profile.image_path ? `${baseUrl}/api/files/${user.profile.image_path}` : null
       } : null,
       work_profiles: user.workProfiles || [],
       addresses: user.addresses || [],
       temp_addresses: user.tempAddresses || [],
-      posts: user.posts || []
+      posts: postsWithUrls
     };
 
     res.status(200).json({
@@ -499,7 +531,7 @@ exports.getProfileById = async (req, res) => {
       updated_at: user.updated_at,
       profile: user.profile ? {
         ...user.profile.toJSON(),
-        image_url: user.profile.image_path ? `${baseUrl}/uploads/${user.profile.image_path}` : null
+        image_url: user.profile.image_path ? `${baseUrl}/api/files/${user.profile.image_path}` : null
       } : null,
       work_profiles: user.workProfiles || [],
       addresses: user.addresses || [],
@@ -708,7 +740,7 @@ exports.updateProfile = async (req, res) => {
         updated_at: updatedUser.updated_at,
         profile: updatedUser.profile ? {
           ...updatedUser.profile.toJSON(),
-          image_url: updatedUser.profile.image_path ? `${baseUrl}/uploads/${updatedUser.profile.image_path}` : null
+          image_url: updatedUser.profile.image_path ? `${baseUrl}/api/files/${updatedUser.profile.image_path}` : null
         } : null,
         work_profiles: updatedUser.workProfiles || [],
         addresses: updatedUser.addresses || [],
@@ -765,7 +797,7 @@ exports.getPublicProfile = async (req, res) => {
       member_since: user.created_at,
       profile: {
         gender: user.profile?.gender || null,
-        image_url: user.profile?.image_path ? `${baseUrl}/uploads/${user.profile.image_path}` : null
+        image_url: user.profile?.image_path ? `${baseUrl}/api/files/${user.profile.image_path}` : null
       },
       work_experience: user.workProfiles.map(work => ({
         company_name: work.company_name,

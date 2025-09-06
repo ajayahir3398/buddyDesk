@@ -31,7 +31,7 @@ const generateAttachmentUrls = (attachments, baseUrl) => {
 
     return {
       ...attachmentData,
-      url: `${baseUrl}/api/posts/files/${attachmentData.file_path}`,
+      url: `${baseUrl}/api/files/${attachmentData.file_path}`,
       // Keep original file_path for backward compatibility
       file_path: attachmentData.file_path,
     };
@@ -1146,7 +1146,24 @@ exports.serveFileByCategory = async (req, res) => {
       ],
     });
 
+    // If not found in PostAttachment, check if it's a profile image
+    let profileImage = null;
     if (!attachment) {
+      profileImage = await UserProfile.findOne({
+        where: {
+          image_path: `${category}/${safeFilename}`
+        },
+        include: [
+          {
+            model: User,
+            as: "user",
+            attributes: ["id", "name"]
+          }
+        ]
+      });
+    }
+
+    if (!attachment && !profileImage) {
       return res.status(404).json({
         success: false,
         message: "File not found",
@@ -1187,11 +1204,24 @@ exports.serveFileByCategory = async (req, res) => {
     }
 
     // Set appropriate headers based on file type
-    const mimeType = attachment.mime_type || "application/octet-stream";
+    let mimeType, fileName;
+    if (attachment) {
+      mimeType = attachment.mime_type || "application/octet-stream";
+      fileName = attachment.file_name;
+    } else if (profileImage) {
+      // For profile images, determine mime type from file extension
+      const ext = path.extname(safeFilename).toLowerCase();
+      mimeType = ext === '.png' ? 'image/png' : 
+                 ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 
+                 ext === '.gif' ? 'image/gif' : 
+                 'application/octet-stream';
+      fileName = safeFilename;
+    }
+    
     res.setHeader("Content-Type", mimeType);
     res.setHeader(
       "Content-Disposition",
-      `inline; filename="${attachment.file_name}"`
+      `inline; filename="${fileName}"`
     );
 
     // Add cache headers for better performance
@@ -1232,6 +1262,7 @@ exports.serveFileByCategory = async (req, res) => {
       category,
       filename: safeFilename,
       mimeType,
+      fileType: attachment ? 'post_attachment' : 'profile_image'
     });
   } catch (error) {
     logger.error("Error serving file", {

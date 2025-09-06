@@ -87,6 +87,10 @@ const aadhaarRoutes = require('./routes/aadhaar.routes');
 const healthRoutes = require('./routes/health.js');
 const chatRoutes = require('./routes/chatRoutes');
 const notificationRoutes = require('./routes/notification.routes');
+const postController = require('./controllers/post.controller');
+
+// Generic file serving route for all attachments (posts, profiles, etc.)
+app.get('/api/files/:category/:filename', postController.serveFileByCategory);
 
 app.use('/api/users', userRoutes);
 app.use('/api/skills', skillsRoutes);

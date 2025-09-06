@@ -34,6 +34,7 @@ router.get('/attachments/:attachmentId/download', authenticateToken, postControl
 router.delete('/attachments/:attachmentId', authenticateToken, postController.deleteAttachment);
 
 // New enhanced file serving routes (requires authentication)
-router.get('/files/:category/:filename', postController.serveFileByCategory);
+// Moved to a more generic route - this endpoint now serves all file types
+// router.get('/files/:category/:filename', postController.serveFileByCategory);
 
 module.exports = router;
