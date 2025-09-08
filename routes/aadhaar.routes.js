@@ -91,6 +91,17 @@ router.post('/verify-zip',
 );
 
 /**
+ * POST /api/aadhaar/verify-xml
+ * Verify Aadhaar XML data (offline eKYC)
+ */
+router.post('/verify-xml',
+    authenticateToken,
+    validateXMLVerification,
+    validateContentSecurity,
+    aadhaarController.verifyXML.bind(aadhaarController)
+);
+
+/**
  * POST /api/aadhaar/verify-qr
  * Verify Aadhaar QR code from image
  */
@@ -109,6 +120,15 @@ router.post('/verify-qr',
 router.post('/validate-number',
     validateAadhaarNumber,
     aadhaarController.validateNumber.bind(aadhaarController)
+);
+
+/**
+ * GET /api/aadhaar/verification-status
+ * Get user's Aadhaar verification status
+ */
+router.get('/verification-status',
+    authenticateToken,
+    aadhaarController.getVerificationStatus.bind(aadhaarController)
 );
 
 /**
