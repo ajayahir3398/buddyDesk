@@ -20,6 +20,7 @@ const {
 
 // Import controller
 const aadhaarController = require('../controllers/aadhaar.controller');
+const { validateFileSecurityMiddleware } = require('../middleware/fileSecurityValidation');
 
 // Configure multer for QR image uploads and ZIP file uploads
 const qrUpload = multer({
@@ -84,6 +85,7 @@ router.use(validateVerificationRateLimit); // Rate limiting
 router.post('/verify-zip',
     authenticateToken,
     zipUpload.single('zipFile'),
+    validateFileSecurityMiddleware,
     validateZIPFile,
     validateContentSecurity,
     validateZIPVerification,
@@ -108,6 +110,7 @@ router.post('/verify-xml',
 router.post('/verify-qr',
     authenticateToken,
     qrUpload.single('qrImage'),
+    validateFileSecurityMiddleware,
     validateQRImageFile,
     validateQRVerification,
     aadhaarController.verifyQR.bind(aadhaarController)
