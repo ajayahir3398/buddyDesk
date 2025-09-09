@@ -56,6 +56,14 @@ const validateUserRegistration = [
     .matches(patterns.password)
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   
+  body('referred_by_code')
+    .optional()
+    .trim()
+    .isLength({ min: 6, max: 6 })
+    .withMessage('Referral code must be 6 characters long')
+    .isAlphanumeric()
+    .withMessage('Referral code can only contain letters and numbers'),
+
   handleValidationErrors
 ];
 

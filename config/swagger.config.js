@@ -83,6 +83,18 @@ const options = {
               example: "john.doe@example.com",
               description: "User email address",
             },
+            referral_code: {
+              type: "string",
+              example: "ABCDEF",
+              description: "Unique referral code for the user",
+              maxLength: 255,
+            },
+            referred_by: {
+              type: "string",
+              example: "GHIJKL",
+              description: "Referral code of the user who referred this user",
+              maxLength: 255,
+            },
             created_at: {
               type: "string",
               format: "date-time",
@@ -118,6 +130,12 @@ const options = {
               minLength: 8,
               maxLength: 128,
             },
+            referral_code: {
+              type: "string",
+              example: "REF123",
+              description: "Optional referral code",
+              nullable: true
+            }
           },
         },
         UserLogin: {
@@ -1400,6 +1418,18 @@ const options = {
               example: "john.doe@example.com",
               description: "User email address",
             },
+            referral_code: {
+              type: "string",
+              example: "ABC123",
+              description: "User's referral code",
+              nullable: true
+            },
+            referred_by: {
+              type: "string", 
+              example: "XYZ789",
+              description: "Referral code of referring user",
+              nullable: true
+            },
             created_at: {
               type: "string",
               format: "date-time",
@@ -2217,6 +2247,7 @@ const options = {
                       name: "John Doe",
                       email: "john.doe@example.com",
                       password: "TestPass123!",
+                      referral_code: "REF123",
                     },
                   },
                   invalid_name: {

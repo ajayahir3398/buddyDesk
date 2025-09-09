@@ -4,6 +4,7 @@ const db = require("../models");
 const User = db.User;
 const SessionLog = db.SessionLog;
 const TokenBlacklist = db.TokenBlacklist; // Added TokenBlacklist import
+const ReferralLog = db.ReferralLog; // Added ReferralLog import
 const UserProfile = db.UserProfile; // Added UserProfile import
 const WorkProfile = db.WorkProfile; // Added WorkProfile import
 const UserSkill = db.UserSkill; // Added UserSkill import
@@ -43,7 +44,18 @@ const generateRefreshToken = (user) => {
 // Register a new user
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, referred_by_code } = req.body; // Added referred_by_code
+
+    // Generate a unique referral code for the new user
+    let referralCode;
+    let isUnique = false;
+    while (!isUnique) {
+      referralCode = Math.random().toString(36).substring(2, 8).toUpperCase(); // Simple 6-char alphanumeric code
+      const existingReferralUser = await User.findOne({ where: { referral_code: referralCode } });
+      if (!existingReferralUser) {
+        isUnique = true;
+      }
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
@@ -63,8 +75,23 @@ exports.register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
+      referral_code: referralCode, // Store the generated referral code
+      referred_by: referred_by_code, // Store the referral code of who invited them
       created_at: new Date()
     });
+
+    // Log referral if referred_by_code is present
+    if (referred_by_code) {
+      const referrer = await User.findOne({ where: { referral_code: referred_by_code } });
+      if (referrer) {
+        await ReferralLog.create({
+          referrer_id: referrer.id,
+          referee_id: user.id,
+          status: 'signed_up',
+          created_at: new Date()
+        });
+      }
+    }
 
     res.status(201).json({
       success: true,

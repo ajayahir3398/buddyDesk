@@ -18,6 +18,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    referral_code: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: true
+    },
+    referred_by: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     is_online: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

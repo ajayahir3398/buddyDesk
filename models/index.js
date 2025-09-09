@@ -52,6 +52,7 @@ db.Message = require("./message.model")(sequelize, Sequelize.DataTypes);
 db.MessageStatus = require("./messageStatus.model")(sequelize, Sequelize.DataTypes);
 db.TypingStatus = require("./typingStatus.model")(sequelize, Sequelize.DataTypes);
 db.Notification = require("./notification.model")(sequelize, Sequelize.DataTypes);
+db.ReferralLog = require("./referralLog.model")(sequelize, Sequelize.DataTypes);
 
 // Set up associations
 Object.keys(db).forEach(modelName => {
