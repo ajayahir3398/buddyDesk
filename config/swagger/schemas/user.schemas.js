@@ -18,11 +18,45 @@ module.exports = {
         example: "john.doe@example.com",
         description: "User email address",
       },
+      referral_code: {
+        type: "string",
+        example: "ABCDEF",
+        description: "Unique referral code for the user",
+        maxLength: 255,
+      },
+      referred_by: {
+        type: "string",
+        example: "GHIJKL",
+        description: "Referral code of the user who referred this user",
+        maxLength: 255,
+      },
+      is_online: {
+        type: "boolean",
+        example: false,
+        description: "Whether the user is currently online",
+      },
+      last_seen: {
+        type: "string",
+        format: "date-time",
+        example: "2024-01-01T12:00:00.000Z",
+        description: "Last time the user was active",
+      },
+      socket_id: {
+        type: "string",
+        example: "socket_123456",
+        description: "Current socket connection ID",
+      },
       created_at: {
         type: "string",
         format: "date-time",
         example: "2024-01-01T00:00:00.000Z",
         description: "User creation timestamp",
+      },
+      updated_at: {
+        type: "string",
+        format: "date-time",
+        example: "2024-01-01T00:00:00.000Z",
+        description: "User last update timestamp",
       },
     },
   },
@@ -53,6 +87,12 @@ module.exports = {
         minLength: 8,
         maxLength: 128,
       },
+      referral_code: {
+        type: "string",
+        example: "REF123",
+        description: "Optional referral code",
+        nullable: true
+      }
     },
   },
   UserLogin: {

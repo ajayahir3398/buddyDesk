@@ -23,6 +23,7 @@ module.exports = {
                   name: "John Doe",
                   email: "john.doe@example.com",
                   password: "TestPass123!",
+                  referral_code: "REF123",
                 },
               },
               invalid_name: {

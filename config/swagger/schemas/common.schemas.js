@@ -171,6 +171,81 @@ module.exports = {
       },
     },
   },
+  TempAddress: {
+    type: "object",
+    properties: {
+      id: {
+        type: "integer",
+        example: 1,
+        description: "Temporary address ID",
+      },
+      user_id: {
+        type: "integer",
+        example: 1,
+        description: "User ID who owns this temporary address",
+      },
+      location_data: {
+        type: "string",
+        example: "Near Central Park, New York",
+        description: "Location description or coordinates",
+      },
+      pincode: {
+        type: "string",
+        example: "10001",
+        description: "6-digit postal code",
+        pattern: "^[0-9]{6}$",
+      },
+      selected_area: {
+        type: "string",
+        example: "Manhattan",
+        description: "Selected area or neighborhood",
+      },
+      location_permission: {
+        type: "boolean",
+        example: true,
+        description: "Whether location permission is granted",
+      },
+      city: {
+        type: "string",
+        example: "New York",
+        description: "City name",
+      },
+      state: {
+        type: "string",
+        example: "NY",
+        description: "State or province",
+      },
+      country: {
+        type: "string",
+        example: "India",
+        description: "Country name",
+        default: "India",
+      },
+      is_active: {
+        type: "boolean",
+        example: true,
+        description: "Whether this temporary address is currently active",
+      },
+      expires_at: {
+        type: "string",
+        format: "date-time",
+        example: "2024-12-31T23:59:59.000Z",
+        description: "Expiration date for this temporary address",
+      },
+      created_at: {
+        type: "string",
+        format: "date-time",
+        example: "2024-01-01T00:00:00.000Z",
+        description: "Temporary address creation timestamp",
+      },
+      updated_at: {
+        type: "string",
+        format: "date-time",
+        example: "2024-01-01T00:00:00.000Z",
+        description: "Temporary address update timestamp",
+      },
+    },
+  },
   WorkProfile: {
     type: "object",
     properties: {
