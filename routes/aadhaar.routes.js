@@ -20,6 +20,7 @@ const {
 
 // Import controller
 const aadhaarController = require('../controllers/aadhaar.controller');
+const { validateFileSecurityMiddleware } = require('../middleware/fileSecurityValidation');
 
 // Configure multer for QR image uploads and ZIP file uploads
 const qrUpload = multer({
@@ -84,10 +85,22 @@ router.use(validateVerificationRateLimit); // Rate limiting
 router.post('/verify-zip',
     authenticateToken,
     zipUpload.single('zipFile'),
+    validateFileSecurityMiddleware,
     validateZIPFile,
     validateContentSecurity,
     validateZIPVerification,
     aadhaarController.verifyZIP.bind(aadhaarController)
+);
+
+/**
+ * POST /api/aadhaar/verify-xml
+ * Verify Aadhaar XML data (offline eKYC)
+ */
+router.post('/verify-xml',
+    authenticateToken,
+    validateXMLVerification,
+    validateContentSecurity,
+    aadhaarController.verifyXML.bind(aadhaarController)
 );
 
 /**
@@ -97,6 +110,7 @@ router.post('/verify-zip',
 router.post('/verify-qr',
     authenticateToken,
     qrUpload.single('qrImage'),
+    validateFileSecurityMiddleware,
     validateQRImageFile,
     validateQRVerification,
     aadhaarController.verifyQR.bind(aadhaarController)
@@ -109,6 +123,15 @@ router.post('/verify-qr',
 router.post('/validate-number',
     validateAadhaarNumber,
     aadhaarController.validateNumber.bind(aadhaarController)
+);
+
+/**
+ * GET /api/aadhaar/verification-status
+ * Get user's Aadhaar verification status
+ */
+router.get('/verification-status',
+    authenticateToken,
+    aadhaarController.getVerificationStatus.bind(aadhaarController)
 );
 
 /**

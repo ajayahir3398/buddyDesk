@@ -3,11 +3,12 @@ const postController = require('../controllers/post.controller');
 const { authenticateToken } = require('../middlewares/auth');
 const { validatePostCreation, validatePostUpdate } = require('../middlewares/validation');
 const { uploadMultiple, handleUploadError } = require('../middlewares/upload');
+const { validateFileSecurityMiddleware } = require('../middleware/fileSecurityValidation');
 
 const router = express.Router();
 
 // Create a new post with optional file attachments (requires authentication)
-router.post('/', authenticateToken, uploadMultiple, handleUploadError, validatePostCreation, postController.addPost);
+router.post('/', authenticateToken, uploadMultiple, validateFileSecurityMiddleware, handleUploadError, validatePostCreation, postController.addPost);
 
 // Get all posts with optional filtering and pagination (requires authentication)
 router.get('/', authenticateToken, postController.getPosts);
@@ -25,7 +26,7 @@ router.get('/:id', authenticateToken, postController.getPostById);
 router.put('/:id', authenticateToken, validatePostUpdate, postController.updatePost);
 
 // Add attachments to existing post (requires authentication)
-router.post('/:id/attachments', authenticateToken, uploadMultiple, handleUploadError, postController.addAttachment);
+router.post('/:id/attachments', authenticateToken, uploadMultiple, validateFileSecurityMiddleware, handleUploadError, postController.addAttachment);
 
 // Download attachment by ID
 router.get('/attachments/:attachmentId/download', authenticateToken, postController.downloadAttachment);
