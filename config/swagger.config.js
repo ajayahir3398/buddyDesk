@@ -83,11 +83,43 @@ const options = {
               example: "john.doe@example.com",
               description: "User email address",
             },
+            referral_code: {
+              type: "string",
+              example: "ABC123",
+              description: "User's unique referral code (6 characters, alphanumeric)",
+            },
+            referred_by: {
+              type: "string",
+              example: "XYZ789",
+              description: "Referral code of the user who invited this user",
+            },
+            is_online: {
+              type: "boolean",
+              example: false,
+              description: "Whether the user is currently online",
+            },
+            last_seen: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T12:00:00.000Z",
+              description: "Last time the user was active",
+            },
+            socket_id: {
+              type: "string",
+              example: "socket_123abc",
+              description: "Current socket connection ID",
+            },
             created_at: {
               type: "string",
               format: "date-time",
               example: "2024-01-01T00:00:00.000Z",
               description: "User creation timestamp",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T00:00:00.000Z",
+              description: "User last update timestamp",
             },
           },
         },
@@ -117,6 +149,13 @@ const options = {
                 "Password (8-128 characters, must contain uppercase, lowercase, number, and special character)",
               minLength: 8,
               maxLength: 128,
+            },
+            referred_by: {
+              type: "string",
+              example: "ABC123",
+              description: "Optional referral code from an existing user (6 characters, alphanumeric)",
+              minLength: 6,
+              maxLength: 6,
             },
           },
         },
@@ -2176,6 +2215,131 @@ const options = {
             },
           },
         },
+        Project: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Project ID" },
+            title: { type: "string", example: "E-commerce Website", description: "Project title" },
+            description: { type: "string", example: "Full-stack e-commerce platform", description: "Project description" },
+            technologies: { type: "string", example: "React, Node.js, MongoDB", description: "Technologies used" },
+            duration: { type: "string", example: "6 months", description: "Project duration" },
+            role: { type: "string", example: "Full Stack Developer", description: "Role in project" },
+            work_profile_id: { type: "integer", example: 1, description: "Associated work profile ID" },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+            updated_at: { type: "string", format: "date-time", description: "Last update timestamp" },
+          },
+        },
+        SessionLog: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Session log ID" },
+            user_id: { type: "integer", example: 1, description: "User ID" },
+            session_id: { type: "string", example: "sess_12345", description: "Session identifier" },
+            ip_address: { type: "string", example: "192.168.1.1", description: "IP address" },
+            user_agent: { type: "string", example: "Mozilla/5.0...", description: "User agent string" },
+            login_time: { type: "string", format: "date-time", description: "Login timestamp" },
+            logout_time: { type: "string", format: "date-time", description: "Logout timestamp" },
+            is_active: { type: "boolean", example: true, description: "Session active status" },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+            updated_at: { type: "string", format: "date-time", description: "Last update timestamp" },
+          },
+        },
+        TokenBlacklist: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Blacklist entry ID" },
+            token: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", description: "Blacklisted token" },
+            user_id: { type: "integer", example: 1, description: "User ID" },
+            reason: { type: "string", example: "logout", description: "Blacklist reason" },
+            expires_at: { type: "string", format: "date-time", description: "Token expiration time" },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+          },
+        },
+        UserSkillReview: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Review ID" },
+            user_skill_id: { type: "integer", example: 1, description: "User skill ID" },
+            reviewer_id: { type: "integer", example: 2, description: "Reviewer user ID" },
+            rating: { type: "integer", example: 4, description: "Skill rating (1-5)" },
+            comment: { type: "string", example: "Great JavaScript skills!", description: "Review comment" },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+            updated_at: { type: "string", format: "date-time", description: "Last update timestamp" },
+          },
+        },
+        AadhaarVerificationLog: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Log entry ID" },
+            verification_id: { type: "integer", example: 1, description: "Verification ID" },
+            action: { type: "string", example: "verification_started", description: "Action performed" },
+            details: { type: "string", example: "ZIP file uploaded", description: "Action details" },
+            ip_address: { type: "string", example: "192.168.1.1", description: "IP address" },
+            user_agent: { type: "string", example: "Mozilla/5.0...", description: "User agent" },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+          },
+        },
+        DeviceToken: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Device token ID" },
+            user_id: { type: "integer", example: 1, description: "User ID" },
+            token: { type: "string", example: "fcm_token_123", description: "FCM device token" },
+            platform: { type: "string", enum: ["android", "ios", "web"], description: "Device platform" },
+            is_active: { type: "boolean", example: true, description: "Token active status" },
+            last_used: { type: "string", format: "date-time", description: "Last used timestamp" },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+            updated_at: { type: "string", format: "date-time", description: "Last update timestamp" },
+          },
+        },
+        ConversationMember: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Member ID" },
+            conversation_id: { type: "integer", example: 1, description: "Conversation ID" },
+            user_id: { type: "integer", example: 1, description: "User ID" },
+            role: { type: "string", enum: ["admin", "member"], example: "member", description: "Member role" },
+            joined_at: { type: "string", format: "date-time", description: "Join timestamp" },
+            left_at: { type: "string", format: "date-time", description: "Leave timestamp" },
+            is_active: { type: "boolean", example: true, description: "Member active status" },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+            updated_at: { type: "string", format: "date-time", description: "Last update timestamp" },
+          },
+        },
+        MessageStatus: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Status ID" },
+            message_id: { type: "integer", example: 1, description: "Message ID" },
+            user_id: { type: "integer", example: 1, description: "User ID" },
+            status: { type: "string", enum: ["sent", "delivered", "read"], example: "read", description: "Message status" },
+            timestamp: { type: "string", format: "date-time", description: "Status timestamp" },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+            updated_at: { type: "string", format: "date-time", description: "Last update timestamp" },
+          },
+        },
+        TypingStatus: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Typing status ID" },
+            conversation_id: { type: "integer", example: 1, description: "Conversation ID" },
+            user_id: { type: "integer", example: 1, description: "User ID" },
+            is_typing: { type: "boolean", example: true, description: "Typing status" },
+            last_seen: { type: "string", format: "date-time", description: "Last seen timestamp" },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+            updated_at: { type: "string", format: "date-time", description: "Last update timestamp" },
+          },
+        },
+        ReferralLog: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Referral log ID" },
+            referrer_id: { type: "integer", example: 1, description: "Referrer user ID" },
+            referee_id: { type: "integer", example: 2, description: "Referee user ID (the one who was referred)" },
+            status: { type: "string", enum: ["signed_up", "verified", "completed"], example: "signed_up", description: "Referral status" },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+          },
+        },
       },
     },
     tags: [
@@ -2201,7 +2365,7 @@ const options = {
       "/users/register": {
         post: {
           summary: "Register a new user",
-          description: "Create a new user account with validation",
+          description: "Create a new user account with validation. Optionally accepts a referral code from an existing user. Upon successful registration, a unique referral code is automatically generated for the new user.",
           tags: ["Users"],
           requestBody: {
             required: true,
@@ -2217,6 +2381,15 @@ const options = {
                       name: "John Doe",
                       email: "john.doe@example.com",
                       password: "TestPass123!",
+                    },
+                  },
+                  with_referral: {
+                    summary: "Registration with referral code",
+                    value: {
+                      name: "Jane Smith",
+                      email: "jane.smith@example.com",
+                      password: "TestPass123!",
+                      referred_by: "ABC123",
                     },
                   },
                   invalid_name: {
@@ -2243,55 +2416,13 @@ const options = {
                       password: "TestPass123",
                     },
                   },
-                },
-              },
-              "multipart/form-data": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    name: {
-                      type: "string",
-                      description:
-                        "User full name (2-50 characters, letters and spaces only)",
-                    },
-                    email: {
-                      type: "string",
-                      description: "User email address (must be unique)",
-                    },
-                    phone: {
-                      type: "string",
-                      description: "Phone number (10-20 characters)",
-                    },
-                    dob: {
-                      type: "string",
-                      format: "date",
-                      description: "Date of birth in YYYY-MM-DD format",
-                    },
-                    bio: {
-                      type: "string",
-                      description: "User biography (max 1000 characters)",
-                    },
-                    profile_image: {
-                      type: "string",
-                      format: "binary",
-                      description:
-                        "Profile image file (JPEG, PNG, GIF, WebP, max 5MB)",
-                    },
-                    addresses: {
-                      type: "string",
-                      description: "JSON string of addresses array",
-                    },
-                    temp_addresses: {
-                      type: "string",
-                      description: "JSON string of temporary addresses array",
-                    },
-                    work_profiles: {
-                      type: "string",
-                      description: "JSON string of work profiles array",
-                    },
-                    looking_skills: {
-                      type: "string",
-                      description: "JSON string of looking skills array",
+                  invalid_referral: {
+                    summary: "Invalid referral code (wrong length)",
+                    value: {
+                      name: "John Doe",
+                      email: "john.doe@example.com",
+                      password: "TestPass123!",
+                      referred_by: "ABC",
                     },
                   },
                 },
