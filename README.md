@@ -38,8 +38,6 @@ DB_PORT=5432
 
 # JWT Configuration
 JWT_SECRET=your_super_secret_jwt_key_here_change_in_production
-JWT_ACCESS_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
 
 # Production Configuration
 PRODUCTION_URL=https://buddydesk-eumd.onrender.com/api

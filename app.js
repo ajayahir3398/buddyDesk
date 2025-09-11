@@ -20,9 +20,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(requestIdMiddleware);
 app.use(cors());
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
-
 // Swagger UI setup
 app.use('/api-docs', (req, res, next) => {
   // Disable CSP for swagger docs
@@ -80,8 +77,8 @@ app.get('/', (req, res) => {
 });
 
 // Routes
-const userRoutes = require('./routes/user.routes');
-const skillsRoutes = require('./routes/skills.routes');
+const userRoutes = require('./routes/skills.routes');
+const skillsRoutes = require('./routes/user.routes');
 const postRoutes = require('./routes/post.routes');
 const aadhaarRoutes = require('./routes/aadhaar.routes');
 const healthRoutes = require('./routes/health.js');

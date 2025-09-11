@@ -62,11 +62,7 @@ async function sendPostNotificationToMatchingUsers(post) {
 
 		// Find users whose looking_skills contain the post's required_skill_id
 		const matchingUsers = await db.UserProfile.findAll({
-			where: {
-				looking_skills: {
-					[db.Sequelize.Op.contains]: [post.required_skill_id]
-				}
-			},
+			where: db.Sequelize.literal(`looking_skills::jsonb @> '${JSON.stringify([post.required_skill_id])}'`),
 			include: [{
 				model: db.User,
 				as: 'user',

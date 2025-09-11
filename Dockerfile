@@ -27,7 +27,6 @@ COPY . .
 RUN mkdir -p /app/uploads/images \
     /app/uploads/audio \
     /app/uploads/documents \
-    /app/uploads/posts \
     /app/logs
 
 # Set proper ownership and permissions

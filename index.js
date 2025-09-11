@@ -1,7 +1,5 @@
 require('dotenv').config();
 
-// Environment validation removed for deployment flexibility
-
 const app = require("./app");
 const http = require('http');
 const { initializeSocket } = require('./config/socket.config');

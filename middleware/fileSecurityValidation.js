@@ -4,10 +4,10 @@ const crypto = require('crypto');
 const ffmpeg = require('fluent-ffmpeg');
 const pdfParse = require('pdf-parse');
 const jpeg = require('jpeg-js');
-const nsfwDetectionService = require('../services/nsfwDetectionService');
-const keywordFilteringService = require('../services/keywordFilteringService');
-const videoAnalysisService = require('../services/videoAnalysisService');
-const securityLoggingService = require('../services/securityLoggingService');
+const { nsfwDetectionService } = require('../services/nsfwDetectionService');
+const KeywordFilteringService = require('../services/keywordFilteringService');
+const keywordFilteringService = new KeywordFilteringService();
+const { securityLoggingService } = require('../services/securityLoggingService');
 
 // Configuration for security validation
 const SECURITY_CONFIG = {
@@ -396,45 +396,6 @@ class FileSecurityValidator {
             resolve();
             return;
           }
-          
-          // Enhanced video analysis
-          videoAnalysisService.analyzeVideoNSFW(file.path).then(videoResult => {
-            result.securityAnalysis.video = videoResult;
-            
-            if (videoResult.isNSFW && videoResult.confidence > this.securityThresholds.nsfw) {
-              result.violations.push({
-                type: 'NSFW_VIDEO',
-                message: `Video contains inappropriate content (confidence: ${(videoResult.confidence * 100).toFixed(1)}%)`,
-                severity: 'HIGH',
-                details: videoResult.details
-              });
-              riskFactors.push({ type: 'NSFW video content detected', score: videoResult.confidence * 0.9 });
-            } else {
-              result.securityChecks.contentSafe = true;
-            }
-            resolve();
-          }).catch(err => {
-            console.error('Video analysis failed:', err);
-            // Fallback to basic NSFW detection
-            nsfwDetectionService.detectNSFW(file.path, 'video').then(nsfwResult => {
-              if (nsfwResult.isNSFW) {
-                result.violations.push({
-                  type: 'NSFW_CONTENT',
-                  message: `Video contains inappropriate content (confidence: ${(nsfwResult.confidence * 100).toFixed(1)}%)`,
-                  severity: 'HIGH',
-                  details: nsfwResult.predictions
-                });
-                riskFactors.push({ type: 'NSFW content detected', score: nsfwResult.confidence * 0.8 });
-              } else {
-                result.securityChecks.contentSafe = true;
-              }
-              resolve();
-            }).catch(err => {
-              console.error('NSFW detection failed for video:', err);
-              result.securityChecks.contentSafe = true;
-              resolve();
-            });
-          });
         });
       });
     } catch (error) {
