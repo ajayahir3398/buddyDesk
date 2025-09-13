@@ -77,8 +77,8 @@ app.get('/', (req, res) => {
 });
 
 // Routes
-const userRoutes = require('./routes/skills.routes');
-const skillsRoutes = require('./routes/user.routes');
+const userRoutes = require('./routes/user.routes');
+const skillsRoutes = require('./routes/skills.routes');
 const postRoutes = require('./routes/post.routes');
 const aadhaarRoutes = require('./routes/aadhaar.routes');
 const healthRoutes = require('./routes/health.js');
