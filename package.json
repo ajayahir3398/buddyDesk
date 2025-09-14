@@ -7,7 +7,9 @@
     "dev": "nodemon index.js",
     "dev:debug": "nodemon --inspect index.js",
     "dev:watch": "nodemon --watch . --ext js,json --exec node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node test-feed-simple.js",
+    "test:feed": "node test-feed-simple.js",
+    "test:feed:full": "node test-feed-apis.js",
     "insert-skills": "node scripts/insertSkills.js",
     "insert-skills:upsert": "node scripts/insertSkills.js --upsert",
     "insert-sub-skills": "node scripts/insertSubSkills.js",
@@ -23,6 +25,7 @@
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
     "adm-zip": "^0.5.16",
+    "axios": "^1.12.1",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

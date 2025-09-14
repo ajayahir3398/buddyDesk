@@ -2340,6 +2340,231 @@ const options = {
             created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
           },
         },
+        // Feed Schemas
+        FeedPost: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Feed post ID" },
+            user_id: { type: "integer", example: 1, description: "ID of the user who created the post" },
+            content: { 
+              type: "string", 
+              example: "Just completed an amazing React project! 🚀", 
+              description: "Post content (1-5000 characters)",
+              minLength: 1,
+              maxLength: 5000
+            },
+            is_pinned: { type: "boolean", example: false, description: "Whether this post is pinned by the user" },
+            is_featured: { type: "boolean", example: false, description: "Whether this post is featured by admin" },
+            engagement_score: { type: "number", example: 85.5, description: "Calculated engagement score for ranking" },
+            view_count: { type: "integer", example: 150, description: "Total number of views" },
+            like_count: { type: "integer", example: 25, description: "Total number of likes" },
+            comment_count: { type: "integer", example: 8, description: "Total number of comments" },
+            share_count: { type: "integer", example: 3, description: "Total number of shares" },
+            status: { 
+              type: "string", 
+              enum: ["active", "hidden", "deleted"],
+              example: "active",
+              description: "Post status"
+            },
+            created_at: { type: "string", format: "date-time", description: "Creation timestamp" },
+            updated_at: { type: "string", format: "date-time", description: "Last update timestamp" },
+            user: {
+              type: "object",
+              properties: {
+                id: { type: "integer", example: 1 },
+                name: { type: "string", example: "John Doe" },
+                email: { type: "string", example: "john@example.com" },
+                profile: {
+                  type: "object",
+                  properties: {
+                    image_path: { type: "string", example: "images/profile.jpg" },
+                    image_url: { type: "string", example: "http://localhost:3000/api/files/images/profile.jpg" },
+                    bio: { type: "string", example: "Software Developer" }
+                  }
+                }
+              }
+            },
+            attachments: {
+              type: "array",
+              items: { $ref: "#/components/schemas/FeedAttachment" },
+              description: "Media attachments for the post"
+            }
+          },
+        },
+        FeedAttachment: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Attachment ID" },
+            feed_post_id: { type: "integer", example: 1, description: "Feed post ID" },
+            file_path: { type: "string", example: "images/attachment.jpg", description: "Relative path to the file" },
+            file_name: { type: "string", example: "my-photo.jpg", description: "Original filename" },
+            file_type: { 
+              type: "string", 
+              enum: ["image", "video", "document", "audio"],
+              example: "image",
+              description: "Type of file"
+            },
+            mime_type: { type: "string", example: "image/jpeg", description: "MIME type of the file" },
+            file_size: { type: "integer", example: 1024000, description: "File size in bytes" },
+            thumbnail_path: { type: "string", example: "thumbnails/thumb.jpg", description: "Path to thumbnail" },
+            duration: { type: "integer", example: 120, description: "Duration in seconds for videos/audio" },
+            width: { type: "integer", example: 1920, description: "Width in pixels for images/videos" },
+            height: { type: "integer", example: 1080, description: "Height in pixels for images/videos" },
+            url: { type: "string", example: "http://localhost:3000/api/files/images/attachment.jpg", description: "Full URL to access the file" },
+            thumbnail_url: { type: "string", example: "http://localhost:3000/api/files/thumbnails/thumb.jpg", description: "Full URL to access the thumbnail" },
+            created_at: { type: "string", format: "date-time", description: "Upload timestamp" }
+          },
+        },
+        FeedLike: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Like ID" },
+            feed_post_id: { type: "integer", example: 1, description: "Feed post ID" },
+            user_id: { type: "integer", example: 1, description: "User ID who liked the post" },
+            like_type: { 
+              type: "string", 
+              enum: ["like", "love", "laugh", "wow", "sad", "angry"],
+              example: "like",
+              description: "Type of reaction"
+            },
+            created_at: { type: "string", format: "date-time", description: "Like timestamp" },
+            user: {
+              type: "object",
+              properties: {
+                id: { type: "integer", example: 1 },
+                name: { type: "string", example: "Jane Doe" },
+                profile: {
+                  type: "object",
+                  properties: {
+                    image_url: { type: "string", example: "http://localhost:3000/api/files/images/jane.jpg" }
+                  }
+                }
+              }
+            }
+          },
+        },
+        FeedComment: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Comment ID" },
+            feed_post_id: { type: "integer", example: 1, description: "Feed post ID" },
+            user_id: { type: "integer", example: 1, description: "User ID who commented" },
+            parent_comment_id: { type: "integer", example: null, description: "Parent comment ID for replies" },
+            content: { 
+              type: "string", 
+              example: "Great post! Really helpful information.",
+              description: "Comment content (1-1000 characters)",
+              minLength: 1,
+              maxLength: 1000
+            },
+            is_edited: { type: "boolean", example: false, description: "Whether this comment has been edited" },
+            like_count: { type: "integer", example: 5, description: "Number of likes on this comment" },
+            reply_count: { type: "integer", example: 2, description: "Number of replies to this comment" },
+            status: { 
+              type: "string", 
+              enum: ["active", "hidden", "deleted"],
+              example: "active",
+              description: "Comment status"
+            },
+            created_at: { type: "string", format: "date-time", description: "Comment timestamp" },
+            updated_at: { type: "string", format: "date-time", description: "Last update timestamp" },
+            user: {
+              type: "object",
+              properties: {
+                id: { type: "integer", example: 1 },
+                name: { type: "string", example: "Alice Smith" },
+                email: { type: "string", example: "alice@example.com" },
+                profile: {
+                  type: "object",
+                  properties: {
+                    image_url: { type: "string", example: "http://localhost:3000/api/files/images/alice.jpg" }
+                  }
+                }
+              }
+            },
+            replies: {
+              type: "array",
+              items: { $ref: "#/components/schemas/FeedComment" },
+              description: "Replies to this comment"
+            }
+          },
+        },
+        FeedPostCreation: {
+          type: "object",
+          required: ["content"],
+          properties: {
+            content: { 
+              type: "string", 
+              example: "Just completed an amazing React project! 🚀",
+              description: "Post content (1-5000 characters)",
+              minLength: 1,
+              maxLength: 5000
+            }
+          },
+        },
+        FeedResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Feed retrieved successfully" },
+            data: {
+              type: "object",
+              properties: {
+                posts: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/FeedPost" },
+                  description: "Array of feed posts"
+                },
+                pagination: {
+                  type: "object",
+                  properties: {
+                    page: { type: "integer", example: 1, description: "Current page number" },
+                    limit: { type: "integer", example: 20, description: "Number of posts per page" },
+                    total: { type: "integer", example: 150, description: "Total number of posts" },
+                    hasMore: { type: "boolean", example: true, description: "Whether there are more posts" }
+                  }
+                }
+              }
+            }
+          },
+        },
+        FeedPostResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Feed post created successfully" },
+            data: { $ref: "#/components/schemas/FeedPost" }
+          },
+        },
+        FeedLikeRequest: {
+          type: "object",
+          properties: {
+            like_type: { 
+              type: "string", 
+              enum: ["like", "love", "laugh", "wow", "sad", "angry"],
+              example: "like",
+              description: "Type of reaction"
+            }
+          },
+        },
+        FeedCommentRequest: {
+          type: "object",
+          required: ["content"],
+          properties: {
+            content: { 
+              type: "string", 
+              example: "Great post! Really helpful information.",
+              description: "Comment content (1-1000 characters)",
+              minLength: 1,
+              maxLength: 1000
+            },
+            parent_comment_id: { 
+              type: "integer", 
+              example: null,
+              description: "Parent comment ID for replies"
+            }
+          },
+        },
       },
     },
     tags: [
@@ -2359,6 +2584,10 @@ const options = {
       {
         name: "Aadhaar Verification",
         description: "Offline Aadhaar verification APIs",
+      },
+      {
+        name: "Feed",
+        description: "Social feed operations including posts, likes, comments, shares, and trending content",
       },
     ],
     paths: {
@@ -6380,6 +6609,490 @@ const options = {
             },
           },
         },
+      },
+      // Feed API Endpoints
+      "/feed/posts": {
+        post: {
+          summary: "Create a new feed post",
+          description: "Create a new feed post with optional file attachments. Supports text posts, images, videos, and other media types.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            content: {
+              "multipart/form-data": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    content: { 
+                      type: "string", 
+                      example: "Just completed an amazing React project! 🚀",
+                      description: "Post content (1-5000 characters)"
+                    },
+                    attachments: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                        format: "binary"
+                      },
+                      description: "Media files to attach to the post"
+                    }
+                  },
+                  required: ["content"]
+                }
+              },
+              "application/json": {
+                schema: { $ref: "#/components/schemas/FeedPostCreation" }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: "Feed post created successfully",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/FeedPostResponse" },
+                  examples: {
+                    text_post: {
+                      summary: "Text post creation",
+                      value: {
+                        success: true,
+                        message: "Feed post created successfully",
+                        data: {
+                          id: 1,
+                          user_id: 1,
+                          content: "Just completed an amazing React project! 🚀",
+                          like_count: 0,
+                          comment_count: 0,
+                          share_count: 0,
+                          view_count: 0,
+                          created_at: "2024-01-01T12:00:00.000Z",
+                          user: {
+                            id: 1,
+                            name: "John Doe",
+                            email: "john@example.com",
+                            profile: {
+                              image_url: "http://localhost:3000/api/files/images/profile.jpg"
+                            }
+                          },
+                          attachments: []
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            400: { description: "Invalid request data" },
+            401: { description: "Unauthorized" },
+            413: { description: "File too large" },
+            415: { description: "Unsupported media type" }
+          }
+        },
+        get: {
+          summary: "Get personalized feed",
+          description: "Retrieve a personalized feed based on trending and featured posts.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "query",
+              name: "page",
+              schema: { type: "integer", minimum: 1, default: 1 },
+              description: "Page number for pagination"
+            },
+            {
+              in: "query",
+              name: "limit",
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+              description: "Number of posts per page"
+            }
+          ],
+          responses: {
+            200: {
+              description: "Feed retrieved successfully",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/FeedResponse" },
+                  examples: {
+                    personalized_feed: {
+                      summary: "Personalized feed response",
+                      value: {
+                        success: true,
+                        message: "Feed retrieved successfully",
+                        data: {
+                          posts: [
+                            {
+                              id: 1,
+                              content: "Just completed an amazing React project! 🚀",
+                              like_count: 25,
+                              comment_count: 8,
+                              share_count: 3,
+                              view_count: 150,
+                              created_at: "2024-01-01T12:00:00.000Z",
+                              user: {
+                                id: 2,
+                                name: "Alice Developer",
+                                profile: {
+                                  image_url: "http://localhost:3000/api/files/images/alice.jpg"
+                                }
+                              },
+                              attachments: []
+                            }
+                          ],
+                          pagination: {
+                            page: 1,
+                            limit: 20,
+                            total: 150,
+                            hasMore: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/feed/posts/{id}": {
+        get: {
+          summary: "Get specific feed post",
+          description: "Retrieve a specific feed post by ID with all its details, attachments, and engagement metrics.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Feed post ID"
+            }
+          ],
+          responses: {
+            200: {
+              description: "Feed post retrieved successfully",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/FeedPostResponse" }
+                }
+              }
+            },
+            404: { description: "Feed post not found" },
+            401: { description: "Unauthorized" }
+          }
+        },
+        delete: {
+          summary: "Delete feed post",
+          description: "Delete a feed post. Only the post creator can delete their own posts.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Feed post ID"
+            }
+          ],
+          responses: {
+            200: {
+              description: "Feed post deleted successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Feed post deleted successfully" }
+                    }
+                  }
+                }
+              }
+            },
+            404: { description: "Feed post not found or access denied" },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/feed/posts/{id}/like": {
+        post: {
+          summary: "Like or unlike a feed post",
+          description: "Toggle like status for a feed post. Supports different reaction types.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Feed post ID"
+            }
+          ],
+          requestBody: {
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/FeedLikeRequest" }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: "Like status updated successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Post liked successfully" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          liked: { type: "boolean", example: true },
+                          like_type: { type: "string", example: "like" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            404: { description: "Feed post not found" },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/feed/posts/{id}/comment": {
+        post: {
+          summary: "Add a comment to a feed post",
+          description: "Add a comment or reply to a feed post.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Feed post ID"
+            }
+          ],
+          requestBody: {
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/FeedCommentRequest" }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: "Comment added successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Comment added successfully" },
+                      data: { $ref: "#/components/schemas/FeedComment" }
+                    }
+                  }
+                }
+              }
+            },
+            400: { description: "Invalid comment data" },
+            404: { description: "Feed post not found" },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/feed/posts/{id}/comments": {
+        get: {
+          summary: "Get comments for a feed post",
+          description: "Retrieve comments for a specific feed post with pagination.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Feed post ID"
+            },
+            {
+              in: "query",
+              name: "page",
+              schema: { type: "integer", minimum: 1, default: 1 },
+              description: "Page number for pagination"
+            },
+            {
+              in: "query",
+              name: "limit",
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+              description: "Number of comments per page"
+            }
+          ],
+          responses: {
+            200: {
+              description: "Comments retrieved successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Comments retrieved successfully" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          comments: {
+                            type: "array",
+                            items: { $ref: "#/components/schemas/FeedComment" }
+                          },
+                          pagination: {
+                            type: "object",
+                            properties: {
+                              page: { type: "integer", example: 1 },
+                              limit: { type: "integer", example: 20 },
+                              total: { type: "integer", example: 50 },
+                              hasMore: { type: "boolean", example: true }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            404: { description: "Feed post not found" },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/feed/posts/{id}/share": {
+        post: {
+          summary: "Share a feed post",
+          description: "Share a feed post with optional quote text.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "integer" },
+              description: "Feed post ID"
+            }
+          ],
+          requestBody: {
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    share_type: { 
+                      type: "string", 
+                      enum: ["repost", "quote", "bookmark"],
+                      example: "repost"
+                    },
+                    quote_text: { 
+                      type: "string", 
+                      example: "This is exactly what I needed!",
+                      maxLength: 1000
+                    }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: "Post shared successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Post shared successfully" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          share_type: { type: "string", example: "repost" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            404: { description: "Feed post not found" },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/feed/trending": {
+        get: {
+          summary: "Get trending feed posts",
+          description: "Retrieve trending and featured feed posts based on engagement metrics.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "query",
+              name: "page",
+              schema: { type: "integer", minimum: 1, default: 1 },
+              description: "Page number for pagination"
+            },
+            {
+              in: "query",
+              name: "limit",
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+              description: "Number of posts per page"
+            }
+          ],
+          responses: {
+            200: {
+              description: "Trending posts retrieved successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Trending posts retrieved successfully" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          posts: {
+                            type: "array",
+                            items: { $ref: "#/components/schemas/FeedPost" }
+                          },
+                          pagination: {
+                            type: "object",
+                            properties: {
+                              page: { type: "integer", example: 1 },
+                              limit: { type: "integer", example: 20 },
+                              hasMore: { type: "boolean", example: true }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            401: { description: "Unauthorized" }
+          }
+        }
       },
     },
   },

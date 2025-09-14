@@ -1315,11 +1315,7 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
         attributes: ["looking_skills"],
       });
 
-      if (
-        !userProfile ||
-        !userProfile.looking_skills ||
-        userProfile.looking_skills.length === 0
-      ) {
+      if (!userProfile || !userProfile.looking_skills) {
         return res.status(200).json({
           success: true,
           message: "No looking skills found for skill matching",
@@ -1339,7 +1335,59 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
         });
       }
 
-      userLookingSkills = userProfile.looking_skills.map((skill) => skill.id);
+      // Parse looking_skills if it's a JSON string, otherwise use as is
+      let lookingSkills = userProfile.looking_skills;
+      if (typeof lookingSkills === 'string') {
+        try {
+          lookingSkills = JSON.parse(lookingSkills);
+        } catch (error) {
+          console.error('Error parsing looking_skills JSON:', error);
+          return res.status(200).json({
+            success: true,
+            message: "Invalid looking skills data format",
+            data: [],
+            tempAddress: {
+              pincode: tempAddress.pincode,
+              selected_area: tempAddress.selected_area,
+              city: tempAddress.city,
+              state: tempAddress.state,
+            },
+            pagination: {
+              currentPage: page,
+              totalPages: 0,
+              totalItems: 0,
+              itemsPerPage: limit,
+            },
+          });
+        }
+      }
+
+      // Check if looking_skills is an array and has items
+      if (!Array.isArray(lookingSkills) || lookingSkills.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: "No looking skills found for skill matching",
+          data: [],
+          tempAddress: {
+            pincode: tempAddress.pincode,
+            selected_area: tempAddress.selected_area,
+            city: tempAddress.city,
+            state: tempAddress.state,
+          },
+          pagination: {
+            currentPage: page,
+            totalPages: 0,
+            totalItems: 0,
+            itemsPerPage: limit,
+          },
+        });
+      }
+
+      // Extract skill IDs from the looking_skills array
+      userLookingSkills = lookingSkills.map((skill) => {
+        // Handle both object format {id: 1, name: "skill"} and direct ID format
+        return typeof skill === 'object' ? skill.id : skill;
+      });
     }
 
     // Build where clause for filtering posts

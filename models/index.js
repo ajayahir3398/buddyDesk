@@ -54,6 +54,15 @@ db.TypingStatus = require("./typingStatus.model")(sequelize, Sequelize.DataTypes
 db.Notification = require("./notification.model")(sequelize, Sequelize.DataTypes);
 db.ReferralLog = require("./referralLog.model")(sequelize, Sequelize.DataTypes);
 
+// Feed models
+db.FeedPost = require("./feedPost.model")(sequelize, Sequelize.DataTypes);
+db.FeedAttachment = require("./feedAttachment.model")(sequelize, Sequelize.DataTypes);
+db.FeedLike = require("./feedLike.model")(sequelize, Sequelize.DataTypes);
+db.FeedComment = require("./feedComment.model")(sequelize, Sequelize.DataTypes);
+db.FeedShare = require("./feedShare.model")(sequelize, Sequelize.DataTypes);
+db.FeedFollow = require("./feedFollow.model")(sequelize, Sequelize.DataTypes);
+db.FeedView = require("./feedView.model")(sequelize, Sequelize.DataTypes);
+
 // Set up associations
 Object.keys(db).forEach(modelName => {
     if (db[modelName].associate) {

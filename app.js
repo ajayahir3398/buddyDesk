@@ -84,6 +84,7 @@ const aadhaarRoutes = require('./routes/aadhaar.routes');
 const healthRoutes = require('./routes/health.js');
 const chatRoutes = require('./routes/chatRoutes');
 const notificationRoutes = require('./routes/notification.routes');
+const feedRoutes = require('./routes/feed.routes');
 const postController = require('./controllers/post.controller');
 
 // Generic file serving route for all attachments (posts, profiles, etc.)
@@ -95,6 +96,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/aadhaar', aadhaarRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/feed', feedRoutes);
 app.use('/health', healthRoutes);
 
 // Error handling middleware (must be last)
