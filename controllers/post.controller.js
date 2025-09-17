@@ -133,7 +133,7 @@ exports.addPost = async (req, res) => {
       }
     }
 
-    // Fetch the created post with associations
+    // Fetch the created post with optimized associations
     const createdPost = await Post.findByPk(post.id, {
       include: [
         {
@@ -1163,11 +1163,23 @@ exports.serveFileByCategory = async (req, res) => {
       });
     }
 
+    // If not found in database, check if file exists on disk as fallback
     if (!attachment && !profileImage) {
-      return res.status(404).json({
-        success: false,
-        message: "File not found",
-      });
+      const filePath = path.join(
+        __dirname,
+        "..",
+        "uploads",
+        category,
+        safeFilename
+      );
+      
+      // Check if file exists on disk
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({
+          success: false,
+          message: "File not found",
+        });
+      }
     }
 
     // Check if user has access to this file (either owner of post or has permission)
@@ -1216,6 +1228,25 @@ exports.serveFileByCategory = async (req, res) => {
                  ext === '.gif' ? 'image/gif' : 
                  'application/octet-stream';
       fileName = safeFilename;
+    } else {
+      // Fallback case: file found on disk but not in database
+      const ext = path.extname(safeFilename).toLowerCase();
+      mimeType = ext === '.png' ? 'image/png' : 
+                 ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 
+                 ext === '.gif' ? 'image/gif' : 
+                 ext === '.webp' ? 'image/webp' :
+                 ext === '.bmp' ? 'image/bmp' :
+                 ext === '.mp3' ? 'audio/mpeg' :
+                 ext === '.wav' ? 'audio/wav' :
+                 ext === '.ogg' ? 'audio/ogg' :
+                 ext === '.pdf' ? 'application/pdf' :
+                 'application/octet-stream';
+      fileName = safeFilename;
+    }
+    
+    // Ensure mimeType is never undefined
+    if (!mimeType) {
+      mimeType = 'application/octet-stream';
     }
     
     res.setHeader("Content-Type", mimeType);
