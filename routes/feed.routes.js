@@ -12,6 +12,7 @@ router.use(authenticateToken);
 // Feed Posts
 router.post('/posts', uploadMultiple, validateFileSecurityMiddleware, handleUploadError, feedController.createFeedPost);
 router.get('/posts', feedController.getFeed);
+router.get('/posts/my-posts', feedController.getUserFeedPosts);
 router.get('/posts/:id', feedController.getFeedPost);
 router.delete('/posts/:id', feedController.deleteFeedPost);
 

@@ -64,6 +64,31 @@ const generateFeedUrls = (posts, baseUrl) => {
   });
 };
 
+// Helper function to generate comment URLs
+const generateCommentUrls = (comments, baseUrl) => {
+  return comments.map(comment => {
+    const commentData = comment.toJSON ? comment.toJSON() : comment;
+    
+    // Generate user profile image URL for main comment
+    if (commentData.user && commentData.user.profile && commentData.user.profile.image_path) {
+      commentData.user.profile.image_url = `${baseUrl}/api/files/${commentData.user.profile.image_path}`;
+    }
+    
+    // Generate user profile image URLs for replies
+    if (commentData.replies && commentData.replies.length > 0) {
+      commentData.replies = commentData.replies.map(reply => {
+        const replyData = reply.toJSON ? reply.toJSON() : reply;
+        if (replyData.user && replyData.user.profile && replyData.user.profile.image_path) {
+          replyData.user.profile.image_url = `${baseUrl}/api/files/${replyData.user.profile.image_path}`;
+        }
+        return replyData;
+      });
+    }
+    
+    return commentData;
+  });
+};
+
 // Create a new feed post
 exports.createFeedPost = async (req, res) => {
   try {
@@ -480,11 +505,15 @@ exports.getComments = async (req, res) => {
       offset: offset
     });
 
+    // Generate URLs for comments
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const commentsWithUrls = generateCommentUrls(comments.rows, baseUrl);
+
     res.status(200).json({
       success: true,
       message: 'Comments retrieved successfully',
       data: {
-        comments: comments.rows,
+        comments: commentsWithUrls,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -551,6 +580,7 @@ exports.sharePost = async (req, res) => {
 // Get trending posts
 exports.getTrendingPosts = async (req, res) => {
   try {
+    const userId = req.user.id;
     const { page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
@@ -573,6 +603,13 @@ exports.getTrendingPosts = async (req, res) => {
           model: FeedAttachment,
           as: 'attachments',
           attributes: ['id', 'file_path', 'file_name', 'file_type', 'mime_type', 'file_size', 'thumbnail_path', 'width', 'height']
+        },
+        {
+          model: FeedLike,
+          as: 'likes',
+          where: { user_id: userId },
+          required: false,
+          attributes: ['id', 'like_type']
         }
       ],
       order: [
@@ -603,6 +640,75 @@ exports.getTrendingPosts = async (req, res) => {
 
   } catch (error) {
     console.error('Get trending posts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Get logged-in user's own feed posts
+exports.getUserFeedPosts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const userPosts = await FeedPost.findAndCountAll({
+      where: { 
+        user_id: userId,
+        status: 'active'
+      },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'email'],
+          include: [{
+            model: UserProfile,
+            as: 'profile',
+            attributes: ['image_path', 'bio']
+          }]
+        },
+        {
+          model: FeedAttachment,
+          as: 'attachments',
+          attributes: ['id', 'file_path', 'file_name', 'file_type', 'mime_type', 'file_size', 'thumbnail_path', 'width', 'height']
+        },
+        {
+          model: FeedLike,
+          as: 'likes',
+          where: { user_id: userId },
+          required: false,
+          attributes: ['id', 'like_type']
+        }
+      ],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: offset
+    });
+
+    // Generate URLs
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const postsWithUrls = generateFeedUrls(userPosts.rows, baseUrl);
+
+    res.status(200).json({
+      success: true,
+      message: 'User feed posts retrieved successfully',
+      data: {
+        posts: postsWithUrls,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: userPosts.count,
+          hasMore: (offset + parseInt(limit)) < userPosts.count
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get user feed posts error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

@@ -2477,7 +2477,8 @@ const options = {
                 profile: {
                   type: "object",
                   properties: {
-                    image_url: { type: "string", example: "http://localhost:3000/api/files/images/alice.jpg" }
+                    image_path: { type: "string", example: "uploads/images/alice.jpg", description: "Relative path to the profile image" },
+                    image_url: { type: "string", example: "http://localhost:3000/api/files/uploads/images/alice.jpg", description: "Full URL to access the profile image" }
                   }
                 }
               }
@@ -6967,6 +6968,71 @@ const options = {
                         }
                       }
                     }
+                  },
+                  examples: {
+                    comments_with_images: {
+                      summary: "Comments with profile images",
+                      value: {
+                        success: true,
+                        message: "Comments retrieved successfully",
+                        data: {
+                          comments: [
+                            {
+                              id: 1,
+                              feed_post_id: 123,
+                              user_id: 456,
+                              parent_comment_id: null,
+                              content: "Great post! Really helpful information.",
+                              is_edited: false,
+                              like_count: 5,
+                              reply_count: 2,
+                              status: "active",
+                              created_at: "2024-01-01T00:00:00.000Z",
+                              updated_at: "2024-01-01T00:00:00.000Z",
+                              user: {
+                                id: 456,
+                                name: "Alice Smith",
+                                email: "alice@example.com",
+                                profile: {
+                                  image_path: "uploads/images/alice.jpg",
+                                  image_url: "http://localhost:3000/api/files/uploads/images/alice.jpg"
+                                }
+                              },
+                              replies: [
+                                {
+                                  id: 2,
+                                  feed_post_id: 123,
+                                  user_id: 789,
+                                  parent_comment_id: 1,
+                                  content: "I totally agree!",
+                                  is_edited: false,
+                                  like_count: 2,
+                                  reply_count: 0,
+                                  status: "active",
+                                  created_at: "2024-01-01T01:00:00.000Z",
+                                  updated_at: "2024-01-01T01:00:00.000Z",
+                                  user: {
+                                    id: 789,
+                                    name: "Bob Johnson",
+                                    email: "bob@example.com",
+                                    profile: {
+                                      image_path: "uploads/images/bob.jpg",
+                                      image_url: "http://localhost:3000/api/files/uploads/images/bob.jpg"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ],
+                          pagination: {
+                            page: 1,
+                            limit: 20,
+                            total: 50,
+                            hasMore: true
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -7038,6 +7104,98 @@ const options = {
           }
         }
       },
+      "/feed/posts/my-posts": {
+        get: {
+          summary: "Get logged-in user's feed posts",
+          description: "Retrieve all feed posts created by the authenticated user with pagination support.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "query",
+              name: "page",
+              schema: { type: "integer", minimum: 1, default: 1 },
+              description: "Page number for pagination"
+            },
+            {
+              in: "query",
+              name: "limit",
+              schema: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+              description: "Number of posts per page"
+            }
+          ],
+          responses: {
+            200: {
+              description: "User feed posts retrieved successfully",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/FeedResponse" },
+                  examples: {
+                    user_posts: {
+                      summary: "User's own posts",
+                      value: {
+                        success: true,
+                        message: "User feed posts retrieved successfully",
+                        data: {
+                          posts: [
+                            {
+                              id: 1,
+                              user_id: 123,
+                              content: "My latest project update! 🚀",
+                              like_count: 5,
+                              comment_count: 2,
+                              share_count: 1,
+                              view_count: 10,
+                              is_featured: false,
+                              status: "active",
+                              created_at: "2024-01-01T00:00:00.000Z",
+                              updated_at: "2024-01-01T00:00:00.000Z",
+                              user: {
+                                id: 123,
+                                name: "John Doe",
+                                email: "john@example.com",
+                                profile: {
+                                  image_path: "uploads/images/profile.jpg",
+                                  image_url: "http://localhost:3000/api/files/uploads/images/profile.jpg",
+                                  bio: "Software Developer"
+                                }
+                              },
+                              attachments: [
+                                {
+                                  id: 1,
+                                  file_path: "uploads/images/project.jpg",
+                                  url: "http://localhost:3000/api/files/uploads/images/project.jpg",
+                                  file_name: "project.jpg",
+                                  file_type: "image",
+                                  mime_type: "image/jpeg",
+                                  file_size: 1024000
+                                }
+                              ],
+                              likes: [
+                                {
+                                  id: 1,
+                                  like_type: "like"
+                                }
+                              ]
+                            }
+                          ],
+                          pagination: {
+                            page: 1,
+                            limit: 20,
+                            total: 15,
+                            hasMore: false
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
       "/feed/trending": {
         get: {
           summary: "Get trending feed posts",
@@ -7082,6 +7240,89 @@ const options = {
                               limit: { type: "integer", example: 20 },
                               hasMore: { type: "boolean", example: true }
                             }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  examples: {
+                    trending_posts_with_likes: {
+                      summary: "Trending posts with user like status",
+                      value: {
+                        success: true,
+                        message: "Trending posts retrieved successfully",
+                        data: {
+                          posts: [
+                            {
+                              id: 1,
+                              user_id: 123,
+                              content: "This is a trending post! 🔥",
+                              like_count: 25,
+                              comment_count: 8,
+                              share_count: 5,
+                              view_count: 150,
+                              is_featured: true,
+                              status: "active",
+                              created_at: "2024-01-01T00:00:00.000Z",
+                              updated_at: "2024-01-01T00:00:00.000Z",
+                              user: {
+                                id: 123,
+                                name: "John Doe",
+                                email: "john@example.com",
+                                profile: {
+                                  image_path: "uploads/images/profile.jpg",
+                                  image_url: "http://localhost:3000/api/files/uploads/images/profile.jpg",
+                                  bio: "Software Developer"
+                                }
+                              },
+                              attachments: [
+                                {
+                                  id: 1,
+                                  file_path: "uploads/images/trending.jpg",
+                                  url: "http://localhost:3000/api/files/uploads/images/trending.jpg",
+                                  file_name: "trending.jpg",
+                                  file_type: "image",
+                                  mime_type: "image/jpeg",
+                                  file_size: 1024000
+                                }
+                              ],
+                              likes: [
+                                {
+                                  id: 1,
+                                  like_type: "like"
+                                }
+                              ]
+                            },
+                            {
+                              id: 2,
+                              user_id: 456,
+                              content: "Another trending post!",
+                              like_count: 15,
+                              comment_count: 3,
+                              share_count: 2,
+                              view_count: 80,
+                              is_featured: false,
+                              status: "active",
+                              created_at: "2024-01-01T01:00:00.000Z",
+                              updated_at: "2024-01-01T01:00:00.000Z",
+                              user: {
+                                id: 456,
+                                name: "Jane Smith",
+                                email: "jane@example.com",
+                                profile: {
+                                  image_path: "uploads/images/jane.jpg",
+                                  image_url: "http://localhost:3000/api/files/uploads/images/jane.jpg",
+                                  bio: "Designer"
+                                }
+                              },
+                              attachments: [],
+                              likes: []
+                            }
+                          ],
+                          pagination: {
+                            page: 1,
+                            limit: 20,
+                            hasMore: true
                           }
                         }
                       }
