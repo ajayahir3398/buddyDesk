@@ -1317,10 +1317,6 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
-    const { status, medium, skill_id, skill_match } = req.query;
-
-    // Parse skill_match flag (optional parameter)
-    const shouldMatchSkills = skill_match === "true";
 
     // First, get the user's active temporary address
     const tempAddress = await TempAddress.findOne({
@@ -1338,105 +1334,11 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
       });
     }
 
-    // If skill matching is enabled, get user's looking_skills
-    let userLookingSkills = [];
-    if (shouldMatchSkills) {
-      const userProfile = await UserProfile.findOne({
-        where: { user_id: userId },
-        attributes: ["looking_skills"],
-      });
-
-      if (!userProfile || !userProfile.looking_skills) {
-        return res.status(200).json({
-          success: true,
-          message: "No looking skills found for skill matching",
-          data: [],
-          tempAddress: {
-            pincode: tempAddress.pincode,
-            selected_area: tempAddress.selected_area,
-            city: tempAddress.city,
-            state: tempAddress.state,
-          },
-          pagination: {
-            currentPage: page,
-            totalPages: 0,
-            totalItems: 0,
-            itemsPerPage: limit,
-          },
-        });
-      }
-
-      // Parse looking_skills if it's a JSON string, otherwise use as is
-      let lookingSkills = userProfile.looking_skills;
-      if (typeof lookingSkills === 'string') {
-        try {
-          lookingSkills = JSON.parse(lookingSkills);
-        } catch (error) {
-          console.error('Error parsing looking_skills JSON:', error);
-          return res.status(200).json({
-            success: true,
-            message: "Invalid looking skills data format",
-            data: [],
-            tempAddress: {
-              pincode: tempAddress.pincode,
-              selected_area: tempAddress.selected_area,
-              city: tempAddress.city,
-              state: tempAddress.state,
-            },
-            pagination: {
-              currentPage: page,
-              totalPages: 0,
-              totalItems: 0,
-              itemsPerPage: limit,
-            },
-          });
-        }
-      }
-
-      // Check if looking_skills is an array and has items
-      if (!Array.isArray(lookingSkills) || lookingSkills.length === 0) {
-        return res.status(200).json({
-          success: true,
-          message: "No looking skills found for skill matching",
-          data: [],
-          tempAddress: {
-            pincode: tempAddress.pincode,
-            selected_area: tempAddress.selected_area,
-            city: tempAddress.city,
-            state: tempAddress.state,
-          },
-          pagination: {
-            currentPage: page,
-            totalPages: 0,
-            totalItems: 0,
-            itemsPerPage: limit,
-          },
-        });
-      }
-
-      // Extract skill IDs from the looking_skills array
-      userLookingSkills = lookingSkills.map((skill) => {
-        // Handle both object format {id: 1, name: "skill"} and direct ID format
-        return typeof skill === 'object' ? skill.id : skill;
-      });
-    }
-
-    // Build where clause for filtering posts
+    // Simple where clause - only filter by active status and exclude logged-in user's posts
     const where = {
-      user_id: { [Op.ne]: userId }, // Exclude posts from the current user
+      status: 'active', // Only show active posts
+      user_id: { [Op.ne]: userId } // Exclude posts from the current user
     };
-    if (status) where.status = status;
-    if (medium) where.medium = medium;
-
-    // Handle skill filtering logic
-    if (shouldMatchSkills && userLookingSkills.length > 0) {
-      // When skill_match=true, use user's looking_skills for filtering
-      where.required_skill_id = { [Op.in]: userLookingSkills };
-    }
-    if (skill_id) {
-      // When skill_match=false or not provided, use skill_id if provided
-      where.required_skill_id = skill_id;
-    }
 
     // First, get the count with a simpler query to ensure accuracy
     const count = await Post.count({
@@ -1511,73 +1413,23 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
       offset,
     });
 
-    // Generate full URLs for attachments AFTER all Sequelize processing
+    // Generate full URLs for attachments
     const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    // Optimize: Extract unique user IDs for batch queries
-    const uniqueUserIds = [...new Set(posts.map((post) => post.user_id))];
+    // Simple post processing - just generate attachment URLs
+    const postsWithUrls = posts.map((post) => {
+      const postData = post.toJSON ? post.toJSON() : post;
 
-    // Batch fetch user profiles and posts to avoid N+1 queries
-    const [userProfiles, userPosts] = await Promise.all([
-      UserProfile.findAll({
-        where: {
-          user_id: { [Op.in]: uniqueUserIds },
-        },
-        attributes: ["user_id", "looking_skills"],
-      }),
-      Post.findAll({
-        where: {
-          user_id: { [Op.in]: uniqueUserIds },
-        },
-        attributes: ["id", "title", "user_id", "required_skill_id"],
-      }),
-    ]);
-
-    // Create lookup maps for O(1) access
-    const profileMap = new Map();
-    userProfiles.forEach((profile) => {
-      profileMap.set(profile.user_id, profile.looking_skills || []);
-    });
-
-    const userPostsMap = new Map();
-    userPosts.forEach((post) => {
-      if (!userPostsMap.has(post.user_id)) {
-        userPostsMap.set(post.user_id, []);
+      // Generate attachment URLs
+      if (postData.attachments && postData.attachments.length > 0) {
+        postData.attachments = generateAttachmentUrls(
+          postData.attachments,
+          baseUrl
+        );
       }
-      userPostsMap.get(post.user_id).push(post);
+
+      return postData;
     });
-
-    // Process posts efficiently using Promise.all
-    const postsWithUrls = await Promise.all(
-      posts.map(async (post) => {
-        const postData = post.toJSON ? post.toJSON() : post;
-
-        // Generate attachment URLs
-        if (postData.attachments && postData.attachments.length > 0) {
-          postData.attachments = generateAttachmentUrls(
-            postData.attachments,
-            baseUrl
-          );
-        }
-
-        // Get user skills from lookup map
-        const userSkills = profileMap.get(postData.user_id) || [];
-        const userPostsList = userPostsMap.get(postData.user_id) || [];
-
-        // Find matching exchange skill post
-        if (userPostsList.length > 0 && userSkills.length > 0) {
-          const matchingPost = userPostsList.find((userPost) =>
-            userSkills.some((skill) => skill.id == userPost.required_skill_id)
-          );
-
-          if (matchingPost) {
-            postData.inExchangeSkillPost = matchingPost;
-          }
-        }
-
-        return postData;
-      })
-    );
 
     res.status(200).json({
       success: true,
