@@ -5067,7 +5067,7 @@ const options = {
         get: {
           summary: "Get posts by user's temporary address pincode",
           description:
-            "Retrieve posts from users whose temporary address pincode matches the requesting user's temporary address pincode",
+            "Retrieve active posts from other users whose temporary address pincode matches the requesting user's temporary address pincode. Excludes the logged-in user's own posts.",
           tags: ["Posts"],
           security: [{ bearerAuth: [] }],
           parameters: [
@@ -5096,56 +5096,11 @@ const options = {
                 example: 10,
               },
             },
-            {
-              name: "status",
-              in: "query",
-              description: "Filter by post status (default: active)",
-              required: false,
-              schema: {
-                type: "string",
-                enum: ["active", "hold", "discussed", "completed", "deleted"],
-                default: "active",
-                example: "active",
-              },
-            },
-            {
-              name: "medium",
-              in: "query",
-              description: "Filter by collaboration medium",
-              required: false,
-              schema: {
-                type: "string",
-                enum: ["online", "offline"],
-                example: "online",
-              },
-            },
-            {
-              name: "skill_id",
-              in: "query",
-              description: "Filter by skill ID",
-              required: false,
-              schema: {
-                type: "integer",
-                minimum: 1,
-                example: 1,
-              },
-            },
-            {
-              name: "skill_match",
-              in: "query",
-              description: "Enable skill matching filter. If true, posts are filtered by user's looking_skills. If false, uses only current zip code filtering.",
-              required: false,
-              schema: {
-                type: "string",
-                enum: ["true", "false"],
-                example: "true",
-              },
-            },
           ],
           responses: {
             200: {
               description:
-                "Posts retrieved successfully with optimized exchange skill matching",
+                "Active posts retrieved successfully filtered by temporary address pincode",
               content: {
                 "application/json": {
                   schema: {
@@ -5209,8 +5164,8 @@ const options = {
                         updated_at: "2025-08-29T19:51:00.315Z",
                         user: {
                           id: 17,
-                          name: "Ajay B",
-                          email: "bandhiyaajay3398@gmail.com",
+                          name: "John Doe",
+                          email: "john.doe@example.com",
                           tempAddresses: [
                             {
                               pincode: "361004",
@@ -5228,14 +5183,54 @@ const options = {
                           id: 2,
                           name: "College Project Guidance",
                         },
-                        attachments: [],
-                        inExchangeSkillPost: {
-                          id: 15,
-                          title: "Web Development Services",
-                          user_id: 17,
-                          required_skill_id: 2,
-                        },
+                        attachments: [
+                          {
+                            id: 1,
+                            file_name: "project_details.pdf",
+                            file_path: "/uploads/documents/project_details.pdf",
+                            file_category: "document",
+                            mime_type: "application/pdf",
+                            size: 256789,
+                            uploaded_at: "2025-08-29T19:51:00.310Z",
+                            url: "http://localhost:3000/uploads/documents/project_details.pdf"
+                          }
+                        ]
                       },
+                      {
+                        id: 23,
+                        user_id: 18,
+                        title: "Web Design Collaboration",
+                        description: "Looking for UI/UX designer for website project",
+                        required_skill_id: 3,
+                        required_sub_skill_id: 5,
+                        medium: "offline",
+                        status: "active",
+                        deadline: "2025-09-15",
+                        created_at: "2025-08-30T10:30:00.000Z",
+                        updated_at: "2025-08-30T10:30:00.000Z",
+                        user: {
+                          id: 18,
+                          name: "Jane Smith",
+                          email: "jane.smith@example.com",
+                          tempAddresses: [
+                            {
+                              pincode: "361004",
+                              selected_area: "Udyognagar",
+                              city: "Gujarat",
+                              state: null,
+                            },
+                          ],
+                        },
+                        requiredSkill: {
+                          id: 3,
+                          name: "Design",
+                        },
+                        requiredSubSkill: {
+                          id: 5,
+                          name: "UI/UX Design",
+                        },
+                        attachments: []
+                      }
                     ],
                     tempAddress: {
                       pincode: "361004",
@@ -5246,15 +5241,15 @@ const options = {
                     pagination: {
                       currentPage: 1,
                       totalPages: 1,
-                      totalItems: 4,
+                      totalItems: 2,
                       itemsPerPage: 10,
                     },
                   },
                 },
               },
             },
-            400: {
-              description: "Bad request - User has no active temporary address",
+            404: {
+              description: "Not found - User has no active temporary address",
               content: {
                 "application/json": {
                   schema: {
