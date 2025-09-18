@@ -5067,7 +5067,7 @@ const options = {
         get: {
           summary: "Get posts by user's temporary address pincode",
           description:
-            "Retrieve active posts from other users whose temporary address pincode matches the requesting user's temporary address pincode. Excludes the logged-in user's own posts.",
+            "Retrieve active posts from other users whose temporary address pincode matches the requesting user's temporary address pincode. Optionally filter by skills when isFilterBySkills=true. Excludes the logged-in user's own posts.",
           tags: ["Posts"],
           security: [{ bearerAuth: [] }],
           parameters: [
@@ -5096,11 +5096,23 @@ const options = {
                 example: 10,
               },
             },
+            {
+              name: "isFilterBySkills",
+              in: "query",
+              description: "Filter posts by user's looking_skills. If true, only posts with required_skill_id matching user's looking_skills are returned.",
+              required: false,
+              schema: {
+                type: "string",
+                enum: ["true", "false"],
+                default: "false",
+                example: "true",
+              },
+            },
           ],
           responses: {
             200: {
               description:
-                "Active posts retrieved successfully filtered by temporary address pincode",
+                "Active posts retrieved successfully filtered by temporary address pincode and optionally by user's looking skills",
               content: {
                 "application/json": {
                   schema: {
@@ -5247,6 +5259,39 @@ const options = {
                   },
                 },
               },
+            },
+            200: {
+              description: "Empty result - User has no looking skills configured",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "No looking skills found for skill matching" },
+                      data: { type: "array", example: [] },
+                      tempAddress: {
+                        type: "object",
+                        properties: {
+                          pincode: { type: "string", example: "361004" },
+                          selected_area: { type: "string", example: "Udyognagar" },
+                          city: { type: "string", example: "Gujarat" },
+                          state: { type: "string", nullable: true, example: null }
+                        }
+                      },
+                      pagination: {
+                        type: "object",
+                        properties: {
+                          currentPage: { type: "integer", example: 1 },
+                          totalPages: { type: "integer", example: 0 },
+                          totalItems: { type: "integer", example: 0 },
+                          itemsPerPage: { type: "integer", example: 10 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             },
             404: {
               description: "Not found - User has no active temporary address",

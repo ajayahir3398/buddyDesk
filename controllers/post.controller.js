@@ -1317,6 +1317,7 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
+    const isFilterBySkills = req.query.isFilterBySkills === 'true';
 
     // First, get the user's active temporary address
     const tempAddress = await TempAddress.findOne({
@@ -1334,11 +1335,72 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
       });
     }
 
-    // Simple where clause - only filter by active status and exclude logged-in user's posts
+    // Build base where clause
     const where = {
       status: 'active', // Only show active posts
       user_id: { [Op.ne]: userId } // Exclude posts from the current user
     };
+
+    // Add skill filtering only if isFilterBySkills flag is true
+    if (isFilterBySkills) {
+      // Get user's looking_skills for skill matching
+      const userProfile = await UserProfile.findOne({
+        where: { user_id: userId },
+        attributes: ["looking_skills"],
+      });
+
+      if (!userProfile || !userProfile.looking_skills) {
+        return res.status(200).json({
+          success: true,
+          message: "No looking skills found for skill matching",
+          data: [],
+          tempAddress: {
+            pincode: tempAddress.pincode,
+            selected_area: tempAddress.selected_area,
+            city: tempAddress.city,
+            state: tempAddress.state,
+          },
+          pagination: {
+            currentPage: page,
+            totalPages: 0,
+            totalItems: 0,
+            itemsPerPage: limit,
+          },
+        });
+      }
+
+      let lookingSkills = userProfile.looking_skills;
+
+      // Check if looking_skills is an array and has items
+      if (!Array.isArray(lookingSkills) || lookingSkills.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: "No looking skills found for skill matching",
+          data: [],
+          tempAddress: {
+            pincode: tempAddress.pincode,
+            selected_area: tempAddress.selected_area,
+            city: tempAddress.city,
+            state: tempAddress.state,
+          },
+          pagination: {
+            currentPage: page,
+            totalPages: 0,
+            totalItems: 0,
+            itemsPerPage: limit,
+          },
+        });
+      }
+
+      // Extract skill IDs from the looking_skills array
+      const userLookingSkillIds = lookingSkills.map((skill) => {
+        // Handle both object format {id: 1, name: "skill"} and direct ID format
+        return typeof skill === 'object' ? skill.id : skill;
+      });
+
+      // Add skill filtering to where clause
+      where.required_skill_id = { [Op.in]: userLookingSkillIds };
+    }
 
     // First, get the count with a simpler query to ensure accuracy
     const count = await Post.count({
@@ -1433,7 +1495,9 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Posts retrieved successfully for pincode ${tempAddress.pincode}`,
+      message: isFilterBySkills 
+        ? `Posts retrieved successfully for pincode ${tempAddress.pincode} matching your skills`
+        : `Posts retrieved successfully for pincode ${tempAddress.pincode}`,
       data: postsWithUrls,
       tempAddress: {
         pincode: tempAddress.pincode,
