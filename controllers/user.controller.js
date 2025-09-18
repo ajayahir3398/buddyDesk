@@ -378,7 +378,7 @@ exports.getProfile = async (req, res) => {
           order: [['created_at', 'DESC']] // Most recent posts first
         }
       ],
-      attributes: ['id', 'name', 'email', 'created_at', 'updated_at'],
+      attributes: ['id', 'name', 'email', 'referral_code', 'created_at', 'updated_at'],
       order: [
         [{ model: WorkProfile, as: 'workProfiles' }, 'start_date', 'DESC']
       ]
@@ -429,6 +429,7 @@ exports.getProfile = async (req, res) => {
       id: user.id,
       name: user.name,
       email: user.email,
+      referral_code: user.referral_code,
       created_at: user.created_at,
       updated_at: user.updated_at,
       profile: user.profile ? {
