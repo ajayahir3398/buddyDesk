@@ -73,13 +73,17 @@ module.exports = {
       'audio/mp3',
       'audio/wav',
       'audio/ogg',
-      'application/pdf'
+      'application/pdf',
+      'application/zip',
+      'application/x-zip-compressed',
+      'application/octet-stream'
     ],
     // File type categories for organization
     CATEGORIES: {
       IMAGE: ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'],
       AUDIO: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg'],
-      DOCUMENT: ['application/pdf']
+      DOCUMENT: ['application/pdf'],
+      ARCHIVE: ['application/zip', 'application/x-zip-compressed', 'application/octet-stream']
     }
   },
 

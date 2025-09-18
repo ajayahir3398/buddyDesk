@@ -17,6 +17,7 @@ const SECURITY_CONFIG = {
     video: 100 * 1024 * 1024, // 100MB
     document: 50 * 1024 * 1024, // 50MB
     audio: 50 * 1024 * 1024, // 50MB
+    archive: 10 * 1024 * 1024, // 10MB for ZIP files
     default: 25 * 1024 * 1024 // 25MB
   },
   
@@ -25,7 +26,8 @@ const SECURITY_CONFIG = {
     image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],
     video: ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm'],
     document: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'],
-    audio: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a']
+    audio: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a'],
+    archive: ['application/zip', 'application/x-zip-compressed', 'application/octet-stream']
   },
   
   // NSFW detection thresholds
@@ -256,6 +258,9 @@ class FileSecurityValidator {
         case 'audio':
           await this.validateAudioContent(file, result);
           break;
+        case 'archive':
+          await this.validateArchiveContent(file, result);
+          break;
         default:
           result.securityChecks.contentSafe = true;
       }
@@ -480,6 +485,12 @@ class FileSecurityValidator {
   // Audio content validation
   async validateAudioContent(file, result) {
     try {
+      // Skip audio validation for files without path (memory storage)
+      if (!file.path) {
+        result.securityChecks.contentSafe = true;
+        return;
+      }
+
       // Basic audio validation using ffmpeg
       await new Promise((resolve, reject) => {
         ffmpeg.ffprobe(file.path, (err, metadata) => {
@@ -511,12 +522,80 @@ class FileSecurityValidator {
       // Error already handled in the promise
     }
   }
+
+  // Archive content validation (for ZIP files)
+  async validateArchiveContent(file, result) {
+    try {
+      // Basic archive validation
+      if (file.size > SECURITY_CONFIG.maxFileSizes.archive) {
+        result.violations.push({
+          type: 'ARCHIVE_TOO_LARGE',
+          message: 'Archive file size exceeds security limits',
+          severity: 'MEDIUM'
+        });
+        return;
+      }
+
+      // For memory storage files (like Aadhaar ZIP), skip file system checks
+      if (!file.path && file.buffer) {
+        // Basic buffer validation
+        if (!file.buffer || file.buffer.length === 0) {
+          result.violations.push({
+            type: 'EMPTY_ARCHIVE',
+            message: 'Archive file appears to be empty',
+            severity: 'HIGH'
+          });
+          return;
+        }
+
+        // Check for ZIP file signature
+        const zipSignature = file.buffer.slice(0, 4);
+        const validZipSignatures = [
+          Buffer.from([0x50, 0x4B, 0x03, 0x04]), // Standard ZIP
+          Buffer.from([0x50, 0x4B, 0x05, 0x06]), // Empty ZIP
+          Buffer.from([0x50, 0x4B, 0x07, 0x08])  // Spanned ZIP
+        ];
+
+        const isValidZip = validZipSignatures.some(sig => zipSignature.equals(sig));
+        if (!isValidZip) {
+          result.violations.push({
+            type: 'INVALID_ARCHIVE_FORMAT',
+            message: 'File does not appear to be a valid ZIP archive',
+            severity: 'HIGH'
+          });
+          return;
+        }
+      }
+
+      result.securityChecks.contentSafe = true;
+      
+    } catch (error) {
+      result.violations.push({
+        type: 'ARCHIVE_VALIDATION_ERROR',
+        message: `Archive validation failed: ${error.message}`,
+        severity: 'MEDIUM'
+      });
+    }
+  }
   
   // Basic malware detection
   async validateMalware(file, result) {
     try {
-      // Check for suspicious file signatures
-      const buffer = fs.readFileSync(file.path, { start: 0, end: 1024 });
+      // Handle both file path and buffer storage
+      let buffer;
+      if (file.path) {
+        buffer = fs.readFileSync(file.path, { start: 0, end: 1024 });
+      } else if (file.buffer) {
+        buffer = file.buffer.slice(0, 1024);
+      } else {
+        result.violations.push({
+          type: 'MALWARE_SCAN_ERROR',
+          message: 'Unable to access file for malware scanning',
+          severity: 'MEDIUM'
+        });
+        return;
+      }
+      
       const fileSignature = buffer.toString('hex');
       
       // Check for executable signatures
@@ -551,8 +630,21 @@ class FileSecurityValidator {
   // File integrity validation
   async validateFileIntegrity(file, result) {
     try {
-      // Calculate file hash for integrity
-      const fileBuffer = fs.readFileSync(file.path);
+      // Handle both file path and buffer storage
+      let fileBuffer;
+      if (file.path) {
+        fileBuffer = fs.readFileSync(file.path);
+      } else if (file.buffer) {
+        fileBuffer = file.buffer;
+      } else {
+        result.violations.push({
+          type: 'INTEGRITY_CHECK_ERROR',
+          message: 'Unable to access file for integrity check',
+          severity: 'MEDIUM'
+        });
+        return;
+      }
+      
       const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
       
       result.fileInfo.hash = hash;
@@ -582,6 +674,7 @@ class FileSecurityValidator {
     if (mimeType.startsWith('video/')) return 'video';
     if (mimeType.startsWith('audio/')) return 'audio';
     if (mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('text')) return 'document';
+    if (mimeType.includes('zip') || mimeType.includes('compressed') || mimeType === 'application/octet-stream') return 'archive';
     return null;
   }
   
