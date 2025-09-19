@@ -93,6 +93,11 @@ const options = {
               example: "XYZ789",
               description: "Referral code of the user who invited this user",
             },
+            referred_user_count: {
+              type: "integer",
+              example: 5,
+              description: "Number of users who have signed up using this user's referral code",
+            },
             is_online: {
               type: "boolean",
               example: false,
@@ -1438,6 +1443,16 @@ const options = {
               type: "string",
               example: "john.doe@example.com",
               description: "User email address",
+            },
+            referral_code: {
+              type: "string",
+              example: "ABC123",
+              description: "User's unique referral code",
+            },
+            referred_user_count: {
+              type: "integer",
+              example: 5,
+              description: "Number of users who have signed up using this user's referral code",
             },
             created_at: {
               type: "string",
@@ -3505,6 +3520,8 @@ const options = {
                       id: 1,
                       name: "John Doe",
                       email: "john.doe@example.com",
+                      referral_code: "ABC123",
+                      referred_user_count: 5,
                       created_at: "2024-01-01T00:00:00.000Z",
                       updated_at: "2024-01-01T00:00:00.000Z",
                       profile: {

@@ -44,7 +44,7 @@ const generateRefreshToken = (user) => {
 // Register a new user
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, referred_by_code } = req.body; // Added referred_by_code
+    const { name, email, password, referred_by } = req.body; // Added referred_by
 
     // Generate a unique referral code for the new user
     let referralCode;
@@ -76,13 +76,13 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       referral_code: referralCode, // Store the generated referral code
-      referred_by: referred_by_code, // Store the referral code of who invited them
+      referred_by: referred_by, // Store the referral code of who invited them
       created_at: new Date()
     });
 
-    // Log referral if referred_by_code is present
-    if (referred_by_code) {
-      const referrer = await User.findOne({ where: { referral_code: referred_by_code } });
+    // Log referral if referred_by is present
+    if (referred_by) {
+      const referrer = await User.findOne({ where: { referral_code: referred_by } });
       if (referrer) {
         await ReferralLog.create({
           referrer_id: referrer.id,
@@ -313,6 +313,13 @@ exports.getProfile = async (req, res) => {
   try {
     const userId = req.user.id; // From authentication middleware
 
+    // Get referred user count
+    const referredUserCount = await ReferralLog.count({
+      where: {
+        referrer_id: userId
+      }
+    });
+
     const user = await User.findByPk(userId, {
       include: [
         {
@@ -430,6 +437,7 @@ exports.getProfile = async (req, res) => {
       name: user.name,
       email: user.email,
       referral_code: user.referral_code,
+      referred_user_count: referredUserCount,
       created_at: user.created_at,
       updated_at: user.updated_at,
       profile: user.profile ? {
@@ -470,6 +478,13 @@ exports.getProfileById = async (req, res) => {
         message: 'Access denied. You can only view your own profile.'
       });
     }
+
+    // Get referred user count
+    const referredUserCount = await ReferralLog.count({
+      where: {
+        referrer_id: id
+      }
+    });
 
     const user = await User.findByPk(id, {
       include: [
@@ -555,6 +570,8 @@ exports.getProfileById = async (req, res) => {
       id: user.id,
       name: user.name,
       email: user.email,
+      referral_code: user.referral_code,
+      referred_user_count: referredUserCount,
       created_at: user.created_at,
       updated_at: user.updated_at,
       profile: user.profile ? {
