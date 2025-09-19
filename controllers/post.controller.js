@@ -1172,7 +1172,7 @@ exports.serveFileByCategory = async (req, res) => {
         category,
         safeFilename
       );
-      
+
       // Check if file exists on disk
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({
@@ -1223,32 +1223,32 @@ exports.serveFileByCategory = async (req, res) => {
     } else if (profileImage) {
       // For profile images, determine mime type from file extension
       const ext = path.extname(safeFilename).toLowerCase();
-      mimeType = ext === '.png' ? 'image/png' : 
-                 ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 
-                 ext === '.gif' ? 'image/gif' : 
-                 'application/octet-stream';
+      mimeType = ext === '.png' ? 'image/png' :
+        ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+          ext === '.gif' ? 'image/gif' :
+            'application/octet-stream';
       fileName = safeFilename;
     } else {
       // Fallback case: file found on disk but not in database
       const ext = path.extname(safeFilename).toLowerCase();
-      mimeType = ext === '.png' ? 'image/png' : 
-                 ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 
-                 ext === '.gif' ? 'image/gif' : 
-                 ext === '.webp' ? 'image/webp' :
-                 ext === '.bmp' ? 'image/bmp' :
-                 ext === '.mp3' ? 'audio/mpeg' :
-                 ext === '.wav' ? 'audio/wav' :
-                 ext === '.ogg' ? 'audio/ogg' :
-                 ext === '.pdf' ? 'application/pdf' :
-                 'application/octet-stream';
+      mimeType = ext === '.png' ? 'image/png' :
+        ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+          ext === '.gif' ? 'image/gif' :
+            ext === '.webp' ? 'image/webp' :
+              ext === '.bmp' ? 'image/bmp' :
+                ext === '.mp3' ? 'audio/mpeg' :
+                  ext === '.wav' ? 'audio/wav' :
+                    ext === '.ogg' ? 'audio/ogg' :
+                      ext === '.pdf' ? 'application/pdf' :
+                        'application/octet-stream';
       fileName = safeFilename;
     }
-    
+
     // Ensure mimeType is never undefined
     if (!mimeType) {
       mimeType = 'application/octet-stream';
     }
-    
+
     res.setHeader("Content-Type", mimeType);
     res.setHeader(
       "Content-Disposition",
@@ -1434,6 +1434,11 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
           attributes: ["id", "name", "email"],
           include: [
             {
+              model: UserProfile,
+              as: "profile",
+              attributes: ["looking_skills"],
+            },
+            {
               model: TempAddress,
               as: "tempAddresses",
               where: {
@@ -1479,7 +1484,7 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
     const baseUrl = `${req.protocol}://${req.get("host")}`;
 
     // Simple post processing - just generate attachment URLs
-    const postsWithUrls = posts.map((post) => {
+    let postsWithUrls = posts.map((post) => {
       const postData = post.toJSON ? post.toJSON() : post;
 
       // Generate attachment URLs
@@ -1493,9 +1498,22 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
       return postData;
     });
 
+    const userPosts = await Post.findAll({
+      where: {
+        user_id: userId,
+      },
+    });
+
+    postsWithUrls = postsWithUrls.map(post => {
+      const lookingSkillsIds = post.user.profile.looking_skills.map(skill => skill.id) || []
+      const userPostsList = userPosts.filter(userPost => lookingSkillsIds.includes(userPost.required_skill_id))
+      post.inExchangeSkillPost = userPostsList.length > 0 ? userPostsList[0] : null
+      return post
+    })
+
     res.status(200).json({
       success: true,
-      message: isFilterBySkills 
+      message: isFilterBySkills
         ? `Posts retrieved successfully for pincode ${tempAddress.pincode} matching your skills`
         : `Posts retrieved successfully for pincode ${tempAddress.pincode}`,
       data: postsWithUrls,
