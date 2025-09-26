@@ -868,6 +868,50 @@ exports.getPublicProfile = async (req, res) => {
   }
 };
 
+// Change user password
+exports.changePassword = async (req, res) => {
+  try {
+    const { email, new_password } = req.body;
+
+    // Check if user exists with the provided email
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User with this email does not exist, please register yourself'
+      });
+    }
+
+    // Hash the new password
+    const saltRounds = 10;
+    const hashedNewPassword = await bcrypt.hash(new_password, saltRounds);
+
+    // Update the user's password
+    await User.update(
+      { 
+        password: hashedNewPassword,
+        updated_at: new Date()
+      },
+      { 
+        where: { email } 
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
 // Helper function to calculate work duration
 const calculateWorkDuration = (startDate, endDate) => {
   if (!startDate) return null;

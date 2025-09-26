@@ -5,6 +5,7 @@ const {
     validateUserRegistration,
     validateUserLogin,
     validateProfileUpdate,
+    validateChangePassword,
 } = require('../middlewares/validation');
 const { uploadProfileImage, handleUploadError } = require('../middlewares/upload');
 const { validateFileSecurityMiddleware } = require('../middleware/fileSecurityValidation');
@@ -16,6 +17,7 @@ router.post('/register', validateUserRegistration, userController.register);
 router.post('/login', validateUserLogin, userController.login);
 router.post('/refresh-token', userController.refreshToken);
 router.post('/logout', userController.logout);
+router.post('/change-password', validateChangePassword, userController.changePassword);
 
 // Profile routes (require authentication)
 router.get('/profile', authenticateToken, userController.getProfile);

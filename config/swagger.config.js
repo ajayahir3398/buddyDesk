@@ -183,6 +183,33 @@ const options = {
             },
           },
         },
+        ChangePassword: {
+          type: "object",
+          required: ["email", "new_password"],
+          properties: {
+            email: {
+              type: "string",
+              example: "john.doe@example.com",
+              description: "User email address",
+              format: "email",
+              maxLength: 255,
+            },
+            new_password: {
+              type: "string",
+              example: "NewSecureP@ssw0rd123",
+              description: "New password (8-128 characters, must contain uppercase, lowercase, number, and special character)",
+              minLength: 8,
+              maxLength: 128,
+            },
+          },
+        },
+        ChangePasswordResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Password changed successfully" },
+          },
+        },
         LoginResponse: {
           type: "object",
           properties: {
@@ -2958,6 +2985,92 @@ const options = {
                 "application/json": {
                   schema: {
                     $ref: "#/components/schemas/Error",
+                  },
+                },
+              },
+            },
+            500: {
+              description: "Internal server error",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/users/change-password": {
+        post: {
+          summary: "Change user password",
+          description: "Change password for an existing user by providing email and new password",
+          tags: ["Users"],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ChangePassword",
+                },
+                examples: {
+                  valid: {
+                    summary: "Valid password change",
+                    value: {
+                      email: "john.doe@example.com",
+                      new_password: "NewSecureP@ssw0rd123",
+                    },
+                  },
+                  invalid_email: {
+                    summary: "Invalid email format",
+                    value: {
+                      email: "invalid-email",
+                      new_password: "NewSecureP@ssw0rd123",
+                    },
+                  },
+                  weak_password: {
+                    summary: "Weak password",
+                    value: {
+                      email: "john.doe@example.com",
+                      new_password: "weak",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Password changed successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ChangePasswordResponse",
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Validation error",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ValidationError",
+                  },
+                },
+              },
+            },
+            404: {
+              description: "User not found",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                  example: {
+                    success: false,
+                    message: "User with this email does not exist, please register yourself",
                   },
                 },
               },

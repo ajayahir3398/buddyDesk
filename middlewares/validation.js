@@ -685,6 +685,27 @@ const validatePostUpdate = [
   handleValidationErrors
 ];
 
+// Change password validation
+const validateChangePassword = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email address')
+    .normalizeEmail(),
+  
+  body('new_password')
+    .notEmpty()
+    .withMessage('New password is required')
+    .isLength({ min: 8, max: 128 })
+    .withMessage('New password must be between 8 and 128 characters')
+    .matches(patterns.password)
+    .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+  
+  handleValidationErrors
+];
+
 module.exports = {
   handleValidationErrors,
   validateUserRegistration,
@@ -704,5 +725,6 @@ module.exports = {
   validateNotEmpty,
   validatePostCreation,
   validatePostUpdate,
+  validateChangePassword,
   patterns
 };
