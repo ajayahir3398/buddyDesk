@@ -18,7 +18,7 @@ async function saveOrUpdateToken({ userId, fcmToken, platform, deviceInfo }) {
 async function sendPushToUser(userId, payload) {
 	const tokens = await db.DeviceToken.findAll({
 		where: { user_id: userId },
-		attributes: ['id', 'fcm_token']
+		attributes: ['id', 'fcm_token', 'platform', 'last_used_at']
 	});
 
 	if (!tokens.length) return { successCount: 0, failureCount: 0, results: [] };
@@ -30,27 +30,45 @@ async function sendPushToUser(userId, payload) {
 		tokens: registrationTokens
 	};
 
-	const response = await admin.messaging().sendEachForMulticast(message);
+	try {
+		const response = await admin.messaging().sendEachForMulticast(message);
 
-	// Cleanup invalid tokens
-	const invalidTokenIds = [];
-	response.responses.forEach((res, idx) => {
-		if (!res.success) {
-			const code = res.error && res.error.code;
-			if (code === 'messaging/registration-token-not-registered' || code === 'messaging/invalid-registration-token') {
-				invalidTokenIds.push(tokens[idx].id);
+		// Cleanup invalid tokens
+		const invalidTokenIds = [];
+		const invalidTokenDetails = [];
+
+		response.responses.forEach((res, idx) => {
+			if (!res.success) {
+				const code = res.error && res.error.code;
+				if (code === 'messaging/registration-token-not-registered' || code === 'messaging/invalid-registration-token') {
+					invalidTokenIds.push(tokens[idx].id);
+					invalidTokenDetails.push({
+						tokenId: tokens[idx].id,
+						platform: tokens[idx].platform,
+						errorCode: code,
+						tokenPreview: tokens[idx].fcm_token?.substring(0, 20) + '...'
+					});
+				}
 			}
-		}
-	});
-	if (invalidTokenIds.length) {
-		await db.DeviceToken.destroy({ where: { id: invalidTokenIds } });
-	}
+		});
 
-	return {
-		successCount: response.successCount,
-		failureCount: response.failureCount,
-		results: response.responses
-	};
+		if (invalidTokenIds.length) {
+			await db.DeviceToken.destroy({ where: { id: invalidTokenIds } });
+		}
+
+		return {
+			successCount: response.successCount,
+			failureCount: response.failureCount,
+			results: response.responses
+		};
+	} catch (error) {
+		logger.error('❌ FCM PUSH FAILED: Error sending push notification via Firebase', {
+			...pushLogContext,
+			error: error.message,
+			stack: error.stack
+		});
+		throw error;
+	}
 }
 
 async function sendPostNotificationToAllUsers(post) {
@@ -70,14 +88,14 @@ async function sendPostNotificationToAllUsers(post) {
 			if (!user || user.id === post.user_id) {
 				return false;
 			}
-			
+
 			// Check notification preferences
 			const settings = user.notificationSettings;
 			if (settings) {
 				// Only check push_notification flag
 				return settings.push_notification;
 			}
-			
+
 			// If no notification settings found, default to sending notifications
 			return true;
 		});
@@ -136,13 +154,6 @@ async function sendPostNotificationToAllUsers(post) {
 
 		const results = await Promise.all(notificationPromises);
 		const successCount = results.filter(r => r.success).length;
-
-		logger.info('Post notifications sent', {
-			postId: post.id,
-			totalUsers: usersToNotify.length,
-			successCount,
-			failureCount: results.length - successCount
-		});
 
 		return {
 			success: true,
