@@ -2694,6 +2694,139 @@ const options = {
             }
           },
         },
+        Notification: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 123, description: "Notification ID" },
+            user_id: { type: "integer", example: 1, description: "User ID receiving the notification" },
+            message_id: { type: "integer", example: 456, description: "Message ID (if applicable)" },
+            conversation_id: { type: "integer", example: 789, description: "Conversation ID (if applicable)" },
+            post_id: { type: "integer", example: 12, description: "Post ID (if applicable)" },
+            type: { 
+              type: "string", 
+              enum: ["message", "mention", "group_invite", "system", "post"],
+              example: "post",
+              description: "Notification type"
+            },
+            title: { type: "string", example: "New Post Available!", description: "Notification title" },
+            body: { type: "string", example: "A new post has been created", description: "Notification body text" },
+            data: { 
+              type: "object", 
+              example: { post_id: 12, post_title: "Sample Post" },
+              description: "Additional notification data"
+            },
+            is_seen: { type: "boolean", example: false, description: "Whether notification has been seen" },
+            is_read: { type: "boolean", example: false, description: "Whether notification has been read" },
+            seen_at: { 
+              type: "string", 
+              format: "date-time", 
+              example: null,
+              description: "When notification was seen"
+            },
+            read_at: { 
+              type: "string", 
+              format: "date-time", 
+              example: null,
+              description: "When notification was read"
+            },
+            push_sent: { type: "boolean", example: true, description: "Whether push notification was sent" },
+            push_sent_at: { 
+              type: "string", 
+              format: "date-time", 
+              example: "2024-01-01T10:30:00.000Z",
+              description: "When push notification was sent"
+            },
+            created_at: { 
+              type: "string", 
+              format: "date-time", 
+              example: "2024-01-01T10:00:00.000Z",
+              description: "When notification was created"
+            },
+            updated_at: { 
+              type: "string", 
+              format: "date-time", 
+              example: "2024-01-01T10:00:00.000Z",
+              description: "When notification was last updated"
+            },
+            post: {
+              type: "object",
+              description: "Associated post details (if type is 'post')",
+              properties: {
+                id: { type: "integer", example: 12 },
+                title: { type: "string", example: "Looking for React Developer" },
+                description: { type: "string", example: "Need help with React project" },
+                medium: { type: "string", enum: ["online", "offline"], example: "online" },
+                status: { type: "string", example: "active" },
+                user: {
+                  type: "object",
+                  properties: {
+                    id: { type: "integer", example: 2 },
+                    name: { type: "string", example: "Jane Smith" }
+                  }
+                },
+                requiredSkill: {
+                  type: "object",
+                  properties: {
+                    id: { type: "integer", example: 1 },
+                    name: { type: "string", example: "React" }
+                  }
+                }
+              }
+            },
+            message: {
+              type: "object",
+              description: "Associated message details (if type is 'message')",
+              properties: {
+                id: { type: "integer", example: 456 },
+                content: { type: "string", example: "Hello there!" },
+                sender: {
+                  type: "object",
+                  properties: {
+                    id: { type: "integer", example: 3 },
+                    name: { type: "string", example: "Bob Wilson" }
+                  }
+                }
+              }
+            },
+            conversation: {
+              type: "object",
+              description: "Associated conversation details (if applicable)",
+              properties: {
+                id: { type: "integer", example: 789 },
+                name: { type: "string", example: "Project Discussion" },
+                type: { type: "string", example: "group" }
+              }
+            }
+          },
+        },
+        NotificationsResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Notifications retrieved successfully" },
+            data: {
+              type: "object",
+              properties: {
+                notifications: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/Notification" }
+                },
+                pagination: {
+                  type: "object",
+                  properties: {
+                    currentPage: { type: "integer", example: 1, description: "Current page number" },
+                    totalPages: { type: "integer", example: 5, description: "Total number of pages" },
+                    totalNotifications: { type: "integer", example: 85, description: "Total number of notifications" },
+                    hasNextPage: { type: "boolean", example: true, description: "Whether there are more pages" },
+                    hasPreviousPage: { type: "boolean", example: false, description: "Whether there are previous pages" },
+                    limit: { type: "integer", example: 20, description: "Number of notifications per page" }
+                  }
+                },
+                unreadCount: { type: "integer", example: 12, description: "Number of unread notifications" }
+              }
+            }
+          },
+        },
       },
     },
     tags: [
@@ -3269,6 +3402,135 @@ const options = {
               },
             },
             400: { description: "Bad request" },
+            401: { description: "Unauthorized" },
+            500: { description: "Server error" },
+          },
+        },
+      },
+      "/notifications": {
+        get: {
+          summary: "Get user notifications",
+          description:
+            "Retrieve paginated notifications for the authenticated user with optional filtering by type",
+          tags: ["Notifications"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "page",
+              in: "query",
+              description: "Page number for pagination",
+              required: false,
+              schema: {
+                type: "integer",
+                minimum: 1,
+                default: 1,
+                example: 1,
+              },
+            },
+            {
+              name: "limit",
+              in: "query",
+              description: "Number of notifications per page (max 50)",
+              required: false,
+              schema: {
+                type: "integer",
+                minimum: 1,
+                maximum: 50,
+                default: 20,
+                example: 20,
+              },
+            },
+            {
+              name: "type",
+              in: "query",
+              description: "Filter notifications by type",
+              required: false,
+              schema: {
+                type: "string",
+                enum: ["message", "mention", "group_invite", "system", "post"],
+                example: "post",
+              },
+            },
+          ],
+          responses: {
+            200: {
+              description: "Notifications retrieved successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/NotificationsResponse",
+                  },
+                },
+              },
+            },
+            400: { description: "Bad request" },
+            401: { description: "Unauthorized" },
+            500: { description: "Server error" },
+          },
+        },
+      },
+      "/notifications/{id}/read": {
+        put: {
+          summary: "Mark notification as read",
+          description: "Mark a specific notification as read for the authenticated user",
+          tags: ["Notifications"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              description: "Notification ID",
+              required: true,
+              schema: {
+                type: "integer",
+                minimum: 1,
+                example: 123,
+              },
+            },
+          ],
+          responses: {
+            200: {
+              description: "Notification marked as read successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Notification marked as read" },
+                      data: { $ref: "#/components/schemas/Notification" },
+                    },
+                  },
+                },
+              },
+            },
+            404: { description: "Notification not found" },
+            401: { description: "Unauthorized" },
+            500: { description: "Server error" },
+          },
+        },
+      },
+      "/notifications/read-all": {
+        put: {
+          summary: "Mark all notifications as read",
+          description: "Mark all unread notifications as read for the authenticated user",
+          tags: ["Notifications"],
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: "All notifications marked as read successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "All notifications marked as read" },
+                    },
+                  },
+                },
+              },
+            },
             401: { description: "Unauthorized" },
             500: { description: "Server error" },
           },
