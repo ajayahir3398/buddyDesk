@@ -58,11 +58,24 @@ const validateUserRegistration = [
   
   body('referred_by')
     .optional()
-    .trim()
-    .isLength({ min: 6, max: 6 })
-    .withMessage('Referral code must be 6 characters long')
-    .isAlphanumeric()
-    .withMessage('Referral code can only contain letters and numbers'),
+    .custom((value) => {
+      // Allow null, undefined, or empty string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      // If value is provided, trim and validate
+      const trimmedValue = value.trim();
+      if (trimmedValue === '') {
+        return true; // Allow empty string after trimming
+      }
+      if (trimmedValue.length !== 6) {
+        throw new Error('Referral code must be 6 characters long');
+      }
+      if (!/^[a-zA-Z0-9]+$/.test(trimmedValue)) {
+        throw new Error('Referral code can only contain letters and numbers');
+      }
+      return true;
+    }),
 
   handleValidationErrors
 ];
