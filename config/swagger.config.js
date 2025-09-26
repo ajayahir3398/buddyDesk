@@ -992,6 +992,51 @@ const options = {
             },
           },
         },
+        NotificationSettings: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 1,
+              description: "Notification settings ID"
+            },
+            push_notification: {
+              type: "boolean",
+              example: true,
+              description: "Enable/disable push notifications"
+            },
+            general_notification: {
+              type: "boolean",
+              example: true,
+              description: "Enable/disable general notifications"
+            },
+            skill_exchange_notification: {
+              type: "boolean",
+              example: true,
+              description: "Enable/disable skill exchange notifications"
+            },
+            message_notification: {
+              type: "boolean",
+              example: true,
+              description: "Enable/disable message notifications"
+            },
+            marketing_notification: {
+              type: "boolean",
+              example: false,
+              description: "Enable/disable marketing notifications"
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T00:00:00.000Z"
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T00:00:00.000Z"
+            }
+          }
+        },
         PostAttachment: {
           type: "object",
           properties: {
@@ -1516,6 +1561,11 @@ const options = {
               },
               description: "User temporary addresses",
             },
+            notification_settings: {
+              $ref: "#/components/schemas/NotificationSettings",
+              description: "User notification preferences",
+              nullable: true,
+            },
             posts: {
               type: "array",
               items: {
@@ -1752,6 +1802,11 @@ const options = {
                       },
                     },
                   },
+                },
+                notification_settings: {
+                  $ref: "#/components/schemas/NotificationSettings",
+                  description: "Updated user notification preferences",
+                  nullable: true,
                 },
               },
             },
@@ -1996,10 +2051,41 @@ const options = {
               description: "Relative path for user profile image (optional)",
               nullable: true,
             },
+            notification_settings: {
+              type: "object",
+              description: "Notification preferences object",
+              properties: {
+                push_notification: {
+                  type: "boolean",
+                  example: true,
+                  description: "Enable/disable push notifications",
+                },
+                general_notification: {
+                  type: "boolean",
+                  example: true,
+                  description: "Enable/disable general notifications",
+                },
+                skill_exchange_notification: {
+                  type: "boolean",
+                  example: true,
+                  description: "Enable/disable skill exchange notifications",
+                },
+                message_notification: {
+                  type: "boolean",
+                  example: true,
+                  description: "Enable/disable message notifications",
+                },
+                marketing_notification: {
+                  type: "boolean",
+                  example: false,
+                  description: "Enable/disable marketing notifications",
+                },
+              },
+            },
           },
           additionalProperties: false,
           description:
-            "At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses, temp_addresses, and work_profiles completely replace existing data when provided.",
+            "At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses, temp_addresses, and work_profiles completely replace existing data when provided. Notification settings can be updated individually or together.",
         },
         PublicProfile: {
           type: "object",
@@ -3712,6 +3798,16 @@ const options = {
                           updated_at: "2024-01-01T00:00:00.000Z",
                         },
                       ],
+                      notification_settings: {
+                        id: 1,
+                        push_notification: true,
+                        general_notification: true,
+                        skill_exchange_notification: true,
+                        message_notification: true,
+                        marketing_notification: false,
+                        created_at: "2024-01-01T00:00:00.000Z",
+                        updated_at: "2024-01-01T00:00:00.000Z",
+                      },
                       posts: [
                         {
                           id: 1,
@@ -3784,7 +3880,7 @@ const options = {
         put: {
           summary: "Update user profile",
           description:
-            "Update profile information including basic details, addresses, temporary addresses, and work profiles with skills. At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses, temp_addresses, and work_profiles completely replace existing data when provided.",
+            "Update profile information including basic details, addresses, temporary addresses, work profiles with skills, and notification settings. At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses, temp_addresses, and work_profiles completely replace existing data when provided. Notification settings can be updated individually or all together.",
           tags: ["Users"],
           security: [
             {
@@ -3819,6 +3915,27 @@ const options = {
                         { id: 5, name: "Node.js" },
                         { id: 7, name: "Python" },
                       ],
+                    },
+                  },
+                  update_notification_settings: {
+                    summary: "Update notification settings only",
+                    value: {
+                      notification_settings: {
+                        push_notification: false,
+                        marketing_notification: true,
+                      },
+                    },
+                  },
+                  update_all_notifications: {
+                    summary: "Update all notification settings",
+                    value: {
+                      notification_settings: {
+                        push_notification: true,
+                        general_notification: true,
+                        skill_exchange_notification: false,
+                        message_notification: true,
+                        marketing_notification: false,
+                      },
                     },
                   },
                   email_only: {

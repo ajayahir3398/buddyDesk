@@ -282,12 +282,15 @@ const validateDate = (fieldName) => [
 
 // Custom validation to check if at least one field is provided
 const validateAtLeastOneField = (req, res, next) => {
-  const { name, email, phone, dob, bio, addresses, temp_addresses, work_profiles } = req.body;
+  const { 
+    name, email, phone, dob, bio, addresses, temp_addresses, work_profiles,
+    notification_settings
+  } = req.body;
   
-  if (!name && !email && !phone && !dob && !bio && !addresses && !temp_addresses && !work_profiles) {
+  if (!name && !email && !phone && !dob && !bio && !addresses && !temp_addresses && !work_profiles && !notification_settings) {
     return res.status(400).json({
       success: false,
-      message: 'At least one field (name, email, phone, dob, bio, addresses, temp_addresses, or work_profiles) must be provided for update'
+      message: 'At least one field (name, email, phone, dob, bio, addresses, temp_addresses, work_profiles, or notification_settings) must be provided for update'
     });
   }
   
@@ -571,6 +574,37 @@ const validateProfileUpdate = [
     .optional()
     .isIn(['Beginner', 'Intermediate', 'Expert'])
     .withMessage('Proficiency level must be one of: Beginner, Intermediate, Expert'),
+
+  // Notification Settings validation (optional nested object with boolean fields)
+  body('notification_settings')
+    .optional()
+    .isObject()
+    .withMessage('Notification settings must be an object'),
+
+  body('notification_settings.push_notification')
+    .optional()
+    .isBoolean()
+    .withMessage('Push notification must be a boolean value'),
+
+  body('notification_settings.general_notification')
+    .optional()
+    .isBoolean()
+    .withMessage('General notification must be a boolean value'),
+
+  body('notification_settings.skill_exchange_notification')
+    .optional()
+    .isBoolean()
+    .withMessage('Skill exchange notification must be a boolean value'),
+
+  body('notification_settings.message_notification')
+    .optional()
+    .isBoolean()
+    .withMessage('Message notification must be a boolean value'),
+
+  body('notification_settings.marketing_notification')
+    .optional()
+    .isBoolean()
+    .withMessage('Marketing notification must be a boolean value'),
   
   handleValidationErrors
 ];

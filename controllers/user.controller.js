@@ -14,6 +14,7 @@ const Skill = db.Skill; // Added Skill import
 const SubSkill = db.SubSkill; // Added SubSkill import
 const PostAttachment = db.PostAttachment; // Added PostAttachment import
 const TempAddress = db.TempAddress; // Added TempAddress import
+const NotificationSettings = db.NotificationSettings; // Added NotificationSettings import
 
 // Generate access token (short-lived)
 const generateAccessToken = (user) => {
@@ -362,6 +363,11 @@ exports.getProfile = async (req, res) => {
           attributes: ['id', 'location_data', 'pincode', 'selected_area', 'city', 'state', 'country', 'location_permission', 'is_active', 'expires_at', 'created_at', 'updated_at']
         },
         {
+          model: NotificationSettings,
+          as: 'notificationSettings',
+          attributes: ['id', 'push_notification', 'general_notification', 'skill_exchange_notification', 'message_notification', 'marketing_notification', 'created_at', 'updated_at']
+        },
+        {
           model: Post,
           as: 'posts',
           attributes: ['id', 'title', 'description', 'medium', 'status', 'deadline', 'created_at', 'updated_at'],
@@ -447,6 +453,7 @@ exports.getProfile = async (req, res) => {
       work_profiles: user.workProfiles || [],
       addresses: user.addresses || [],
       temp_addresses: user.tempAddresses || [],
+      notification_settings: user.notificationSettings || null,
       posts: postsWithUrls
     };
 
@@ -528,6 +535,11 @@ exports.getProfileById = async (req, res) => {
           attributes: ['id', 'location_data', 'pincode', 'selected_area', 'city', 'state', 'country', 'location_permission', 'is_active', 'expires_at', 'created_at', 'updated_at']
         },
         {
+          model: NotificationSettings,
+          as: 'notificationSettings',
+          attributes: ['id', 'push_notification', 'general_notification', 'skill_exchange_notification', 'message_notification', 'marketing_notification', 'created_at', 'updated_at']
+        },
+        {
           model: Post,
           as: 'posts',
           attributes: ['id', 'title', 'description', 'medium', 'status', 'deadline', 'created_at', 'updated_at'],
@@ -581,6 +593,7 @@ exports.getProfileById = async (req, res) => {
       work_profiles: user.workProfiles || [],
       addresses: user.addresses || [],
       temp_addresses: user.tempAddresses || [],
+      notification_settings: user.notificationSettings || null,
       posts: user.posts || []
     };
 
@@ -617,7 +630,10 @@ function CustomError(message, statusCode = 500) {
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, email, phone, dob, bio, looking_skills, addresses, temp_addresses, work_profiles } = req.body;
+    const { 
+      name, email, phone, dob, bio, looking_skills, addresses, temp_addresses, work_profiles,
+      notification_settings
+    } = req.body;
 
     const fieldsToUpdate = {};
     const profileFieldsToUpdate = {};
@@ -745,6 +761,47 @@ exports.updateProfile = async (req, res) => {
           }
         }
       }
+
+      // --- NOTIFICATION SETTINGS ---
+      if (notification_settings && typeof notification_settings === 'object') {
+        const notificationFieldsToUpdate = {};
+        
+        // Extract individual notification settings from the nested object
+        if (notification_settings.push_notification !== undefined) {
+          notificationFieldsToUpdate.push_notification = notification_settings.push_notification;
+        }
+        if (notification_settings.general_notification !== undefined) {
+          notificationFieldsToUpdate.general_notification = notification_settings.general_notification;
+        }
+        if (notification_settings.skill_exchange_notification !== undefined) {
+          notificationFieldsToUpdate.skill_exchange_notification = notification_settings.skill_exchange_notification;
+        }
+        if (notification_settings.message_notification !== undefined) {
+          notificationFieldsToUpdate.message_notification = notification_settings.message_notification;
+        }
+        if (notification_settings.marketing_notification !== undefined) {
+          notificationFieldsToUpdate.marketing_notification = notification_settings.marketing_notification;
+        }
+
+        if (Object.keys(notificationFieldsToUpdate).length > 0) {
+        const existingNotificationSettings = await NotificationSettings.findOne({ where: { user_id: userId }, transaction });
+        if (existingNotificationSettings) {
+          await NotificationSettings.update(notificationFieldsToUpdate, { where: { user_id: userId }, transaction });
+        } else {
+          // Create new notification settings with default values for unspecified fields
+          const defaultSettings = {
+            user_id: userId,
+            push_notification: true,
+            general_notification: true,
+            skill_exchange_notification: true,
+            message_notification: true,
+            marketing_notification: false,
+            ...notificationFieldsToUpdate // Override defaults with provided values
+          };
+          await NotificationSettings.create(defaultSettings, { transaction });
+        }
+        }
+      }
     }); // 👈 rollback auto on error
 
     // --- FETCH UPDATED DATA ---
@@ -766,7 +823,8 @@ exports.updateProfile = async (req, res) => {
           ]
         },
         { model: Address, as: 'addresses', attributes: ['id', 'street', 'city', 'state', 'zip_code', 'country', 'type', 'created_at', 'updated_at'] },
-        { model: TempAddress, as: 'tempAddresses', attributes: ['id', 'location_data', 'pincode', 'selected_area', 'city', 'state', 'country', 'location_permission', 'is_active', 'expires_at', 'created_at', 'updated_at'] }
+        { model: TempAddress, as: 'tempAddresses', attributes: ['id', 'location_data', 'pincode', 'selected_area', 'city', 'state', 'country', 'location_permission', 'is_active', 'expires_at', 'created_at', 'updated_at'] },
+        { model: NotificationSettings, as: 'notificationSettings', attributes: ['id', 'push_notification', 'general_notification', 'skill_exchange_notification', 'message_notification', 'marketing_notification', 'created_at', 'updated_at'] }
       ],
       attributes: ['id', 'name', 'email', 'created_at', 'updated_at'],
       order: [[{ model: WorkProfile, as: 'workProfiles' }, 'start_date', 'DESC']]
@@ -789,7 +847,8 @@ exports.updateProfile = async (req, res) => {
         } : null,
         work_profiles: updatedUser.workProfiles || [],
         addresses: updatedUser.addresses || [],
-        temp_addresses: updatedUser.tempAddresses || []
+        temp_addresses: updatedUser.tempAddresses || [],
+        notification_settings: updatedUser.notificationSettings || null
       }
     });
 

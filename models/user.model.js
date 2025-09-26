@@ -74,6 +74,7 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.MessageStatus, { foreignKey: 'user_id', as: 'messageStatuses' });
     User.hasMany(models.TypingStatus, { foreignKey: 'user_id', as: 'typingStatuses' });
     User.hasMany(models.Notification, { foreignKey: 'user_id', as: 'notifications' });
+    User.hasOne(models.NotificationSettings, { foreignKey: 'user_id', as: 'notificationSettings' });
     
     // Feed-related associations
     User.hasMany(models.FeedPost, { foreignKey: 'user_id', as: 'feedPosts' });

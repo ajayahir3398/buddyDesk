@@ -32,6 +32,7 @@ db.UserProfile = require("./userProfile.model")(sequelize, Sequelize.DataTypes);
 db.WorkProfile = require("./workProfile.model")(sequelize, Sequelize.DataTypes);
 db.Project = require("./project.model")(sequelize, Sequelize.DataTypes);
 db.Address = require("./address.model")(sequelize, Sequelize.DataTypes);
+db.TempAddress = require("./tempAddress.model")(sequelize, Sequelize.DataTypes);
 db.SessionLog = require("./sessionLog.model")(sequelize, Sequelize.DataTypes);
 db.TokenBlacklist = require("./tokenBlacklist.model")(sequelize, Sequelize.DataTypes);
 db.Skill = require("./skill.model")(sequelize, Sequelize.DataTypes);
@@ -52,6 +53,7 @@ db.Message = require("./message.model")(sequelize, Sequelize.DataTypes);
 db.MessageStatus = require("./messageStatus.model")(sequelize, Sequelize.DataTypes);
 db.TypingStatus = require("./typingStatus.model")(sequelize, Sequelize.DataTypes);
 db.Notification = require("./notification.model")(sequelize, Sequelize.DataTypes);
+db.NotificationSettings = require("./notificationSettings.model")(sequelize, Sequelize.DataTypes);
 db.ReferralLog = require("./referralLog.model")(sequelize, Sequelize.DataTypes);
 
 // Feed models
