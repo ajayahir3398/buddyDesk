@@ -437,6 +437,14 @@ exports.getProfile = async (req, res) => {
 
       return postData;
     });
+
+    const defaultNotificationSettings = {
+      push_notification: true,
+      general_notification: true,
+      skill_exchange_notification: true,
+      message_notification: true,
+      marketing_notification: true
+    }
     
     const profileData = {
       id: user.id,
@@ -453,7 +461,7 @@ exports.getProfile = async (req, res) => {
       work_profiles: user.workProfiles || [],
       addresses: user.addresses || [],
       temp_addresses: user.tempAddresses || [],
-      notification_settings: user.notificationSettings || null,
+      notification_settings: user.notificationSettings || defaultNotificationSettings,
       posts: postsWithUrls
     };
 
