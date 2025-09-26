@@ -19,7 +19,7 @@ const {
 const path = require("path");
 const { Op } = require("sequelize");
 const fs = require("fs"); // Added for enhanced file serving
-const { sendPostNotificationToMatchingUsers } = require("../services/notificationService");
+const { sendPostNotificationToAllUsers } = require("../services/notificationService");
 
 // Helper function to generate full attachment URLs
 const generateAttachmentUrls = (attachments, baseUrl) => {
@@ -174,17 +174,15 @@ exports.addPost = async (req, res) => {
       postId: post.id,
     });
 
-    // Send notifications to users with matching looking_skills
+    // Send notifications to all users (excluding post creator)
     // This is done asynchronously to not block the response
-    if (post.required_skill_id) {
-      sendPostNotificationToMatchingUsers(post).catch(error => {
-        logger.error('Failed to send post notifications', {
-          requestId: req.requestId,
-          postId: post.id,
-          error: error.message
-        });
+    sendPostNotificationToAllUsers(post).catch(error => {
+      logger.error('Failed to send post notifications', {
+        requestId: req.requestId,
+        postId: post.id,
+        error: error.message
       });
-    }
+    });
 
     res.status(201).json({
       success: true,

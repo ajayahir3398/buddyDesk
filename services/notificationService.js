@@ -53,63 +53,65 @@ async function sendPushToUser(userId, payload) {
 	};
 }
 
-async function sendPostNotificationToMatchingUsers(post) {
+async function sendPostNotificationToAllUsers(post) {
 	try {
-		// If post doesn't have a required skill, no notifications to send
-		if (!post.required_skill_id) {
-			return { success: true, notificationsSent: 0 };
-		}
-
-		// Find users whose looking_skills contain the post's required_skill_id
-		const matchingUsers = await db.UserProfile.findAll({
-			where: db.Sequelize.literal(`looking_skills::jsonb @> '${JSON.stringify([post.required_skill_id])}'`),
+		// Find all users with their notification settings
+		const allUsers = await db.User.findAll({
+			attributes: ['id', 'name'],
 			include: [{
-				model: db.User,
-				as: 'user',
-				attributes: ['id', 'name']
+				model: db.NotificationSettings,
+				as: 'notificationSettings',
+				attributes: ['push_notification']
 			}]
 		});
 
-		// Filter out the post creator from receiving notification
-		const usersToNotify = matchingUsers.filter(profile => 
-			profile.user && profile.user.id !== post.user_id
-		);
+		// Filter out the post creator and users who have disabled relevant notifications
+		const usersToNotify = allUsers.filter(user => {
+			if (!user || user.id === post.user_id) {
+				return false;
+			}
+			
+			// Check notification preferences
+			const settings = user.notificationSettings;
+			if (settings) {
+				// Only check push_notification flag
+				return settings.push_notification;
+			}
+			
+			// If no notification settings found, default to sending notifications
+			return true;
+		});
 
 		if (usersToNotify.length === 0) {
 			return { success: true, notificationsSent: 0 };
 		}
 
-		// Get skill name for notification
-		const skill = await db.Skill.findByPk(post.required_skill_id);
-		const skillName = skill ? skill.name : 'a skill you\'re looking for';
-
 		// Create notifications and send push notifications
-		const notificationPromises = usersToNotify.map(async (userProfile) => {
+		const notificationPromises = usersToNotify.map(async (user) => {
 			try {
 				// Create notification in database
 				const notification = await db.Notification.create({
-					user_id: userProfile.user.id,
+					user_id: user.id,
 					post_id: post.id,
 					type: 'post',
-					title: 'New Post Match!',
-					body: `A new post requiring ${skillName} has been posted: "${post.title}"`,
+					title: 'New Post Available!',
+					body: `A new post has been created: "${post.title || post.description}"`,
 					data: {
 						post_id: post.id,
-						skill_id: post.required_skill_id,
-						skill_name: skillName
+						post_title: post.title,
+						post_description: post.description
 					}
 				});
 
 				// Send push notification
-				const pushResult = await sendPushToUser(userProfile.user.id, {
+				const pushResult = await sendPushToUser(user.id, {
 					notification: {
-						title: 'New Post Match!',
-						body: `A new post requiring ${skillName} has been posted: "${post.title}"`
+						title: 'New Post Available!',
+						body: `A new post has been created: "${post.title || post.description}"`
 					},
 					data: {
 						post_id: post.id.toString(),
-						skill_id: post.required_skill_id.toString(),
-						notification_type: 'post_match'
+						notification_type: 'new_post'
 					}
 				});
 
@@ -121,14 +123,14 @@ async function sendPostNotificationToMatchingUsers(post) {
 					});
 				}
 
-				return { success: true, userId: userProfile.user.id, pushResult };
+				return { success: true, userId: user.id, pushResult };
 			} catch (error) {
 				logger.error('Error sending notification to user', {
-					userId: userProfile.user.id,
+					userId: user.id,
 					postId: post.id,
 					error: error.message
 				});
-				return { success: false, userId: userProfile.user.id, error: error.message };
+				return { success: false, userId: user.id, error: error.message };
 			}
 		});
 
@@ -158,6 +160,6 @@ async function sendPostNotificationToMatchingUsers(post) {
 	}
 }
 
-module.exports = { sendPushToUser, saveOrUpdateToken, sendPostNotificationToMatchingUsers };
+module.exports = { sendPushToUser, saveOrUpdateToken, sendPostNotificationToAllUsers };
 
 
