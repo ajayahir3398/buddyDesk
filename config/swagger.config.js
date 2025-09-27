@@ -1037,6 +1037,59 @@ const options = {
             }
           }
         },
+        Feedback: {
+          type: "object",
+          required: ["subject", "message"],
+          properties: {
+            type: {
+              type: "string",
+              enum: ["bug", "feature_request", "general", "complaint", "suggestion"],
+              example: "bug",
+              description: "Type of feedback",
+              default: "general"
+            },
+            subject: {
+              type: "string",
+              example: "App crashes on login",
+              description: "Feedback subject (5-255 characters)",
+              minLength: 5,
+              maxLength: 255
+            },
+            message: {
+              type: "string",
+              example: "The app crashes every time I try to login with my email. This happens on both Android and iOS devices.",
+              description: "Detailed feedback message (10-5000 characters)",
+              minLength: 10,
+              maxLength: 5000
+            },
+            rating: {
+              type: "integer",
+              minimum: 1,
+              maximum: 5,
+              example: 2,
+              description: "Optional rating from 1 to 5"
+            }
+          }
+        },
+        FeedbackResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Feedback submitted successfully" },
+            data: {
+              type: "object",
+              properties: {
+                id: { type: "integer", example: 123, description: "Feedback ID" },
+                created_at: { 
+                  type: "string", 
+                  format: "date-time", 
+                  example: "2024-01-15T10:30:00.000Z",
+                  description: "Feedback creation timestamp"
+                }
+              }
+            }
+          }
+        },
         PostAttachment: {
           type: "object",
           properties: {
@@ -2851,6 +2904,10 @@ const options = {
         name: "Feed",
         description: "Social feed operations including posts, likes, comments, shares, and trending content",
       },
+      {
+        name: "Feedback",
+        description: "User feedback submission and management",
+      },
     ],
     paths: {
       "/users/register": {
@@ -3527,6 +3584,77 @@ const options = {
                       success: { type: "boolean", example: true },
                       message: { type: "string", example: "All notifications marked as read" },
                     },
+                  },
+                },
+              },
+            },
+            401: { description: "Unauthorized" },
+            500: { description: "Server error" },
+          },
+        },
+      },
+      "/feedback": {
+        post: {
+          summary: "Submit feedback",
+          description: "Submit user feedback for bugs, feature requests, suggestions, or general feedback",
+          tags: ["Feedback"],
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/Feedback",
+                },
+                examples: {
+                  bug_report: {
+                    summary: "Bug report",
+                    value: {
+                      type: "bug",
+                      subject: "App crashes on login",
+                      message: "The app crashes every time I try to login with my email. This happens on both Android and iOS devices.",
+                      rating: 2
+                    },
+                  },
+                  feature_request: {
+                    summary: "Feature request",
+                    value: {
+                      type: "feature_request",
+                      subject: "Add dark mode support",
+                      message: "It would be great to have a dark mode option for the app. Many users prefer dark themes, especially for night usage.",
+                      rating: 5
+                    },
+                  },
+                  general_feedback: {
+                    summary: "General feedback",
+                    value: {
+                      type: "general",
+                      subject: "Great app overall",
+                      message: "I really enjoy using this app. The interface is clean and the features are useful. Keep up the good work!",
+                      rating: 4
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: "Feedback submitted successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/FeedbackResponse",
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Validation error",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ValidationError",
                   },
                 },
               },

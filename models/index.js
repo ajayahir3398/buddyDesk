@@ -66,6 +66,9 @@ db.FeedShare = require("./feedShare.model")(sequelize, Sequelize.DataTypes);
 db.FeedFollow = require("./feedFollow.model")(sequelize, Sequelize.DataTypes);
 db.FeedView = require("./feedView.model")(sequelize, Sequelize.DataTypes);
 
+// Feedback model
+db.Feedback = require("./feedback.model")(sequelize, Sequelize.DataTypes);
+
 // Set up associations
 Object.keys(db).forEach(modelName => {
     if (db[modelName].associate) {

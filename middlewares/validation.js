@@ -740,6 +740,35 @@ const validateChangePassword = [
   handleValidationErrors
 ];
 
+// Feedback validation
+const validateFeedback = [
+  body('type')
+    .optional()
+    .isIn(['bug', 'feature_request', 'general', 'complaint', 'suggestion'])
+    .withMessage('Feedback type must be one of: bug, feature_request, general, complaint, suggestion'),
+  
+  body('subject')
+    .trim()
+    .notEmpty()
+    .withMessage('Subject is required')
+    .isLength({ min: 5, max: 255 })
+    .withMessage('Subject must be between 5 and 255 characters'),
+  
+  body('message')
+    .trim()
+    .notEmpty()
+    .withMessage('Message is required')
+    .isLength({ min: 10, max: 5000 })
+    .withMessage('Message must be between 10 and 5000 characters'),
+  
+  body('rating')
+    .optional()
+    .isInt({ min: 1, max: 5 })
+    .withMessage('Rating must be between 1 and 5'),
+  
+  handleValidationErrors
+];
+
 module.exports = {
   handleValidationErrors,
   validateUserRegistration,
@@ -760,5 +789,6 @@ module.exports = {
   validatePostCreation,
   validatePostUpdate,
   validateChangePassword,
+  validateFeedback,
   patterns
 };
