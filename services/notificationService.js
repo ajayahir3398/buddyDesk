@@ -210,8 +210,8 @@ async function sendFeedPostNotificationToAllUsers(feedPost) {
 				// Create notification in database
 				const notification = await db.Notification.create({
 					user_id: user.id,
-					feed_post_id: feedPost.id,
-					type: 'feed_post',
+					post_id: feedPost.id, // Using post_id field instead of feed_post_id
+					type: 'post', // Using 'post' type instead of 'feed_post'
 					title: 'New Feed Post!',
 					body: `A new feed post has been shared`,
 					data: {
@@ -270,6 +270,160 @@ async function sendFeedPostNotificationToAllUsers(feedPost) {
 	}
 }
 
-module.exports = { sendPushToUser, saveOrUpdateToken, sendPostNotificationToAllUsers, sendFeedPostNotificationToAllUsers };
+async function sendMessageNotification(message, sender) {
+	try {
+		// Get conversation members (excluding sender)
+		const conversationMembers = await db.ConversationMember.findAll({
+			where: {
+				conversation_id: message.conversation_id,
+				user_id: { [db.Sequelize.Op.ne]: message.sender_id },
+				left_at: null
+			},
+			include: [{
+				model: db.User,
+				as: 'user',
+				attributes: ['id', 'name', 'is_online'],
+				include: [{
+					model: db.NotificationSettings,
+					as: 'notificationSettings',
+					attributes: ['push_notification', 'message_notification']
+				}]
+			}]
+		});
+
+		if (conversationMembers.length === 0) {
+			return { success: true, notificationsSent: 0 };
+		}
+
+		// Filter users who should receive notifications
+		const usersToNotify = conversationMembers.filter(member => {
+			const settings = member.user.notificationSettings;
+			if (!settings) return true; // Default to sending notifications
+			
+			// Check if user has enabled message notifications
+			return settings.message_notification !== false && settings.push_notification !== false;
+		});
+
+		if (usersToNotify.length === 0) {
+			return { success: true, notificationsSent: 0 };
+		}
+
+		// Create notification title and body
+		const conversation = await db.Conversation.findByPk(message.conversation_id, {
+			attributes: ['type', 'name']
+		});
+
+		let title, body;
+		if (conversation.type === 'private') {
+			title = `New message from ${sender.name}`;
+		} else {
+			title = `${sender.name} in ${conversation.name || 'Group'}`;
+		}
+
+		// Prepare message preview
+		if (message.message_type === 'text') {
+			body = message.content_plain || '[Message]';
+			if (body.length > 100) {
+				body = body.substring(0, 100) + '...';
+			}
+		} else {
+			const typeMap = {
+				'image': '📷 Photo',
+				'video': '🎥 Video',
+				'audio': '🎵 Audio',
+				'file': '📄 File',
+				'system': 'System Message'
+			};
+			body = typeMap[message.message_type] || '📎 Attachment';
+		}
+
+		// Create notifications and send push notifications
+		const notificationPromises = usersToNotify.map(async (member) => {
+			try {
+				// Create notification in database
+				const notification = await db.Notification.create({
+					user_id: member.user_id,
+					message_id: message.id,
+					conversation_id: message.conversation_id,
+					type: 'message',
+					title,
+					body,
+					data: {
+						conversation_id: message.conversation_id,
+						message_id: message.id,
+						sender_id: message.sender_id,
+						sender_name: sender.name,
+						message_type: message.message_type
+					}
+				});
+
+				// Send push notification
+				const pushResult = await sendPushToUser(member.user_id, {
+					notification: {
+						title,
+						body
+					},
+					data: {
+						conversation_id: message.conversation_id.toString(),
+						message_id: message.id.toString(),
+						sender_id: message.sender_id.toString(),
+						notification_type: 'new_message'
+					}
+				});
+
+				// Update notification with push status
+				if (pushResult.successCount > 0) {
+					await notification.update({
+						push_sent: true,
+						push_sent_at: new Date()
+					});
+				}
+
+				return { success: true, userId: member.user_id, pushResult };
+			} catch (error) {
+				logger.error('Error sending message notification to user', {
+					userId: member.user_id,
+					messageId: message.id,
+					error: error.message
+				});
+				return { success: false, userId: member.user_id, error: error.message };
+			}
+		});
+
+		const results = await Promise.all(notificationPromises);
+		const successCount = results.filter(r => r.success).length;
+
+		logger.info('Message notifications sent', {
+			messageId: message.id,
+			conversationId: message.conversation_id,
+			senderId: message.sender_id,
+			totalMembers: conversationMembers.length,
+			notificationsSent: successCount,
+			results
+		});
+
+		return {
+			success: true,
+			notificationsSent: successCount,
+			totalMatchingUsers: usersToNotify.length,
+			results
+		};
+	} catch (error) {
+		logger.error('Error in sendMessageNotification', {
+			messageId: message.id,
+			error: error.message,
+			stack: error.stack
+		});
+		return { success: false, error: error.message };
+	}
+}
+
+module.exports = { 
+	sendPushToUser, 
+	saveOrUpdateToken, 
+	sendPostNotificationToAllUsers, 
+	sendFeedPostNotificationToAllUsers,
+	sendMessageNotification
+};
 
 

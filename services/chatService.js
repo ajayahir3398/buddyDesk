@@ -2,6 +2,7 @@ const db = require("../models");
 const crypto = require("crypto-js");
 const logger = require("../utils/logger");
 const { Op } = require("sequelize");
+const { sendMessageNotification } = require("./notificationService");
 
 /**
  * Chat Service - Handles all chat-related business logic
@@ -503,6 +504,23 @@ class ChatService {
       }
 
       await transaction.commit();
+
+      // Send notifications to other conversation members (fire and forget)
+      // Don't wait for notifications to complete as they shouldn't block message sending
+      setImmediate(async () => {
+        try {
+          const notificationResult = await sendMessageNotification(completeMessage, completeMessage.sender);
+          logger.info('Message notification result', {
+            messageId: completeMessage.id,
+            result: notificationResult
+          });
+        } catch (error) {
+          logger.error('Failed to send message notifications', {
+            messageId: completeMessage.id,
+            error: error.message
+          });
+        }
+      });
 
       return {
         success: true,
