@@ -171,6 +171,105 @@ async function sendPostNotificationToAllUsers(post) {
 	}
 }
 
-module.exports = { sendPushToUser, saveOrUpdateToken, sendPostNotificationToAllUsers };
+async function sendFeedPostNotificationToAllUsers(feedPost) {
+	try {
+		// Find all users with their notification settings
+		const allUsers = await db.User.findAll({
+			attributes: ['id', 'name'],
+			include: [{
+				model: db.NotificationSettings,
+				as: 'notificationSettings',
+				attributes: ['push_notification']
+			}]
+		});
+
+		// Filter out the post creator and users who have disabled relevant notifications
+		const usersToNotify = allUsers.filter(user => {
+			if (!user || user.id === feedPost.user_id) {
+				return false;
+			}
+
+			// Check notification preferences
+			const settings = user.notificationSettings;
+			if (settings) {
+				// Only check push_notification flag
+				return settings.push_notification;
+			}
+
+			// If no notification settings found, default to sending notifications
+			return true;
+		});
+
+		if (usersToNotify.length === 0) {
+			return { success: true, notificationsSent: 0 };
+		}
+
+		// Create notifications and send push notifications
+		const notificationPromises = usersToNotify.map(async (user) => {
+			try {
+				// Create notification in database
+				const notification = await db.Notification.create({
+					user_id: user.id,
+					feed_post_id: feedPost.id,
+					type: 'feed_post',
+					title: 'New Feed Post!',
+					body: `A new feed post has been shared`,
+					data: {
+						feed_post_id: feedPost.id,
+						post_content: feedPost.content
+					}
+				});
+
+				// Send push notification
+				const pushResult = await sendPushToUser(user.id, {
+					notification: {
+						title: 'New Feed Post!',
+						body: `A new feed post has been shared`
+					},
+					data: {
+						feed_post_id: feedPost.id.toString(),
+						notification_type: 'new_feed_post'
+					}
+				});
+
+				// Update notification with push status
+				if (pushResult.successCount > 0) {
+					await notification.update({
+						push_sent: true,
+						push_sent_at: new Date()
+					});
+				}
+
+				return { success: true, userId: user.id, pushResult };
+			} catch (error) {
+				logger.error('Error sending feed post notification to user', {
+					userId: user.id,
+					feedPostId: feedPost.id,
+					error: error.message
+				});
+				return { success: false, userId: user.id, error: error.message };
+			}
+		});
+
+		const results = await Promise.all(notificationPromises);
+		const successCount = results.filter(r => r.success).length;
+
+		return {
+			success: true,
+			notificationsSent: successCount,
+			totalMatchingUsers: usersToNotify.length,
+			results
+		};
+	} catch (error) {
+		logger.error('Error in sendFeedPostNotificationToAllUsers', {
+			feedPostId: feedPost.id,
+			error: error.message,
+			stack: error.stack
+		});
+		return { success: false, error: error.message };
+	}
+}
+
+module.exports = { sendPushToUser, saveOrUpdateToken, sendPostNotificationToAllUsers, sendFeedPostNotificationToAllUsers };
 
 
