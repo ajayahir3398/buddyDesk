@@ -5,7 +5,7 @@ const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
     host: dbConfig.HOST,
     dialect: dbConfig.DIALECT,
     port: dbConfig.PORT,
-    logging: process.env.NODE_ENV === 'development' ? true : false, // Disable SQL query logs
+    logging: process.env.NODE_ENV === 'development' ? false : false, // Disable SQL query logs
     dialectOptions: {
         ssl: {
             require: true,
