@@ -27,4 +27,7 @@ router.put('/profile', authenticateToken, uploadProfileImage, validateFileSecuri
 // Public profile route (require authentication but allow viewing other users)
 router.get('/public-profile/:id', authenticateToken, userController.getPublicProfile);
 
+// Soft delete user account (require authentication)
+router.delete('/delete-account', authenticateToken, userController.softDeleteUser);
+
 module.exports = router;

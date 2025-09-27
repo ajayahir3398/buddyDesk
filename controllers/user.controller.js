@@ -61,11 +61,11 @@ exports.register = async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: 'User with this email already exists'
-      });
-    }
+        return res.status(409).json({
+          success: false,
+          message: 'User with this email already exists'
+        });
+      }
 
     // Hash the password
     const saltRounds = 10;
@@ -971,6 +971,53 @@ exports.changePassword = async (req, res) => {
 
   } catch (error) {
     console.error("Change password error:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Soft delete user
+exports.softDeleteUser = async (req, res) => {
+  try {
+    const userId = req.user.id; // From authentication middleware
+
+    // Check if user exists and is not already deleted
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Perform soft delete
+    await user.destroy(); // This will set deleted_at timestamp due to paranoid mode
+
+    // Invalidate all active sessions for this user
+    await SessionLog.update(
+      {
+        is_active: false,
+        revoked_at: new Date(),
+        reason: 'User account deleted'
+      },
+      {
+        where: {
+          user_id: userId,
+          is_active: true
+        }
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'User account has been successfully deleted'
+    });
+
+  } catch (error) {
+    console.error("Soft delete user error:", error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

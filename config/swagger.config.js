@@ -2856,7 +2856,7 @@ const options = {
       "/users/register": {
         post: {
           summary: "Register a new user",
-          description: "Create a new user account with validation. Optionally accepts a referral code from an existing user. Upon successful registration, a unique referral code is automatically generated for the new user.",
+          description: "Create a new user account with validation. Optionally accepts a referral code from an existing user. Upon successful registration, a unique referral code is automatically generated for the new user. If a user with the same email was previously soft deleted within 90 days, the account will be reactivated instead of creating a new one. If the user was deleted more than 90 days ago, the old account will be permanently deleted and a new one will be created.",
           tags: ["Users"],
           requestBody: {
             required: true,
@@ -4809,6 +4809,91 @@ const options = {
                           duration: "2 years",
                         },
                       ],
+                    },
+                  },
+                },
+              },
+            },
+            401: {
+              description: "Unauthorized - Invalid or missing access token",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                  examples: {
+                    missing_token: {
+                      summary: "Missing access token",
+                      value: {
+                        success: false,
+                        message: "Access token required",
+                      },
+                    },
+                    invalid_token: {
+                      summary: "Invalid access token",
+                      value: {
+                        success: false,
+                        message: "Invalid access token",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            404: {
+              description: "User not found",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                  example: {
+                    success: false,
+                    message: "User not found",
+                  },
+                },
+              },
+            },
+            500: {
+              description: "Internal server error",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/users/delete-account": {
+        delete: {
+          summary: "Soft delete user account",
+          description:
+            "Soft delete the authenticated user's account. This will set a deleted_at timestamp and invalidate all active sessions. The account can potentially be restored by administrators.",
+          tags: ["Users"],
+          security: [
+            {
+              bearerAuth: [],
+            },
+          ],
+          responses: {
+            200: {
+              description: "User account successfully deleted",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: {
+                        type: "boolean",
+                        example: true,
+                      },
+                      message: {
+                        type: "string",
+                        example: "User account has been successfully deleted",
+                      },
                     },
                   },
                 },
