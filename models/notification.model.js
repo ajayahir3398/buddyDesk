@@ -45,8 +45,18 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE'
     },
+    feed_post_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'feed_posts',
+        key: 'id'
+      },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
+    },
     type: {
-      type: DataTypes.ENUM('message', 'mention', 'group_invite', 'system', 'post'),
+      type: DataTypes.ENUM('message', 'mention', 'group_invite', 'system', 'post', 'feed_post', 'feed_like', 'feed_comment'),
       allowNull: false,
       defaultValue: 'message'
     },
@@ -136,6 +146,7 @@ module.exports = (sequelize, DataTypes) => {
     Notification.belongsTo(models.Message, { foreignKey: 'message_id', as: 'message' });
     Notification.belongsTo(models.Conversation, { foreignKey: 'conversation_id', as: 'conversation' });
     Notification.belongsTo(models.Post, { foreignKey: 'post_id', as: 'post' });
+    Notification.belongsTo(models.FeedPost, { foreignKey: 'feed_post_id', as: 'feedPost' });
   };
 
   return Notification;
