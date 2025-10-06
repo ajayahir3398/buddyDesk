@@ -113,8 +113,11 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user exists
-    const user = await User.findOne({ where: { email } });
+    // Check if user exists (including soft deleted users)
+    const user = await User.findOne({ 
+      where: { email },
+      paranoid: false // Include soft deleted users
+    });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -129,6 +132,26 @@ exports.login = async (req, res) => {
         success: false,
         message: 'Invalid password.'
       });
+    }
+
+    // Check if user is soft deleted and handle reactivation
+    if (user.deleted_at) {
+      const deletedDate = new Date(user.deleted_at);
+      const currentDate = new Date();
+      const daysSinceDeletion = Math.floor((currentDate - deletedDate) / (1000 * 60 * 60 * 24));
+
+      if (daysSinceDeletion > 90) {
+        return res.status(401).json({
+          success: false,
+          message: 'Account has been permanently deleted. Please contact support for assistance.'
+        });
+      }
+
+      // Reactivate the user account
+      await user.restore(); // This removes the deleted_at timestamp
+      
+      // Log the reactivation
+      console.log(`User ${user.id} (${user.email}) account reactivated after ${daysSinceDeletion} days`);
     }
 
     // Generate tokens

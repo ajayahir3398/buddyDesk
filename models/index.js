@@ -5,7 +5,7 @@ const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
     host: dbConfig.HOST,
     dialect: dbConfig.DIALECT,
     port: dbConfig.PORT,
-    logging: process.env.NODE_ENV === 'development' ? true : false, // Disable SQL query logs
+    logging: process.env.NODE_ENV === 'development' ? false : false, // Disable SQL query logs
     dialectOptions: {
         ssl: {
             require: true,
@@ -65,6 +65,9 @@ db.FeedComment = require("./feedComment.model")(sequelize, Sequelize.DataTypes);
 db.FeedShare = require("./feedShare.model")(sequelize, Sequelize.DataTypes);
 db.FeedFollow = require("./feedFollow.model")(sequelize, Sequelize.DataTypes);
 db.FeedView = require("./feedView.model")(sequelize, Sequelize.DataTypes);
+
+// Feedback model
+db.Feedback = require("./feedback.model")(sequelize, Sequelize.DataTypes);
 
 // Set up associations
 Object.keys(db).forEach(modelName => {

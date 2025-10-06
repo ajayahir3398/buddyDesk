@@ -10,6 +10,8 @@ const UserProfile = db.UserProfile;
 const Skill = db.Skill;
 const SubSkill = db.SubSkill;
 const { getFileUrl, getFileCategoryFromPath } = require("../middlewares/upload");
+const { sendFeedPostNotificationToAllUsers } = require("../services/notificationService");
+const logger = require("../utils/logger");
 
 // Helper function to calculate engagement score
 const calculateEngagementScore = (post) => {
@@ -149,6 +151,16 @@ exports.createFeedPost = async (req, res) => {
     // Generate URLs
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const postWithUrls = generateFeedUrls([completePost], baseUrl)[0];
+
+    // Send notifications to all users (excluding post creator)
+    // This is done asynchronously to not block the response
+    sendFeedPostNotificationToAllUsers(completePost).catch(error => {
+      logger.error('Failed to send feed post notifications', {
+        requestId: req.requestId,
+        feedPostId: completePost.id,
+        error: error.message
+      });
+    });
 
     res.status(201).json({
       success: true,
