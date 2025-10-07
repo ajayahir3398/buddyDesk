@@ -437,12 +437,109 @@ async function sendMessageNotification(message, sender) {
 	}
 }
 
+/**
+ * Create a notification in the database for feed post likes
+ * No push notification is sent - only stored for in-app notification tab
+ */
+async function createFeedLikeNotification(feedPost, likerUser) {
+	try {
+		// Don't create notification if user likes their own post
+		if (feedPost.user_id === likerUser.id) {
+			return { success: true, message: 'No notification for own like' };
+		}
+
+		// Create notification in database
+		const notification = await db.Notification.create({
+			user_id: feedPost.user_id, // Post owner receives the notification
+			feed_post_id: feedPost.id,
+			type: 'feed_like',
+			title: 'New Like',
+			body: `${likerUser.name} liked your post`,
+			data: {
+				feed_post_id: feedPost.id,
+				liker_user_id: likerUser.id,
+				liker_name: likerUser.name,
+				post_content: feedPost.content ? feedPost.content.substring(0, 100) : ''
+			},
+			push_sent: false // No push notification sent
+		});
+
+		logger.info('Feed like notification created', {
+			notificationId: notification.id,
+			feedPostId: feedPost.id,
+			postOwnerId: feedPost.user_id,
+			likerUserId: likerUser.id
+		});
+
+		return { success: true, notification };
+	} catch (error) {
+		logger.error('Error creating feed like notification', {
+			feedPostId: feedPost.id,
+			likerUserId: likerUser.id,
+			error: error.message,
+			stack: error.stack
+		});
+		return { success: false, error: error.message };
+	}
+}
+
+/**
+ * Create a notification in the database for feed post comments
+ * No push notification is sent - only stored for in-app notification tab
+ */
+async function createFeedCommentNotification(feedPost, commenterUser, comment) {
+	try {
+		// Don't create notification if user comments on their own post
+		if (feedPost.user_id === commenterUser.id) {
+			return { success: true, message: 'No notification for own comment' };
+		}
+
+		// Create notification in database
+		const notification = await db.Notification.create({
+			user_id: feedPost.user_id, // Post owner receives the notification
+			feed_post_id: feedPost.id,
+			type: 'feed_comment',
+			title: 'New Comment',
+			body: `${commenterUser.name} commented on your post: ${comment.content.substring(0, 50)}${comment.content.length > 50 ? '...' : ''}`,
+			data: {
+				feed_post_id: feedPost.id,
+				comment_id: comment.id,
+				commenter_user_id: commenterUser.id,
+				commenter_name: commenterUser.name,
+				comment_content: comment.content,
+				post_content: feedPost.content ? feedPost.content.substring(0, 100) : ''
+			},
+			push_sent: false // No push notification sent
+		});
+
+		logger.info('Feed comment notification created', {
+			notificationId: notification.id,
+			feedPostId: feedPost.id,
+			postOwnerId: feedPost.user_id,
+			commenterUserId: commenterUser.id,
+			commentId: comment.id
+		});
+
+		return { success: true, notification };
+	} catch (error) {
+		logger.error('Error creating feed comment notification', {
+			feedPostId: feedPost.id,
+			commenterUserId: commenterUser.id,
+			error: error.message,
+			stack: error.stack
+		});
+		return { success: false, error: error.message };
+	}
+}
+
 module.exports = { 
 	sendPushToUser, 
 	saveOrUpdateToken, 
 	sendPostNotificationToAllUsers, 
 	sendFeedPostNotificationToAllUsers,
-	sendMessageNotification
+	sendMessageNotification,
+	createFeedLikeNotification,
+	createFeedCommentNotification
 };
 
 

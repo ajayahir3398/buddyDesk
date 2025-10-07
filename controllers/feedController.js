@@ -10,7 +10,7 @@ const UserProfile = db.UserProfile;
 const Skill = db.Skill;
 const SubSkill = db.SubSkill;
 const { getFileUrl, getFileCategoryFromPath } = require("../middlewares/upload");
-const { sendFeedPostNotificationToAllUsers } = require("../services/notificationService");
+const { sendFeedPostNotificationToAllUsers, createFeedLikeNotification, createFeedCommentNotification } = require("../services/notificationService");
 const logger = require("../utils/logger");
 
 // Helper function to calculate engagement score
@@ -386,6 +386,26 @@ exports.toggleLike = async (req, res) => {
       });
       await FeedPost.increment('like_count', { where: { id } });
       
+      // Create notification for the post owner (asynchronously, don't block response)
+      User.findByPk(userId, {
+        attributes: ['id', 'name']
+      }).then(likerUser => {
+        if (likerUser) {
+          createFeedLikeNotification(feedPost, likerUser).catch(error => {
+            logger.error('Failed to create feed like notification', {
+              feedPostId: feedPost.id,
+              likerUserId: userId,
+              error: error.message
+            });
+          });
+        }
+      }).catch(error => {
+        logger.error('Failed to fetch liker user for notification', {
+          userId: userId,
+          error: error.message
+        });
+      });
+      
       res.status(200).json({
         success: true,
         message: 'Post liked successfully',
@@ -454,6 +474,27 @@ exports.addComment = async (req, res) => {
           attributes: ['image_path']
         }]
       }]
+    });
+
+    // Create notification for the post owner (asynchronously, don't block response)
+    User.findByPk(userId, {
+      attributes: ['id', 'name']
+    }).then(commenterUser => {
+      if (commenterUser) {
+        createFeedCommentNotification(feedPost, commenterUser, comment).catch(error => {
+          logger.error('Failed to create feed comment notification', {
+            feedPostId: feedPost.id,
+            commenterUserId: userId,
+            commentId: comment.id,
+            error: error.message
+          });
+        });
+      }
+    }).catch(error => {
+      logger.error('Failed to fetch commenter user for notification', {
+        userId: userId,
+        error: error.message
+      });
     });
 
     res.status(201).json({

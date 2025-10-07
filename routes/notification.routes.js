@@ -20,7 +20,7 @@ router.post('/test', authenticateToken, [
 router.get('/', authenticateToken, [
 	query('page').optional().isInt({ min: 1 }),
 	query('limit').optional().isInt({ min: 1, max: 50 }),
-	query('type').optional().isIn(['message', 'mention', 'group_invite', 'system', 'post'])
+	query('type').optional().isIn(['message', 'mention', 'group_invite', 'system', 'post', 'feed_post', 'feed_like', 'feed_comment'])
 ], controller.getUserNotifications);
 
 // Mark specific notification as read

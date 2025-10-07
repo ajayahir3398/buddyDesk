@@ -52,48 +52,71 @@ async function getUserNotifications(req, res) {
 			where.type = type;
 		}
 
-		const { count, rows: notifications } = await db.Notification.findAndCountAll({
-			where,
-			include: [
-				{
-					model: db.Post,
-					as: 'post',
-					attributes: ['id', 'title', 'description', 'medium', 'status'],
-					include: [
-						{
-							model: db.User,
-							as: 'user',
-							attributes: ['id', 'name']
-						},
-						{
-							model: db.Skill,
-							as: 'requiredSkill',
-							attributes: ['id', 'name']
-						}
-					]
-				},
-				{
-					model: db.Message,
-					as: 'message',
-					attributes: ['id', 'content'],
-					include: [
-						{
-							model: db.User,
-							as: 'sender',
-							attributes: ['id', 'name']
-						}
-					]
-				},
-				{
-					model: db.Conversation,
-					as: 'conversation',
-					attributes: ['id', 'name', 'type']
-				}
-			],
-			order: [['created_at', 'DESC']],
-			limit,
-			offset
-		});
+	const { count, rows: notifications } = await db.Notification.findAndCountAll({
+		where,
+		include: [
+			{
+				model: db.Post,
+				as: 'post',
+				attributes: ['id', 'title', 'description', 'medium', 'status'],
+				required: false,
+				include: [
+					{
+						model: db.User,
+						as: 'user',
+						attributes: ['id', 'name']
+					},
+					{
+						model: db.Skill,
+						as: 'requiredSkill',
+						attributes: ['id', 'name']
+					}
+				]
+			},
+			{
+				model: db.FeedPost,
+				as: 'feedPost',
+				attributes: ['id', 'content', 'like_count', 'comment_count', 'share_count', 'status', 'created_at'],
+				required: false,
+				include: [
+					{
+						model: db.User,
+						as: 'user',
+						attributes: ['id', 'name'],
+						include: [
+							{
+								model: db.UserProfile,
+								as: 'profile',
+								attributes: ['image_path']
+							}
+						]
+					}
+				]
+			},
+			{
+				model: db.Message,
+				as: 'message',
+				attributes: ['id', 'content'],
+				required: false,
+				include: [
+					{
+						model: db.User,
+						as: 'sender',
+						attributes: ['id', 'name']
+					}
+				]
+			},
+			{
+				model: db.Conversation,
+				as: 'conversation',
+				attributes: ['id', 'name', 'type'],
+				required: false
+			}
+		],
+		order: [['created_at', 'DESC']],
+		limit,
+		offset
+	});
 
 		// Count unread notifications
 		const unreadCount = await db.Notification.count({
