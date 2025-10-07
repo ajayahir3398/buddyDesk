@@ -76,7 +76,7 @@ if docker ps | grep -q buddydesk-app; then
     
     # Check application health
     echo "🏥 Checking application health..."
-    if curl -f http://103.168.18.34:3000/health > /dev/null 2>&1; then
+    if curl -f https://api.buddydesk.in/health > /dev/null 2>&1; then
         echo "✅ Application is healthy and responding!"
     else
         echo "⚠️  Application may still be starting up..."
@@ -92,8 +92,8 @@ if docker ps | grep -q buddydesk-app; then
     
     echo ""
     echo "🎉 Deployment completed successfully!"
-    echo "🌐 Application is available at: http://103.168.18.34:3000"
-    echo "📚 API Documentation: http://103.168.18.34:3000/api-docs"
+    echo "🌐 Application is available at: https://api.buddydesk.in"
+    echo "📚 API Documentation: https://api.buddydesk.in/api-docs"
     
 else
     echo "❌ Container failed to start!"

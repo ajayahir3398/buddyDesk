@@ -32,7 +32,7 @@ const getServers = () => {
         description: "Development server",
       },
       {
-        url: "http://103.168.18.34:3000/api",
+        url: "https://api.buddydesk.in/api",
         description: "Production server",
       }
     );
