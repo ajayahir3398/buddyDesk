@@ -46,6 +46,7 @@ db.AadhaarVerification = require("./aadhaarVerification.model")(sequelize, Seque
 db.AadhaarVerificationLog = require("./aadhaarVerificationLog.model")(sequelize, Sequelize.DataTypes);
 db.TempAddress = require("./tempAddress.model")(sequelize, Sequelize.DataTypes);
 db.DeviceToken = require("./deviceToken.model")(sequelize, Sequelize.DataTypes);
+db.TermsAcceptance = require("./termsAcceptance.model")(sequelize, Sequelize.DataTypes);
 
 // Chat models
 db.Conversation = require("./conversation.model")(sequelize, Sequelize.DataTypes);

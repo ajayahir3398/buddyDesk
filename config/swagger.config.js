@@ -1626,6 +1626,23 @@ const options = {
               },
               description: "User posts",
             },
+            terms_accepted: {
+              type: "boolean",
+              example: true,
+              description: "Whether the user has accepted the current version of terms and conditions",
+            },
+            terms_version: {
+              type: "string",
+              example: "1.0",
+              description: "The current version of terms and conditions being checked",
+            },
+            terms_accepted_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-10-07T14:30:00.000Z",
+              description: "Timestamp when the user accepted the current terms version",
+              nullable: true,
+            },
           },
         },
         ProfileResponse: {
@@ -4230,6 +4247,9 @@ const options = {
                           ],
                         },
                       ],
+                      terms_accepted: true,
+                      terms_version: "1.0",
+                      terms_accepted_at: "2025-10-07T14:30:00.000Z",
                     },
                   },
                 },

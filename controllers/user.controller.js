@@ -15,6 +15,7 @@ const SubSkill = db.SubSkill; // Added SubSkill import
 const PostAttachment = db.PostAttachment; // Added PostAttachment import
 const TempAddress = db.TempAddress; // Added TempAddress import
 const NotificationSettings = db.NotificationSettings; // Added NotificationSettings import
+const TermsAcceptance = db.TermsAcceptance; // Added TermsAcceptance import
 
 // Generate access token (short-lived)
 const generateAccessToken = (user) => {
@@ -469,6 +470,17 @@ exports.getProfile = async (req, res) => {
       marketing_notification: true
     }
     
+    // Check if user has accepted current terms and conditions
+    const currentTermsVersion = process.env.CURRENT_TERMS_VERSION || "1.0";
+    const termsAcceptance = await TermsAcceptance.findOne({
+      where: {
+        user_id: userId,
+        version: currentTermsVersion
+      },
+      attributes: ['id', 'version', 'accepted_at'],
+      order: [['accepted_at', 'DESC']]
+    });
+    
     const profileData = {
       id: user.id,
       name: user.name,
@@ -485,7 +497,10 @@ exports.getProfile = async (req, res) => {
       addresses: user.addresses || [],
       temp_addresses: user.tempAddresses || [],
       notification_settings: user.notificationSettings || defaultNotificationSettings,
-      posts: postsWithUrls
+      posts: postsWithUrls,
+      terms_accepted: !!termsAcceptance,
+      terms_version: currentTermsVersion,
+      terms_accepted_at: termsAcceptance ? termsAcceptance.accepted_at : null
     };
 
     res.status(200).json({
@@ -609,6 +624,18 @@ exports.getProfileById = async (req, res) => {
 
     // Generate full URL for profile image if it exists
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Check if user has accepted current terms and conditions
+    const currentTermsVersion = process.env.CURRENT_TERMS_VERSION || "1.0";
+    const termsAcceptance = await TermsAcceptance.findOne({
+      where: {
+        user_id: id,
+        version: currentTermsVersion
+      },
+      attributes: ['id', 'version', 'accepted_at'],
+      order: [['accepted_at', 'DESC']]
+    });
+    
     const profileData = {
       id: user.id,
       name: user.name,
@@ -625,7 +652,10 @@ exports.getProfileById = async (req, res) => {
       addresses: user.addresses || [],
       temp_addresses: user.tempAddresses || [],
       notification_settings: user.notificationSettings || null,
-      posts: user.posts || []
+      posts: user.posts || [],
+      terms_accepted: !!termsAcceptance,
+      terms_version: currentTermsVersion,
+      terms_accepted_at: termsAcceptance ? termsAcceptance.accepted_at : null
     };
 
     res.status(200).json({

@@ -154,13 +154,13 @@ exports.createFeedPost = async (req, res) => {
 
     // Send notifications to all users (excluding post creator)
     // This is done asynchronously to not block the response
-    sendFeedPostNotificationToAllUsers(completePost).catch(error => {
-      logger.error('Failed to send feed post notifications', {
-        requestId: req.requestId,
-        feedPostId: completePost.id,
-        error: error.message
-      });
-    });
+    // sendFeedPostNotificationToAllUsers(completePost).catch(error => {
+    //   logger.error('Failed to send feed post notifications', {
+    //     requestId: req.requestId,
+    //     feedPostId: completePost.id,
+    //     error: error.message
+    //   });
+    // });
 
     res.status(201).json({
       success: true,
