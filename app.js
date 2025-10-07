@@ -87,6 +87,8 @@ const notificationRoutes = require('./routes/notification.routes');
 const feedRoutes = require('./routes/feed.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
 const termsRoutes = require('./routes/terms.routes');
+const iapRoutes = require('./routes/iap.routes');
+const webhookRoutes = require('./routes/webhook.routes');
 const postController = require('./controllers/post.controller');
 
 // Generic file serving route for all attachments (posts, profiles, etc.)
@@ -101,6 +103,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/feed', feedRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/terms', termsRoutes);
+app.use('/api/iap', iapRoutes);
+app.use('/api/webhooks', webhookRoutes);
 app.use('/health', healthRoutes);
 
 // Error handling middleware (must be last)

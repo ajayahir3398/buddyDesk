@@ -1,0 +1,9 @@
+{
+  "dependencies_to_add": {
+    "googleapis": "^126.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^2.7.0"
+  },
+  "note": "Run: npm install googleapis jsonwebtoken node-fetch"
+}
+

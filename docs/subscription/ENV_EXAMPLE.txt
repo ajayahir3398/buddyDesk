@@ -1,0 +1,38 @@
+# Copy this to .env and update with your values
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=buddydesk
+DB_USER=postgres
+DB_PASSWORD=your_password
+
+# JWT
+JWT_SECRET=your-jwt-secret-key
+
+# Server
+PORT=3000
+NODE_ENV=development
+
+# Google Play In-App Purchases
+GOOGLE_PLAY_PACKAGE_NAME=com.yourapp.package
+GOOGLE_SERVICE_ACCOUNT_KEY_PATH=./config/google-service-account.json
+GOOGLE_PUBSUB_TOPIC=projects/your-project/topics/play-billing-notifications
+GOOGLE_PUBSUB_SUBSCRIPTION=projects/your-project/subscriptions/play-billing-sub
+GOOGLE_PUBSUB_VERIFICATION_TOKEN=your-secret-verification-token
+
+# Apple App Store In-App Purchases
+APPLE_BUNDLE_ID=com.yourapp.bundle
+APPLE_KEY_ID=YOUR_KEY_ID
+APPLE_ISSUER_ID=YOUR_ISSUER_ID
+APPLE_PRIVATE_KEY_PATH=./config/apple-private-key.p8
+APPLE_USE_SANDBOX=true
+
+# IAP Configuration
+IAP_WEBHOOK_SECRET=change-this-secret-in-production
+
+# Firebase (for push notifications)
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_PRIVATE_KEY=your-private-key
+FIREBASE_CLIENT_EMAIL=your-client-email
+

@@ -70,6 +70,10 @@ db.FeedView = require("./feedView.model")(sequelize, Sequelize.DataTypes);
 // Feedback model
 db.Feedback = require("./feedback.model")(sequelize, Sequelize.DataTypes);
 
+// Subscription models (In-App Purchases)
+db.Subscription = require("./subscription.model")(sequelize, Sequelize.DataTypes);
+db.SubscriptionEvent = require("./subscriptionEvent.model")(sequelize, Sequelize.DataTypes);
+
 // Set up associations
 Object.keys(db).forEach(modelName => {
     if (db[modelName].associate) {
