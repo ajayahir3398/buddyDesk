@@ -76,28 +76,47 @@ async function sendPostNotificationToAllUsers(post) {
 		// Find all users with their notification settings
 		const allUsers = await db.User.findAll({
 			attributes: ['id', 'name'],
-			include: [{
-				model: db.NotificationSettings,
-				as: 'notificationSettings',
-				attributes: ['push_notification']
-			}]
+			include: [
+				{
+					model: db.NotificationSettings,
+					as: 'notificationSettings',
+					attributes: ['push_notification']
+				},
+				{
+					model: db.UserProfile,
+					as: 'profile',
+					attributes: ['looking_skills'],
+					required: false // LEFT JOIN to include users even without profiles
+				}
+			]
 		});
 
-		// Filter out the post creator and users who have disabled relevant notifications
+		// Filter users whose looking_skills match the post's required_skill_id
 		const usersToNotify = allUsers.filter(user => {
+			// Exclude the post creator
 			if (!user || user.id === post.user_id) {
 				return false;
 			}
 
 			// Check notification preferences
 			const settings = user.notificationSettings;
-			if (settings) {
-				// Only check push_notification flag
-				return settings.push_notification;
+			if (settings && !settings.push_notification) {
+				return false;
 			}
 
-			// If no notification settings found, default to sending notifications
-			return true;
+			// Check if user has a profile with looking_skills
+			if (!user.profile || !user.profile.looking_skills) {
+				return false;
+			}
+
+			// Check if the post's required_skill_id matches any skill in the user's looking_skills array
+			const lookingSkills = user.profile.looking_skills;
+			if (Array.isArray(lookingSkills)) {
+				// looking_skills format: [{ id: 1, name: "JavaScript" }, { id: 3, name: "React" }]
+				return lookingSkills.some(skill => skill.id === post.required_skill_id);
+			}
+
+			return false;
 		});
 
 		if (usersToNotify.length === 0) {
