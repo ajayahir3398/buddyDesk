@@ -415,7 +415,7 @@ exports.getProfile = async (req, res) => {
           order: [['created_at', 'DESC']] // Most recent posts first
         }
       ],
-      attributes: ['id', 'name', 'email', 'referral_code', 'created_at', 'updated_at'],
+      attributes: ['id', 'name', 'email', 'referral_code', 'is_blocked', 'report_count', 'created_at', 'updated_at'],
       order: [
         [{ model: WorkProfile, as: 'workProfiles' }, 'start_date', 'DESC']
       ]
@@ -487,6 +487,8 @@ exports.getProfile = async (req, res) => {
       email: user.email,
       referral_code: user.referral_code,
       referred_user_count: referredUserCount,
+      is_blocked: user.is_blocked || false,
+      report_count: user.report_count || 0,
       created_at: user.created_at,
       updated_at: user.updated_at,
       profile: user.profile ? {
@@ -609,7 +611,7 @@ exports.getProfileById = async (req, res) => {
           order: [['created_at', 'DESC']] // Most recent posts first
         }
       ],
-      attributes: ['id', 'name', 'email', 'created_at', 'updated_at'],
+      attributes: ['id', 'name', 'email', 'referral_code', 'is_blocked', 'report_count', 'created_at', 'updated_at'],
       order: [
         [{ model: WorkProfile, as: 'workProfiles' }, 'start_date', 'DESC']
       ]
@@ -642,6 +644,8 @@ exports.getProfileById = async (req, res) => {
       email: user.email,
       referral_code: user.referral_code,
       referred_user_count: referredUserCount,
+      is_blocked: user.is_blocked || false,
+      report_count: user.report_count || 0,
       created_at: user.created_at,
       updated_at: user.updated_at,
       profile: user.profile ? {

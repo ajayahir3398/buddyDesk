@@ -42,6 +42,16 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       comment: 'Current socket connection ID'
     },
+    is_blocked: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Whether the user is blocked due to excessive reporting'
+    },
+    report_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      comment: 'Total number of reports made by this user'
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
@@ -91,6 +101,10 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.FeedView, { foreignKey: 'user_id', as: 'feedViews' });
     User.hasMany(models.FeedFollow, { foreignKey: 'follower_id', as: 'following' });
     User.hasMany(models.FeedFollow, { foreignKey: 'following_id', as: 'followers' });
+    
+    // Report-related associations
+    User.hasMany(models.PostReport, { foreignKey: 'reported_by', as: 'postReports' });
+    User.hasMany(models.FeedPostReport, { foreignKey: 'reported_by', as: 'feedPostReports' });
   };
 
   return User;

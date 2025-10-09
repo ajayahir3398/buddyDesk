@@ -9,6 +9,7 @@ const WorkProfile = db.WorkProfile;
 const UserSkill = db.UserSkill;
 const Address = db.Address;
 const TempAddress = db.TempAddress;
+const PostReport = db.PostReport;
 const logger = require("../utils/logger");
 const {
   deleteFile,
@@ -211,12 +212,24 @@ exports.getPosts = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     const { status, medium, skill_id } = req.query;
+    const userId = req.user.id;
+
+    // Get posts reported by the current user
+    const reportedPostIds = await PostReport.findAll({
+      where: { reported_by: userId },
+      attributes: ['post_id']
+    }).then(reports => reports.map(r => r.post_id));
 
     // Build where clause for filtering
     const where = {};
     if (status) where.status = status;
     if (medium) where.medium = medium;
     if (skill_id) where.required_skill_id = skill_id;
+    
+    // Exclude reported posts
+    if (reportedPostIds.length > 0) {
+      where.id = { [Op.notIn]: reportedPostIds };
+    }
 
     const { count, rows: posts } = await Post.findAndCountAll({
       where,
@@ -462,6 +475,12 @@ exports.getMatchingPosts = async (req, res) => {
       });
     }
 
+    // Get posts reported by the current user
+    const reportedPostIds = await PostReport.findAll({
+      where: { reported_by: user_id },
+      attributes: ['post_id']
+    }).then(reports => reports.map(r => r.post_id));
+
     // Build where clause for additional filters
     const additionalFilters = {
       user_id: { [Op.ne]: user_id }, // Exclude user's own posts
@@ -469,6 +488,11 @@ exports.getMatchingPosts = async (req, res) => {
     };
 
     if (medium) additionalFilters.medium = medium;
+    
+    // Exclude reported posts
+    if (reportedPostIds.length > 0) {
+      additionalFilters.id = { [Op.notIn]: reportedPostIds };
+    }
 
     // Main query to find matching posts
     const { count, rows: posts } = await Post.findAndCountAll({
@@ -1333,11 +1357,22 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
       });
     }
 
+    // Get posts reported by the current user
+    const reportedPostIds = await PostReport.findAll({
+      where: { reported_by: userId },
+      attributes: ['post_id']
+    }).then(reports => reports.map(r => r.post_id));
+
     // Build base where clause
     const where = {
       status: 'active', // Only show active posts
       user_id: { [Op.ne]: userId } // Exclude posts from the current user
     };
+    
+    // Exclude reported posts
+    if (reportedPostIds.length > 0) {
+      where.id = { [Op.notIn]: reportedPostIds };
+    }
 
     // Add skill filtering only if isFilterBySkills flag is true
     if (isFilterBySkills) {
@@ -1544,6 +1579,165 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
   }
 };
 
+// Report a post
+exports.reportPost = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { reason, description } = req.body;
+
+    // Check if user is blocked
+    const user = await User.findByPk(userId);
+    if (user.is_blocked) {
+      return res.status(403).json({
+        success: false,
+        message: "You are blocked from reporting posts"
+      });
+    }
+
+    // Check if post exists
+    const post = await Post.findByPk(id);
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found"
+      });
+    }
+
+    // Check if user is trying to report their own post
+    if (post.user_id === userId) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot report your own post"
+      });
+    }
+
+    // Check if user already reported this post
+    const existingReport = await PostReport.findOne({
+      where: {
+        post_id: id,
+        reported_by: userId
+      }
+    });
+
+    if (existingReport) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already reported this post"
+      });
+    }
+
+    // Create the report
+    const report = await PostReport.create({
+      post_id: id,
+      reported_by: userId,
+      reason: reason || null,
+      description: description || null
+    });
+
+    // Increment user's report count
+    await User.increment('report_count', { where: { id: userId } });
+
+    // Get updated user to check report count
+    const updatedUser = await User.findByPk(userId);
+    
+    // Block user if they have reported 10 or more times
+    if (updatedUser.report_count >= 10 && !updatedUser.is_blocked) {
+      await updatedUser.update({ is_blocked: true });
+      
+      logger.warn('User blocked due to excessive reporting', {
+        userId: userId,
+        reportCount: updatedUser.report_count
+      });
+    }
+
+    logger.info('Post reported', {
+      requestId: req.requestId,
+      postId: id,
+      reportedBy: userId,
+      reason: reason,
+      userReportCount: updatedUser.report_count
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Post reported successfully",
+      data: {
+        report_id: report.id,
+        warning: updatedUser.report_count >= 10 ? "You have been blocked due to excessive reporting" : null
+      }
+    });
+
+  } catch (error) {
+    logger.error("Error reporting post", {
+      requestId: req.requestId,
+      error: error.message,
+      stack: error.stack
+    });
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
+  }
+};
+
+// Get user's reported posts
+exports.getUserReportedPosts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: reports } = await PostReport.findAndCountAll({
+      where: { reported_by: userId },
+      include: [
+        {
+          model: Post,
+          as: 'post',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'name', 'email']
+            }
+          ]
+        }
+      ],
+      order: [['created_at', 'DESC']],
+      limit,
+      offset
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Reported posts retrieved successfully",
+      data: reports,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(count / limit),
+        totalItems: count,
+        itemsPerPage: limit
+      }
+    });
+
+  } catch (error) {
+    logger.error("Error retrieving reported posts", {
+      requestId: req.requestId,
+      error: error.message,
+      stack: error.stack
+    });
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   addPost: exports.addPost,
   getPosts: exports.getPosts,
@@ -1555,4 +1749,6 @@ module.exports = {
   deleteAttachment: exports.deleteAttachment,
   serveFileByCategory: exports.serveFileByCategory,
   getPostsByTempAddressPincode: exports.getPostsByTempAddressPincode,
+  reportPost: exports.reportPost,
+  getUserReportedPosts: exports.getUserReportedPosts,
 };

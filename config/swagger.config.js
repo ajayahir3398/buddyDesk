@@ -114,6 +114,16 @@ const options = {
               example: "socket_123abc",
               description: "Current socket connection ID",
             },
+            is_blocked: {
+              type: "boolean",
+              example: false,
+              description: "Whether the user is blocked due to excessive reporting (10+ reports)",
+            },
+            report_count: {
+              type: "integer",
+              example: 0,
+              description: "Total number of reports made by this user",
+            },
             created_at: {
               type: "string",
               format: "date-time",
@@ -1087,6 +1097,82 @@ const options = {
                   description: "Feedback creation timestamp"
                 }
               }
+            }
+          }
+        },
+        PostReport: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Report ID" },
+            post_id: { type: "integer", example: 123, description: "ID of the reported post" },
+            reported_by: { type: "integer", example: 456, description: "ID of the user who reported" },
+            reason: { 
+              type: "string", 
+              nullable: true,
+              example: "This post contains spam content",
+              description: "Free-text reason for reporting"
+            },
+            description: { 
+              type: "string", 
+              nullable: true,
+              example: "Additional details about the report",
+              description: "Additional details about the report"
+            },
+            status: {
+              type: "string",
+              enum: ["pending", "reviewed", "resolved", "dismissed"],
+              example: "pending",
+              description: "Status of the report review"
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T00:00:00.000Z",
+              description: "Report creation timestamp"
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T00:00:00.000Z",
+              description: "Report last update timestamp"
+            }
+          }
+        },
+        FeedPostReport: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Report ID" },
+            feed_post_id: { type: "integer", example: 123, description: "ID of the reported feed post" },
+            reported_by: { type: "integer", example: 456, description: "ID of the user who reported" },
+            reason: { 
+              type: "string", 
+              nullable: true,
+              example: "This post has inappropriate content",
+              description: "Free-text reason for reporting"
+            },
+            description: { 
+              type: "string", 
+              nullable: true,
+              example: "Contains offensive language",
+              description: "Additional details about the report"
+            },
+            status: {
+              type: "string",
+              enum: ["pending", "reviewed", "resolved", "dismissed"],
+              example: "pending",
+              description: "Status of the report review"
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T00:00:00.000Z",
+              description: "Report creation timestamp"
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T00:00:00.000Z",
+              description: "Report last update timestamp"
             }
           }
         },
@@ -8105,6 +8191,307 @@ const options = {
                             page: 1,
                             limit: 20,
                             hasMore: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/posts/{id}/report": {
+        post: {
+          summary: "Report a post",
+          description: "Report a post that violates community guidelines. Users cannot report their own posts or report the same post twice. Blocked users cannot submit reports. After 10 reports, users are automatically blocked.",
+          tags: ["Posts"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { type: "integer" },
+              description: "Post ID to report"
+            }
+          ],
+          requestBody: {
+            required: false,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    reason: {
+                      type: "string",
+                      description: "Free-text reason for reporting (optional)",
+                      example: "This post contains spam content"
+                    },
+                    description: {
+                      type: "string",
+                      description: "Additional details about the report (optional)",
+                      example: "Multiple promotional links detected"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: "Post reported successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Post reported successfully" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          report_id: { type: "integer", example: 123 },
+                          warning: {
+                            type: "string",
+                            nullable: true,
+                            example: "You have been blocked due to excessive reporting"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            400: { description: "Bad request - Already reported or cannot report own post" },
+            403: { description: "Forbidden - User is blocked" },
+            404: { description: "Post not found" },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/posts/reports/my-reports": {
+        get: {
+          summary: "Get user's reported posts",
+          description: "Retrieve a list of posts that the current user has reported",
+          tags: ["Posts"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "page",
+              in: "query",
+              schema: { type: "integer", default: 1 },
+              description: "Page number for pagination"
+            },
+            {
+              name: "limit",
+              in: "query",
+              schema: { type: "integer", default: 10 },
+              description: "Number of items per page"
+            }
+          ],
+          responses: {
+            200: {
+              description: "Reported posts retrieved successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Reported posts retrieved successfully" },
+                      data: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            id: { type: "integer", example: 1 },
+                            post_id: { type: "integer", example: 123 },
+                            reported_by: { type: "integer", example: 456 },
+                            reason: { type: "string", example: "This post contains spam content" },
+                            description: { type: "string", example: "Additional details" },
+                            status: { type: "string", example: "pending", enum: ["pending", "reviewed", "resolved", "dismissed"] },
+                            created_at: { type: "string", format: "date-time" },
+                            post: {
+                              type: "object",
+                              properties: {
+                                id: { type: "integer" },
+                                title: { type: "string" },
+                                user: {
+                                  type: "object",
+                                  properties: {
+                                    id: { type: "integer" },
+                                    name: { type: "string" },
+                                    email: { type: "string" }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      pagination: {
+                        type: "object",
+                        properties: {
+                          currentPage: { type: "integer", example: 1 },
+                          totalPages: { type: "integer", example: 5 },
+                          totalItems: { type: "integer", example: 45 },
+                          itemsPerPage: { type: "integer", example: 10 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/feed/posts/{id}/report": {
+        post: {
+          summary: "Report a feed post",
+          description: "Report a feed post that violates community guidelines. Users cannot report their own posts or report the same post twice. Blocked users cannot submit reports. After 10 reports, users are automatically blocked.",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { type: "integer" },
+              description: "Feed post ID to report"
+            }
+          ],
+          requestBody: {
+            required: false,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    reason: {
+                      type: "string",
+                      description: "Free-text reason for reporting (optional)",
+                      example: "This post has inappropriate content"
+                    },
+                    description: {
+                      type: "string",
+                      description: "Additional details about the report (optional)",
+                      example: "Contains offensive language"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: "Feed post reported successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Feed post reported successfully" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          report_id: { type: "integer", example: 123 },
+                          warning: {
+                            type: "string",
+                            nullable: true,
+                            example: "You have been blocked due to excessive reporting"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            400: { description: "Bad request - Already reported or cannot report own post" },
+            403: { description: "Forbidden - User is blocked" },
+            404: { description: "Feed post not found" },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/feed/reports/my-reports": {
+        get: {
+          summary: "Get user's reported feed posts",
+          description: "Retrieve a list of feed posts that the current user has reported",
+          tags: ["Feed"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "page",
+              in: "query",
+              schema: { type: "integer", default: 1 },
+              description: "Page number for pagination"
+            },
+            {
+              name: "limit",
+              in: "query",
+              schema: { type: "integer", default: 20 },
+              description: "Number of items per page"
+            }
+          ],
+          responses: {
+            200: {
+              description: "Reported feed posts retrieved successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Reported feed posts retrieved successfully" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          reports: {
+                            type: "array",
+                            items: {
+                              type: "object",
+                              properties: {
+                                id: { type: "integer", example: 1 },
+                                feed_post_id: { type: "integer", example: 123 },
+                                reported_by: { type: "integer", example: 456 },
+                                reason: { type: "string", example: "Inappropriate content" },
+                                description: { type: "string", example: "Additional details" },
+                                status: { type: "string", example: "pending", enum: ["pending", "reviewed", "resolved", "dismissed"] },
+                                created_at: { type: "string", format: "date-time" },
+                                feedPost: {
+                                  type: "object",
+                                  properties: {
+                                    id: { type: "integer" },
+                                    content: { type: "string" },
+                                    user: {
+                                      type: "object",
+                                      properties: {
+                                        id: { type: "integer" },
+                                        name: { type: "string" },
+                                        email: { type: "string" }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          pagination: {
+                            type: "object",
+                            properties: {
+                              page: { type: "integer", example: 1 },
+                              limit: { type: "integer", example: 20 },
+                              total: { type: "integer", example: 50 },
+                              hasMore: { type: "boolean", example: true }
+                            }
                           }
                         }
                       }

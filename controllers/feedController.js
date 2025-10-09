@@ -5,6 +5,7 @@ const FeedLike = db.FeedLike;
 const FeedComment = db.FeedComment;
 const FeedShare = db.FeedShare;
 const FeedView = db.FeedView;
+const FeedPostReport = db.FeedPostReport;
 const User = db.User;
 const UserProfile = db.UserProfile;
 const Skill = db.Skill;
@@ -185,12 +186,21 @@ exports.getFeed = async (req, res) => {
     const { page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
-
+    // Get feed posts reported by the current user
+    const reportedFeedPostIds = await FeedPostReport.findAll({
+      where: { reported_by: userId },
+      attributes: ['feed_post_id']
+    }).then(reports => reports.map(r => r.feed_post_id));
 
     // Build where conditions
     let whereConditions = {
       status: 'active'
     };
+    
+    // Exclude reported feed posts
+    if (reportedFeedPostIds.length > 0) {
+      whereConditions.id = { [db.Sequelize.Op.notIn]: reportedFeedPostIds };
+    }
 
     // Get all posts (prioritizing featured and trending)
     let feedPosts = [];
@@ -637,10 +647,24 @@ exports.getTrendingPosts = async (req, res) => {
     const { page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
+    // Get feed posts reported by the current user
+    const reportedFeedPostIds = await FeedPostReport.findAll({
+      where: { reported_by: userId },
+      attributes: ['feed_post_id']
+    }).then(reports => reports.map(r => r.feed_post_id));
+
+    // Build where conditions
+    const whereConditions = {
+      status: 'active'
+    };
+    
+    // Exclude reported feed posts
+    if (reportedFeedPostIds.length > 0) {
+      whereConditions.id = { [db.Sequelize.Op.notIn]: reportedFeedPostIds };
+    }
+
     const trendingPosts = await FeedPost.findAll({
-      where: {
-        status: 'active'
-      },
+      where: whereConditions,
       include: [
         {
           model: User,
@@ -797,6 +821,155 @@ exports.deleteFeedPost = async (req, res) => {
 
   } catch (error) {
     console.error('Delete feed post error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Report a feed post
+exports.reportFeedPost = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { reason, description } = req.body;
+
+    // Check if user is blocked
+    const user = await User.findByPk(userId);
+    if (user.is_blocked) {
+      return res.status(403).json({
+        success: false,
+        message: "You are blocked from reporting posts"
+      });
+    }
+
+    // Check if feed post exists
+    const feedPost = await FeedPost.findByPk(id);
+    if (!feedPost) {
+      return res.status(404).json({
+        success: false,
+        message: "Feed post not found"
+      });
+    }
+
+    // Check if user is trying to report their own post
+    if (feedPost.user_id === userId) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot report your own post"
+      });
+    }
+
+    // Check if user already reported this feed post
+    const existingReport = await FeedPostReport.findOne({
+      where: {
+        feed_post_id: id,
+        reported_by: userId
+      }
+    });
+
+    if (existingReport) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already reported this feed post"
+      });
+    }
+
+    // Create the report
+    const report = await FeedPostReport.create({
+      feed_post_id: id,
+      reported_by: userId,
+      reason: reason || null,
+      description: description || null
+    });
+
+    // Increment user's report count
+    await User.increment('report_count', { where: { id: userId } });
+
+    // Get updated user to check report count
+    const updatedUser = await User.findByPk(userId);
+    
+    // Block user if they have reported 10 or more times
+    if (updatedUser.report_count >= 10 && !updatedUser.is_blocked) {
+      await updatedUser.update({ is_blocked: true });
+      
+      logger.warn('User blocked due to excessive reporting', {
+        userId: userId,
+        reportCount: updatedUser.report_count
+      });
+    }
+
+    logger.info('Feed post reported', {
+      feedPostId: id,
+      reportedBy: userId,
+      reason: reason,
+      userReportCount: updatedUser.report_count
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Feed post reported successfully",
+      data: {
+        report_id: report.id,
+        warning: updatedUser.report_count >= 10 ? "You have been blocked due to excessive reporting" : null
+      }
+    });
+
+  } catch (error) {
+    console.error('Report feed post error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Get user's reported feed posts
+exports.getUserReportedFeedPosts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: reports } = await FeedPostReport.findAndCountAll({
+      where: { reported_by: userId },
+      include: [
+        {
+          model: FeedPost,
+          as: 'feedPost',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'name', 'email']
+            }
+          ]
+        }
+      ],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: offset
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Reported feed posts retrieved successfully",
+      data: {
+        reports,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: count,
+          hasMore: (offset + parseInt(limit)) < count
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get reported feed posts error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

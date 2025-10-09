@@ -4,11 +4,12 @@ const { authenticateToken } = require('../middlewares/auth');
 const { validatePostCreation, validatePostUpdate } = require('../middlewares/validation');
 const { uploadMultiple, handleUploadError } = require('../middlewares/upload');
 const { validateFileSecurityMiddleware } = require('../middleware/fileSecurityValidation');
+const { checkUserBlocked } = require('../middlewares/blockCheck');
 
 const router = express.Router();
 
-// Create a new post with optional file attachments (requires authentication)
-router.post('/', authenticateToken, uploadMultiple, validateFileSecurityMiddleware, handleUploadError, validatePostCreation, postController.addPost);
+// Create a new post with optional file attachments (requires authentication and user not blocked)
+router.post('/', authenticateToken, checkUserBlocked, uploadMultiple, validateFileSecurityMiddleware, handleUploadError, validatePostCreation, postController.addPost);
 
 // Get all posts with optional filtering and pagination (requires authentication)
 router.get('/', authenticateToken, postController.getPosts);
@@ -33,6 +34,12 @@ router.get('/attachments/:attachmentId/download', authenticateToken, postControl
 
 // Delete attachment by ID (requires authentication and ownership)
 router.delete('/attachments/:attachmentId', authenticateToken, postController.deleteAttachment);
+
+// Report a post (requires authentication)
+router.post('/:id/report', authenticateToken, postController.reportPost);
+
+// Get user's reported posts (requires authentication)
+router.get('/reports/my-reports', authenticateToken, postController.getUserReportedPosts);
 
 // New enhanced file serving routes (requires authentication)
 // Moved to a more generic route - this endpoint now serves all file types
