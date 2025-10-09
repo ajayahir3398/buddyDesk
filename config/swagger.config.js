@@ -149,7 +149,7 @@ const options = {
                   example: "active" 
                 },
                 is_auto_renewing: { type: "boolean", example: true },
-                start_date: { type: "string", format: "date-time", example: "2024-01-01T00:00:00.000Z" },
+                purchase_date: { type: "string", format: "date-time", example: "2024-01-01T00:00:00.000Z" },
                 expiry_date: { type: "string", format: "date-time", example: "2024-02-01T00:00:00.000Z" },
                 is_trial: { type: "boolean", example: false }
               }

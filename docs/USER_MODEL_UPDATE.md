@@ -39,7 +39,7 @@ Added two new fields to the User model to track user verification status and sub
   - `product_id` - Product/SKU identifier
   - `status` - Current subscription status
   - `is_auto_renewing` - Auto-renewal status
-  - `start_date` - Subscription start date
+  - `purchase_date` - Subscription purchase date
   - `expiry_date` - Subscription expiry date
   - `is_trial` - Whether it's a trial subscription
 
@@ -124,7 +124,7 @@ Both `GET /api/users/profile` and `GET /api/users/profile/:id` now include:
       "product_id": "premium_monthly",
       "status": "active",
       "is_auto_renewing": true,
-      "start_date": "2024-01-01T00:00:00.000Z",
+      "purchase_date": "2024-01-01T00:00:00.000Z",
       "expiry_date": "2024-02-01T00:00:00.000Z",
       "is_trial": false
     },
@@ -179,17 +179,19 @@ switch (user.subscription_tier) {
 ```javascript
 // In controller
 const activeSubscription = await Subscription.findOne({
-  where: {
-    user_id: userId,
-    status: ['active', 'grace_period']
-  },
-  order: [['expiry_date', 'DESC']]
-});
+      where: {
+        user_id: userId,
+        status: ['active', 'grace_period']
+      },
+      attributes: ['id', 'platform', 'product_id', 'status', 'is_auto_renewing', 'purchase_date', 'expiry_date', 'is_trial'],
+      order: [['expiry_date', 'DESC']]
+    });
 
-if (activeSubscription) {
-  // User has active subscription
-  console.log('Expires:', activeSubscription.expiry_date);
-}
+    if (activeSubscription) {
+      // User has active subscription
+      console.log('Expires:', activeSubscription.expiry_date);
+      console.log('Purchased:', activeSubscription.purchase_date);
+    }
 ```
 
 ### 4. Update Verification Status

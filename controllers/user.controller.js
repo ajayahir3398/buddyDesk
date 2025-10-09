@@ -489,7 +489,7 @@ exports.getProfile = async (req, res) => {
         user_id: userId,
         status: ['active', 'grace_period']
       },
-      attributes: ['id', 'platform', 'product_id', 'status', 'is_auto_renewing', 'start_date', 'expiry_date', 'is_trial'],
+      attributes: ['id', 'platform', 'product_id', 'status', 'is_auto_renewing', 'purchase_date', 'expiry_date', 'is_trial'],
       order: [['expiry_date', 'DESC']]
     });
 
@@ -509,7 +509,7 @@ exports.getProfile = async (req, res) => {
         product_id: activeSubscription.product_id,
         status: activeSubscription.status,
         is_auto_renewing: activeSubscription.is_auto_renewing,
-        start_date: activeSubscription.start_date,
+        purchase_date: activeSubscription.purchase_date,
         expiry_date: activeSubscription.expiry_date,
         is_trial: activeSubscription.is_trial
       } : null,
@@ -668,7 +668,7 @@ exports.getProfileById = async (req, res) => {
         user_id: id,
         status: ['active', 'grace_period']
       },
-      attributes: ['id', 'platform', 'product_id', 'status', 'is_auto_renewing', 'start_date', 'expiry_date', 'is_trial'],
+      attributes: ['id', 'platform', 'product_id', 'status', 'is_auto_renewing', 'purchase_date', 'expiry_date', 'is_trial'],
       order: [['expiry_date', 'DESC']]
     });
     
@@ -688,7 +688,7 @@ exports.getProfileById = async (req, res) => {
         product_id: activeSubscription.product_id,
         status: activeSubscription.status,
         is_auto_renewing: activeSubscription.is_auto_renewing,
-        start_date: activeSubscription.start_date,
+        purchase_date: activeSubscription.purchase_date,
         expiry_date: activeSubscription.expiry_date,
         is_trial: activeSubscription.is_trial
       } : null,
