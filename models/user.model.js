@@ -52,6 +52,16 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 0,
       comment: 'Total number of reports made by this user'
     },
+    is_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Whether the user is verified (e.g., email verified, identity verified)'
+    },
+    subscription_tier: {
+      type: DataTypes.ENUM('free', 'basic', 'premium', 'enterprise'),
+      defaultValue: 'free',
+      comment: 'Current subscription tier of the user'
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
@@ -109,6 +119,9 @@ module.exports = (sequelize, DataTypes) => {
     // Block-related associations
     User.hasMany(models.UserBlock, { foreignKey: 'blocker_id', as: 'blockedUsers' });
     User.hasMany(models.UserBlock, { foreignKey: 'blocked_id', as: 'blockedBy' });
+    
+    // Subscription-related associations
+    User.hasMany(models.Subscription, { foreignKey: 'user_id', as: 'subscriptions' });
   };
 
   return User;

@@ -17,6 +17,7 @@ const TempAddress = db.TempAddress; // Added TempAddress import
 const NotificationSettings = db.NotificationSettings; // Added NotificationSettings import
 const TermsAcceptance = db.TermsAcceptance; // Added TermsAcceptance import
 const UserBlock = db.UserBlock; // Added UserBlock import
+const Subscription = db.Subscription; // Added Subscription import
 
 // Generate access token (short-lived)
 const generateAccessToken = (user) => {
@@ -482,6 +483,16 @@ exports.getProfile = async (req, res) => {
       order: [['accepted_at', 'DESC']]
     });
     
+    // Get user's active subscription details
+    const activeSubscription = await Subscription.findOne({
+      where: {
+        user_id: userId,
+        status: ['active', 'grace_period']
+      },
+      attributes: ['id', 'platform', 'product_id', 'status', 'is_auto_renewing', 'start_date', 'expiry_date', 'is_trial'],
+      order: [['expiry_date', 'DESC']]
+    });
+
     const profileData = {
       id: user.id,
       name: user.name,
@@ -490,6 +501,18 @@ exports.getProfile = async (req, res) => {
       referred_user_count: referredUserCount,
       is_blocked: user.is_blocked || false,
       report_count: user.report_count || 0,
+      is_verified: user.is_verified || false,
+      subscription_tier: user.subscription_tier || 'free',
+      subscription_details: activeSubscription ? {
+        id: activeSubscription.id,
+        platform: activeSubscription.platform,
+        product_id: activeSubscription.product_id,
+        status: activeSubscription.status,
+        is_auto_renewing: activeSubscription.is_auto_renewing,
+        start_date: activeSubscription.start_date,
+        expiry_date: activeSubscription.expiry_date,
+        is_trial: activeSubscription.is_trial
+      } : null,
       created_at: user.created_at,
       updated_at: user.updated_at,
       profile: user.profile ? {
@@ -612,7 +635,7 @@ exports.getProfileById = async (req, res) => {
           order: [['created_at', 'DESC']] // Most recent posts first
         }
       ],
-      attributes: ['id', 'name', 'email', 'referral_code', 'is_blocked', 'report_count', 'created_at', 'updated_at'],
+      attributes: ['id', 'name', 'email', 'referral_code', 'is_blocked', 'report_count', 'is_verified', 'subscription_tier', 'created_at', 'updated_at'],
       order: [
         [{ model: WorkProfile, as: 'workProfiles' }, 'start_date', 'DESC']
       ]
@@ -639,6 +662,16 @@ exports.getProfileById = async (req, res) => {
       order: [['accepted_at', 'DESC']]
     });
     
+    // Get user's active subscription details
+    const activeSubscription = await Subscription.findOne({
+      where: {
+        user_id: id,
+        status: ['active', 'grace_period']
+      },
+      attributes: ['id', 'platform', 'product_id', 'status', 'is_auto_renewing', 'start_date', 'expiry_date', 'is_trial'],
+      order: [['expiry_date', 'DESC']]
+    });
+    
     const profileData = {
       id: user.id,
       name: user.name,
@@ -647,6 +680,18 @@ exports.getProfileById = async (req, res) => {
       referred_user_count: referredUserCount,
       is_blocked: user.is_blocked || false,
       report_count: user.report_count || 0,
+      is_verified: user.is_verified || false,
+      subscription_tier: user.subscription_tier || 'free',
+      subscription_details: activeSubscription ? {
+        id: activeSubscription.id,
+        platform: activeSubscription.platform,
+        product_id: activeSubscription.product_id,
+        status: activeSubscription.status,
+        is_auto_renewing: activeSubscription.is_auto_renewing,
+        start_date: activeSubscription.start_date,
+        expiry_date: activeSubscription.expiry_date,
+        is_trial: activeSubscription.is_trial
+      } : null,
       created_at: user.created_at,
       updated_at: user.updated_at,
       profile: user.profile ? {

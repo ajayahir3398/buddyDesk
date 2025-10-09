@@ -124,6 +124,36 @@ const options = {
               example: 0,
               description: "Total number of reports made by this user",
             },
+            is_verified: {
+              type: "boolean",
+              example: false,
+              description: "Whether the user is verified (email verified, identity verified, etc.)",
+            },
+            subscription_tier: {
+              type: "string",
+              enum: ["free", "basic", "premium", "enterprise"],
+              example: "free",
+              description: "Current subscription tier of the user",
+            },
+            subscription_details: {
+              type: "object",
+              nullable: true,
+              description: "Active subscription details (null if no active subscription)",
+              properties: {
+                id: { type: "string", format: "uuid", example: "123e4567-e89b-12d3-a456-426614174000" },
+                platform: { type: "string", enum: ["play", "appstore"], example: "play" },
+                product_id: { type: "string", example: "premium_monthly" },
+                status: { 
+                  type: "string", 
+                  enum: ["active", "canceled", "expired", "grace_period", "on_hold", "paused", "pending", "in_retry", "revoked"],
+                  example: "active" 
+                },
+                is_auto_renewing: { type: "boolean", example: true },
+                start_date: { type: "string", format: "date-time", example: "2024-01-01T00:00:00.000Z" },
+                expiry_date: { type: "string", format: "date-time", example: "2024-02-01T00:00:00.000Z" },
+                is_trial: { type: "boolean", example: false }
+              }
+            },
             created_at: {
               type: "string",
               format: "date-time",
