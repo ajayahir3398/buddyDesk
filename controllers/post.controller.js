@@ -10,6 +10,7 @@ const UserSkill = db.UserSkill;
 const Address = db.Address;
 const TempAddress = db.TempAddress;
 const PostReport = db.PostReport;
+const UserBlock = db.UserBlock;
 const logger = require("../utils/logger");
 const {
   deleteFile,
@@ -220,15 +221,26 @@ exports.getPosts = async (req, res) => {
       attributes: ['post_id']
     }).then(reports => reports.map(r => r.post_id));
 
+    // Get users blocked by the current user
+    const blockedUserIds = await UserBlock.findAll({
+      where: { blocker_id: userId },
+      attributes: ['blocked_id']
+    }).then(blocks => blocks.map(b => b.blocked_id));
+
     // Build where clause for filtering
     const where = {};
     if (status) where.status = status;
     if (medium) where.medium = medium;
     if (skill_id) where.required_skill_id = skill_id;
-    
+
     // Exclude reported posts
     if (reportedPostIds.length > 0) {
       where.id = { [Op.notIn]: reportedPostIds };
+    }
+
+    // Exclude posts from blocked users
+    if (blockedUserIds.length > 0) {
+      where.user_id = { [Op.notIn]: blockedUserIds };
     }
 
     const { count, rows: posts } = await Post.findAndCountAll({
@@ -481,6 +493,12 @@ exports.getMatchingPosts = async (req, res) => {
       attributes: ['post_id']
     }).then(reports => reports.map(r => r.post_id));
 
+    // Get users blocked by the current user
+    const blockedUserIds = await UserBlock.findAll({
+      where: { blocker_id: user_id },
+      attributes: ['blocked_id']
+    }).then(blocks => blocks.map(b => b.blocked_id));
+
     // Build where clause for additional filters
     const additionalFilters = {
       user_id: { [Op.ne]: user_id }, // Exclude user's own posts
@@ -488,10 +506,25 @@ exports.getMatchingPosts = async (req, res) => {
     };
 
     if (medium) additionalFilters.medium = medium;
-    
+
     // Exclude reported posts
     if (reportedPostIds.length > 0) {
       additionalFilters.id = { [Op.notIn]: reportedPostIds };
+    }
+
+    // Exclude posts from blocked users
+    if (blockedUserIds.length > 0) {
+      if (additionalFilters.user_id && typeof additionalFilters.user_id === 'object' && additionalFilters.user_id[Op.ne]) {
+        // Combine with existing user_id filter
+        additionalFilters.user_id = {
+          [Op.and]: [
+            { [Op.ne]: user_id },
+            { [Op.notIn]: blockedUserIds }
+          ]
+        };
+      } else {
+        additionalFilters.user_id = { [Op.notIn]: blockedUserIds };
+      }
     }
 
     // Main query to find matching posts
@@ -1363,15 +1396,36 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
       attributes: ['post_id']
     }).then(reports => reports.map(r => r.post_id));
 
+    // Get users blocked by the current user
+    const blockedUserIds = await UserBlock.findAll({
+      where: { blocker_id: userId },
+      attributes: ['blocked_id']
+    }).then(blocks => blocks.map(b => b.blocked_id));
+
     // Build base where clause
     const where = {
       status: 'active', // Only show active posts
       user_id: { [Op.ne]: userId } // Exclude posts from the current user
     };
-    
+
     // Exclude reported posts
     if (reportedPostIds.length > 0) {
       where.id = { [Op.notIn]: reportedPostIds };
+    }
+
+    // Exclude posts from blocked users
+    if (blockedUserIds.length > 0) {
+      if (where.user_id && typeof where.user_id === 'object' && where.user_id[Op.ne]) {
+        // Combine with existing user_id filter
+        where.user_id = {
+          [Op.and]: [
+            { [Op.ne]: userId },
+            { [Op.notIn]: blockedUserIds }
+          ]
+        };
+      } else {
+        where.user_id = { [Op.notIn]: blockedUserIds };
+      }
     }
 
     // Add skill filtering only if isFilterBySkills flag is true
@@ -1640,16 +1694,6 @@ exports.reportPost = async (req, res) => {
 
     // Get updated user to check report count
     const updatedUser = await User.findByPk(userId);
-    
-    // Block user if they have reported 10 or more times
-    if (updatedUser.report_count >= 10 && !updatedUser.is_blocked) {
-      await updatedUser.update({ is_blocked: true });
-      
-      logger.warn('User blocked due to excessive reporting', {
-        userId: userId,
-        reportCount: updatedUser.report_count
-      });
-    }
 
     logger.info('Post reported', {
       requestId: req.requestId,
@@ -1662,10 +1706,7 @@ exports.reportPost = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Post reported successfully",
-      data: {
-        report_id: report.id,
-        warning: updatedUser.report_count >= 10 ? "You have been blocked due to excessive reporting" : null
-      }
+      report_id: report.id,
     });
 
   } catch (error) {

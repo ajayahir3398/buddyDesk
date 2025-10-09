@@ -6,6 +6,7 @@ const FeedComment = db.FeedComment;
 const FeedShare = db.FeedShare;
 const FeedView = db.FeedView;
 const FeedPostReport = db.FeedPostReport;
+const UserBlock = db.UserBlock;
 const User = db.User;
 const UserProfile = db.UserProfile;
 const Skill = db.Skill;
@@ -18,16 +19,16 @@ const logger = require("../utils/logger");
 const calculateEngagementScore = (post) => {
   const now = new Date();
   const postAge = (now - new Date(post.created_at)) / (1000 * 60 * 60 * 24); // days
-  
+
   // Base score from engagement
   const baseScore = (post.like_count * 1) + (post.comment_count * 3) + (post.share_count * 5) + (post.view_count * 0.1);
-  
+
   // Time decay factor (newer posts get higher scores)
   const timeDecay = Math.exp(-postAge / 7); // Decay over 7 days
-  
+
   // Bonus for featured posts
   const featuredBonus = post.is_featured ? 50 : 0;
-  
+
   return Math.round((baseScore * timeDecay + featuredBonus) * 100) / 100;
 };
 
@@ -52,17 +53,17 @@ const generateAttachmentUrls = (attachments, baseUrl) => {
 const generateFeedUrls = (posts, baseUrl) => {
   return posts.map(post => {
     const postData = post.toJSON ? post.toJSON() : post;
-    
+
     // Generate URLs for attachments using the same function as posts
     if (postData.attachments && postData.attachments.length > 0) {
       postData.attachments = generateAttachmentUrls(postData.attachments, baseUrl);
     }
-    
+
     // Generate user profile image URL
     if (postData.user && postData.user.profile && postData.user.profile.image_path) {
       postData.user.profile.image_url = `${baseUrl}/api/files/${postData.user.profile.image_path}`;
     }
-    
+
     return postData;
   });
 };
@@ -71,12 +72,12 @@ const generateFeedUrls = (posts, baseUrl) => {
 const generateCommentUrls = (comments, baseUrl) => {
   return comments.map(comment => {
     const commentData = comment.toJSON ? comment.toJSON() : comment;
-    
+
     // Generate user profile image URL for main comment
     if (commentData.user && commentData.user.profile && commentData.user.profile.image_path) {
       commentData.user.profile.image_url = `${baseUrl}/api/files/${commentData.user.profile.image_path}`;
     }
-    
+
     // Generate user profile image URLs for replies
     if (commentData.replies && commentData.replies.length > 0) {
       commentData.replies = commentData.replies.map(reply => {
@@ -87,7 +88,7 @@ const generateCommentUrls = (comments, baseUrl) => {
         return replyData;
       });
     }
-    
+
     return commentData;
   });
 };
@@ -118,9 +119,9 @@ exports.createFeedPost = async (req, res) => {
         feed_post_id: feedPost.id,
         file_path: getFileUrl(file.path), // Use same function as posts controller
         file_name: file.originalname,
-        file_type: file.mimetype.startsWith('image/') ? 'image' : 
-                   file.mimetype.startsWith('video/') ? 'video' : 
-                   file.mimetype.startsWith('audio/') ? 'audio' : 'document',
+        file_type: file.mimetype.startsWith('image/') ? 'image' :
+          file.mimetype.startsWith('video/') ? 'video' :
+            file.mimetype.startsWith('audio/') ? 'audio' : 'document',
         mime_type: file.mimetype,
         file_size: file.size
       }));
@@ -192,14 +193,31 @@ exports.getFeed = async (req, res) => {
       attributes: ['feed_post_id']
     }).then(reports => reports.map(r => r.feed_post_id));
 
+    // Get users blocked by the current user
+    const blockedUserIds = await UserBlock.findAll({
+      where: { blocker_id: userId },
+      attributes: ['blocked_id']
+    }).then(blocks => blocks.map(b => b.blocked_id));
+
     // Build where conditions
     let whereConditions = {
       status: 'active'
     };
-    
+
     // Exclude reported feed posts
     if (reportedFeedPostIds.length > 0) {
       whereConditions.id = { [db.Sequelize.Op.notIn]: reportedFeedPostIds };
+    }
+
+    // Build user_id filter to exclude own posts and blocked users
+    let userIdFilter = { [db.Sequelize.Op.ne]: userId };
+    if (blockedUserIds.length > 0) {
+      userIdFilter = {
+        [db.Sequelize.Op.and]: [
+          { [db.Sequelize.Op.ne]: userId },
+          { [db.Sequelize.Op.notIn]: blockedUserIds }
+        ]
+      };
     }
 
     // Get all posts (prioritizing featured and trending)
@@ -207,7 +225,7 @@ exports.getFeed = async (req, res) => {
     const allPosts = await FeedPost.findAll({
       where: {
         ...whereConditions,
-        user_id: { [db.Sequelize.Op.ne]: userId } // Exclude own posts
+        user_id: userIdFilter
       },
       include: [
         {
@@ -243,7 +261,7 @@ exports.getFeed = async (req, res) => {
     feedPosts = [...feedPosts, ...allPosts];
 
     // Remove duplicates and sort by engagement score
-    const uniquePosts = feedPosts.filter((post, index, self) => 
+    const uniquePosts = feedPosts.filter((post, index, self) =>
       index === self.findIndex(p => p.id === post.id)
     );
 
@@ -381,7 +399,7 @@ exports.toggleLike = async (req, res) => {
       // Unlike the post
       await existingLike.destroy();
       await FeedPost.decrement('like_count', { where: { id } });
-      
+
       res.status(200).json({
         success: true,
         message: 'Post unliked successfully',
@@ -395,7 +413,7 @@ exports.toggleLike = async (req, res) => {
         like_type
       });
       await FeedPost.increment('like_count', { where: { id } });
-      
+
       // Create notification for the post owner (asynchronously, don't block response)
       User.findByPk(userId, {
         attributes: ['id', 'name']
@@ -415,7 +433,7 @@ exports.toggleLike = async (req, res) => {
           error: error.message
         });
       });
-      
+
       res.status(200).json({
         success: true,
         message: 'Post liked successfully',
@@ -531,10 +549,10 @@ exports.getComments = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const comments = await FeedComment.findAndCountAll({
-      where: { 
-        feed_post_id: id, 
+      where: {
+        feed_post_id: id,
         parent_comment_id: null, // Only top-level comments
-        status: 'active' 
+        status: 'active'
       },
       include: [
         {
@@ -653,14 +671,25 @@ exports.getTrendingPosts = async (req, res) => {
       attributes: ['feed_post_id']
     }).then(reports => reports.map(r => r.feed_post_id));
 
+    // Get users blocked by the current user
+    const blockedUserIds = await UserBlock.findAll({
+      where: { blocker_id: userId },
+      attributes: ['blocked_id']
+    }).then(blocks => blocks.map(b => b.blocked_id));
+
     // Build where conditions
     const whereConditions = {
       status: 'active'
     };
-    
+
     // Exclude reported feed posts
     if (reportedFeedPostIds.length > 0) {
       whereConditions.id = { [db.Sequelize.Op.notIn]: reportedFeedPostIds };
+    }
+
+    // Exclude posts from blocked users
+    if (blockedUserIds.length > 0) {
+      whereConditions.user_id = { [db.Sequelize.Op.notIn]: blockedUserIds };
     }
 
     const trendingPosts = await FeedPost.findAll({
@@ -733,7 +762,7 @@ exports.getUserFeedPosts = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const userPosts = await FeedPost.findAndCountAll({
-      where: { 
+      where: {
         user_id: userId,
         status: 'active'
       },
@@ -890,16 +919,6 @@ exports.reportFeedPost = async (req, res) => {
 
     // Get updated user to check report count
     const updatedUser = await User.findByPk(userId);
-    
-    // Block user if they have reported 10 or more times
-    if (updatedUser.report_count >= 10 && !updatedUser.is_blocked) {
-      await updatedUser.update({ is_blocked: true });
-      
-      logger.warn('User blocked due to excessive reporting', {
-        userId: userId,
-        reportCount: updatedUser.report_count
-      });
-    }
 
     logger.info('Feed post reported', {
       feedPostId: id,
@@ -911,10 +930,7 @@ exports.reportFeedPost = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Feed post reported successfully",
-      data: {
-        report_id: report.id,
-        warning: updatedUser.report_count >= 10 ? "You have been blocked due to excessive reporting" : null
-      }
+      report_id: report.id,
     });
 
   } catch (error) {

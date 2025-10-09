@@ -16,6 +16,7 @@ const PostAttachment = db.PostAttachment; // Added PostAttachment import
 const TempAddress = db.TempAddress; // Added TempAddress import
 const NotificationSettings = db.NotificationSettings; // Added NotificationSettings import
 const TermsAcceptance = db.TermsAcceptance; // Added TermsAcceptance import
+const UserBlock = db.UserBlock; // Added UserBlock import
 
 // Generate access token (short-lived)
 const generateAccessToken = (user) => {
@@ -1105,5 +1106,197 @@ const calculateWorkDuration = (startDate, endDate) => {
     return `${diffMonths} month${diffMonths > 1 ? 's' : ''}`;
   } else {
     return 'Less than a month';
+  }
+};
+
+// Block a user
+exports.blockUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const blockerId = req.user.id;
+    const { reason } = req.body;
+
+    // Validate userId
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID"
+      });
+    }
+
+    // Check if trying to block self
+    if (parseInt(userId) === blockerId) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot block yourself"
+      });
+    }
+
+    // Check if user exists
+    const userToBlock = await User.findByPk(userId);
+    if (!userToBlock) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Check if already blocked
+    const existingBlock = await UserBlock.findOne({
+      where: {
+        blocker_id: blockerId,
+        blocked_id: userId
+      }
+    });
+
+    if (existingBlock) {
+      return res.status(400).json({
+        success: false,
+        message: "User is already blocked"
+      });
+    }
+
+    // Create block record
+    const block = await UserBlock.create({
+      blocker_id: blockerId,
+      blocked_id: userId,
+      reason: reason || null
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "User blocked successfully",
+      data: {
+        block_id: block.id,
+        blocked_user_id: parseInt(userId)
+      }
+    });
+
+  } catch (error) {
+    console.error('Block user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Unblock a user
+exports.unblockUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const blockerId = req.user.id;
+
+    // Validate userId
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID"
+      });
+    }
+
+    // Find block record
+    const block = await UserBlock.findOne({
+      where: {
+        blocker_id: blockerId,
+        blocked_id: userId
+      }
+    });
+
+    if (!block) {
+      return res.status(404).json({
+        success: false,
+        message: "User is not blocked"
+      });
+    }
+
+    // Delete block record
+    await block.destroy();
+
+    res.status(200).json({
+      success: true,
+      message: "User unblocked successfully",
+      data: {
+        unblocked_user_id: parseInt(userId)
+      }
+    });
+
+  } catch (error) {
+    console.error('Unblock user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Get list of blocked users
+exports.getBlockedUsers = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: blocks } = await UserBlock.findAndCountAll({
+      where: { blocker_id: userId },
+      include: [
+        {
+          model: User,
+          as: 'blocked',
+          attributes: ['id', 'name', 'email'],
+          include: [
+            {
+              model: UserProfile,
+              as: 'profile',
+              attributes: ['image_path', 'bio', 'city', 'state']
+            }
+          ]
+        }
+      ],
+      order: [['created_at', 'DESC']],
+      limit,
+      offset
+    });
+
+    // Generate image URLs
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const blockedUsers = blocks.map(block => {
+      const userData = block.blocked.toJSON();
+      if (userData.profile && userData.profile.image_path) {
+        userData.profile.image_url = `${baseUrl}/api/files/${userData.profile.image_path}`;
+        delete userData.profile.image_path;
+      }
+      return {
+        block_id: block.id,
+        blocked_at: block.created_at,
+        reason: block.reason,
+        user: userData
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Blocked users retrieved successfully",
+      data: {
+        blocked_users: blockedUsers,
+        pagination: {
+          total: count,
+          page,
+          limit,
+          total_pages: Math.ceil(count / limit)
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get blocked users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
   }
 };

@@ -30,4 +30,9 @@ router.get('/public-profile/:id', authenticateToken, userController.getPublicPro
 // Soft delete user account (require authentication)
 router.delete('/delete-account', authenticateToken, userController.softDeleteUser);
 
+// Block/Unblock user routes (require authentication)
+router.post('/block/:userId', authenticateToken, userController.blockUser);
+router.delete('/block/:userId', authenticateToken, userController.unblockUser);
+router.get('/blocked-users', authenticateToken, userController.getBlockedUsers);
+
 module.exports = router;

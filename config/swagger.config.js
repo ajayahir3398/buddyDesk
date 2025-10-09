@@ -1176,6 +1176,32 @@ const options = {
             }
           }
         },
+        UserBlock: {
+          type: "object",
+          properties: {
+            id: { type: "integer", example: 1, description: "Block ID" },
+            blocker_id: { type: "integer", example: 123, description: "ID of the user who blocked" },
+            blocked_id: { type: "integer", example: 456, description: "ID of the user who is blocked" },
+            reason: { 
+              type: "string", 
+              nullable: true,
+              example: "Inappropriate behavior",
+              description: "Optional reason for blocking"
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T00:00:00.000Z",
+              description: "Block creation timestamp"
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T00:00:00.000Z",
+              description: "Block last update timestamp"
+            }
+          }
+        },
         PostAttachment: {
           type: "object",
           properties: {
@@ -5186,6 +5212,213 @@ const options = {
           },
         },
       },
+      "/users/block/{userId}": {
+        post: {
+          summary: "Block a user",
+          description: "Block another user. Once blocked, their posts and feed posts will not appear in your feeds.",
+          tags: ["Users"],
+          security: [
+            {
+              bearerAuth: [],
+            },
+          ],
+          parameters: [
+            {
+              name: "userId",
+              in: "path",
+              required: true,
+              description: "ID of the user to block",
+              schema: {
+                type: "integer",
+                example: 456
+              }
+            }
+          ],
+          requestBody: {
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    reason: {
+                      type: "string",
+                      description: "Optional reason for blocking (optional)",
+                      example: "Inappropriate behavior"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: "User blocked successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "User blocked successfully" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          block_id: { type: "integer", example: 123 },
+                          blocked_user_id: { type: "integer", example: 456 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            400: { description: "Bad request - Invalid user ID, trying to block self, or user already blocked" },
+            404: { description: "User not found" },
+            401: { description: "Unauthorized" }
+          }
+        },
+        delete: {
+          summary: "Unblock a user",
+          description: "Remove a user from your block list",
+          tags: ["Users"],
+          security: [
+            {
+              bearerAuth: [],
+            },
+          ],
+          parameters: [
+            {
+              name: "userId",
+              in: "path",
+              required: true,
+              description: "ID of the user to unblock",
+              schema: {
+                type: "integer",
+                example: 456
+              }
+            }
+          ],
+          responses: {
+            200: {
+              description: "User unblocked successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "User unblocked successfully" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          unblocked_user_id: { type: "integer", example: 456 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            400: { description: "Bad request - Invalid user ID" },
+            404: { description: "User is not blocked" },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/users/blocked-users": {
+        get: {
+          summary: "Get list of blocked users",
+          description: "Retrieve paginated list of users you have blocked",
+          tags: ["Users"],
+          security: [
+            {
+              bearerAuth: [],
+            },
+          ],
+          parameters: [
+            {
+              name: "page",
+              in: "query",
+              required: false,
+              description: "Page number (default: 1)",
+              schema: {
+                type: "integer",
+                example: 1
+              }
+            },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              description: "Number of items per page (default: 20)",
+              schema: {
+                type: "integer",
+                example: 20
+              }
+            }
+          ],
+          responses: {
+            200: {
+              description: "Blocked users retrieved successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Blocked users retrieved successfully" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          blocked_users: {
+                            type: "array",
+                            items: {
+                              type: "object",
+                              properties: {
+                                block_id: { type: "integer", example: 123 },
+                                blocked_at: { type: "string", format: "date-time", example: "2024-01-01T00:00:00.000Z" },
+                                reason: { type: "string", nullable: true, example: "Inappropriate behavior" },
+                                user: {
+                                  type: "object",
+                                  properties: {
+                                    id: { type: "integer", example: 456 },
+                                    name: { type: "string", example: "Jane Smith" },
+                                    email: { type: "string", example: "jane@example.com" },
+                                    profile: {
+                                      type: "object",
+                                      properties: {
+                                        image_url: { type: "string", example: "http://localhost:3000/api/files/images/profile.jpg" },
+                                        bio: { type: "string", example: "Software Developer" },
+                                        city: { type: "string", example: "New York" },
+                                        state: { type: "string", example: "NY" }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          pagination: {
+                            type: "object",
+                            properties: {
+                              total: { type: "integer", example: 5 },
+                              page: { type: "integer", example: 1 },
+                              limit: { type: "integer", example: 20 },
+                              total_pages: { type: "integer", example: 1 }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            401: { description: "Unauthorized" },
+            500: { description: "Internal server error" }
+          }
+        }
+      },
       "/posts": {
         post: {
           summary: "Create a new post",
@@ -8250,17 +8483,7 @@ const options = {
                     properties: {
                       success: { type: "boolean", example: true },
                       message: { type: "string", example: "Post reported successfully" },
-                      data: {
-                        type: "object",
-                        properties: {
-                          report_id: { type: "integer", example: 123 },
-                          warning: {
-                            type: "string",
-                            nullable: true,
-                            example: "You have been blocked due to excessive reporting"
-                          }
-                        }
-                      }
+                      report_id: { type: "integer", example: 123 }
                     }
                   }
                 }
@@ -8398,17 +8621,7 @@ const options = {
                     properties: {
                       success: { type: "boolean", example: true },
                       message: { type: "string", example: "Feed post reported successfully" },
-                      data: {
-                        type: "object",
-                        properties: {
-                          report_id: { type: "integer", example: 123 },
-                          warning: {
-                            type: "string",
-                            nullable: true,
-                            example: "You have been blocked due to excessive reporting"
-                          }
-                        }
-                      }
+                      report_id: { type: "integer", example: 123 }
                     }
                   }
                 }

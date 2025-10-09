@@ -71,6 +71,9 @@ db.FeedView = require("./feedView.model")(sequelize, Sequelize.DataTypes);
 db.PostReport = require("./postReport.model")(sequelize, Sequelize.DataTypes);
 db.FeedPostReport = require("./feedPostReport.model")(sequelize, Sequelize.DataTypes);
 
+// User block model
+db.UserBlock = require("./userBlock.model")(sequelize, Sequelize.DataTypes);
+
 // Feedback model
 db.Feedback = require("./feedback.model")(sequelize, Sequelize.DataTypes);
 

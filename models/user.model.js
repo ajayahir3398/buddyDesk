@@ -105,6 +105,10 @@ module.exports = (sequelize, DataTypes) => {
     // Report-related associations
     User.hasMany(models.PostReport, { foreignKey: 'reported_by', as: 'postReports' });
     User.hasMany(models.FeedPostReport, { foreignKey: 'reported_by', as: 'feedPostReports' });
+    
+    // Block-related associations
+    User.hasMany(models.UserBlock, { foreignKey: 'blocker_id', as: 'blockedUsers' });
+    User.hasMany(models.UserBlock, { foreignKey: 'blocked_id', as: 'blockedBy' });
   };
 
   return User;
