@@ -427,17 +427,19 @@ class ChatService {
 
           const conversationData = conversation.toJSON();
 
-          // Add image URLs to all members
+          // Add image URLs to all members and mark current user
           if (conversationData.members && baseUrl) {
             conversationData.members = conversationData.members.map(member => {
               if (member.user) {
                 this.addImageUrlToUser(member.user, baseUrl);
+                // Mark if this member is the current user
+                member.is_current_user = member.user_id === userId;
               }
               return member;
             });
           }
 
-          // Add image URL to last message sender
+          // Add image URL to last message sender and identify if sender is current user
           let lastMessageData = null;
           if (lastMessage) {
             lastMessageData = {
@@ -446,6 +448,7 @@ class ChatService {
               message_type: lastMessage.message_type,
               created_at: lastMessage.created_at,
               sender: lastMessage.sender,
+              is_sent_by_me: lastMessage.sender_id === userId,
             };
             
             if (lastMessageData.sender && baseUrl) {
@@ -453,9 +456,26 @@ class ChatService {
             }
           }
 
+          // Get unread message count for current user
+          const unreadCount = await db.MessageStatus.count({
+            where: {
+              user_id: userId,
+              status: { [Op.ne]: 'read' }
+            },
+            include: [{
+              model: db.Message,
+              as: 'message',
+              where: {
+                conversation_id: conversation.id,
+                is_deleted: false
+              }
+            }]
+          });
+
           return {
             ...conversationData,
             lastMessage: lastMessageData,
+            unread_count: unreadCount,
           };
         })
       );

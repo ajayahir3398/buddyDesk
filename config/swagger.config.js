@@ -630,6 +630,11 @@ const options = {
               format: "date-time",
               example: "2025-09-03T17:51:27.185Z",
             },
+            is_current_user: {
+              type: "boolean",
+              example: true,
+              description: "True if this member is the authenticated user viewing the conversation",
+            },
             user: {
               $ref: "#/components/schemas/ChatUser",
             },
@@ -677,6 +682,11 @@ const options = {
               format: "date-time",
               example: "2025-10-04T07:50:28.961Z",
               description: "Message creation timestamp",
+            },
+            is_sent_by_me: {
+              type: "boolean",
+              example: false,
+              description: "True if the authenticated user sent this message",
             },
             sender: {
               $ref: "#/components/schemas/ChatMessageSender",
@@ -748,10 +758,15 @@ const options = {
               items: {
                 $ref: "#/components/schemas/ConversationMember",
               },
-              description: "Array of conversation members",
+              description: "Array of conversation members with is_current_user flag",
             },
             lastMessage: {
               $ref: "#/components/schemas/LastMessage",
+            },
+            unread_count: {
+              type: "integer",
+              example: 3,
+              description: "Number of unread messages for the current user",
             },
           },
         },
