@@ -14,6 +14,30 @@ class ChatService {
   }
 
   /**
+   * Generate full image URL from image path
+   * @param {string} imagePath - Relative image path
+   * @param {string} baseUrl - Base URL of the application
+   * @returns {string|null} Full image URL or null
+   */
+  generateImageUrl(imagePath, baseUrl) {
+    if (!imagePath) return null;
+    return `${baseUrl}/api/files/${imagePath}`;
+  }
+
+  /**
+   * Add image URL to user profile
+   * @param {Object} user - User object with profile
+   * @param {string} baseUrl - Base URL of the application
+   * @returns {Object} User with image_url added to profile
+   */
+  addImageUrlToUser(user, baseUrl) {
+    if (user && user.profile && user.profile.image_path) {
+      user.profile.image_url = this.generateImageUrl(user.profile.image_path, baseUrl);
+    }
+    return user;
+  }
+
+  /**
    * Encrypt message content
    * @param {string} content - Plain text content
    * @returns {string} Encrypted content
@@ -236,6 +260,13 @@ class ChatService {
                 model: db.User,
                 as: "user",
                 attributes: ["id", "name", "email", "is_online", "last_seen"],
+                include: [
+                  {
+                    model: db.UserProfile,
+                    as: "profile",
+                    attributes: ["image_path"],
+                  },
+                ],
               },
             ],
           },
@@ -252,11 +283,12 @@ class ChatService {
   /**
    * Get conversation by ID with members
    * @param {number} conversationId - Conversation ID
+   * @param {string} baseUrl - Base URL of the application (optional)
    * @returns {Object|null} Conversation with members
    */
-  async getConversationById(conversationId) {
+  async getConversationById(conversationId, baseUrl = null) {
     try {
-      return await db.Conversation.findByPk(conversationId, {
+      const conversation = await db.Conversation.findByPk(conversationId, {
         include: [
           {
             model: db.ConversationMember,
@@ -266,6 +298,13 @@ class ChatService {
                 model: db.User,
                 as: "user",
                 attributes: ["id", "name", "email", "is_online", "last_seen"],
+                include: [
+                  {
+                    model: db.UserProfile,
+                    as: "profile",
+                    attributes: ["image_path"],
+                  },
+                ],
               },
             ],
           },
@@ -273,9 +312,39 @@ class ChatService {
             model: db.User,
             as: "creator",
             attributes: ["id", "name", "email"],
+            include: [
+              {
+                model: db.UserProfile,
+                as: "profile",
+                attributes: ["image_path"],
+              },
+            ],
           },
         ],
       });
+
+      if (conversation && baseUrl) {
+        const conversationData = conversation.toJSON();
+        
+        // Add image URLs to all members
+        if (conversationData.members) {
+          conversationData.members = conversationData.members.map(member => {
+            if (member.user) {
+              this.addImageUrlToUser(member.user, baseUrl);
+            }
+            return member;
+          });
+        }
+
+        // Add image URL to creator
+        if (conversationData.creator) {
+          this.addImageUrlToUser(conversationData.creator, baseUrl);
+        }
+
+        return conversationData;
+      }
+
+      return conversation;
     } catch (error) {
       logger.error("Error getting conversation:", error);
       return null;
@@ -285,9 +354,10 @@ class ChatService {
   /**
    * Get user's conversations
    * @param {number} userId - User ID
+   * @param {string} baseUrl - Base URL of the application
    * @returns {Array} User's conversations
    */
-  async getUserConversations(userId) {
+  async getUserConversations(userId, baseUrl) {
     try {
       // First, get conversation IDs where user is a member
       const userConversations = await db.ConversationMember.findAll({
@@ -319,6 +389,13 @@ class ChatService {
                 model: db.User,
                 as: "user",
                 attributes: ["id", "name", "email", "is_online", "last_seen"],
+                include: [
+                  {
+                    model: db.UserProfile,
+                    as: "profile",
+                    attributes: ["image_path"],
+                  },
+                ],
               },
             ],
           },
@@ -336,22 +413,49 @@ class ChatService {
                 model: db.User,
                 as: "sender",
                 attributes: ["id", "name"],
+                include: [
+                  {
+                    model: db.UserProfile,
+                    as: "profile",
+                    attributes: ["image_path"],
+                  },
+                ],
               },
             ],
             order: [["created_at", "DESC"]],
           });
 
+          const conversationData = conversation.toJSON();
+
+          // Add image URLs to all members
+          if (conversationData.members && baseUrl) {
+            conversationData.members = conversationData.members.map(member => {
+              if (member.user) {
+                this.addImageUrlToUser(member.user, baseUrl);
+              }
+              return member;
+            });
+          }
+
+          // Add image URL to last message sender
+          let lastMessageData = null;
+          if (lastMessage) {
+            lastMessageData = {
+              id: lastMessage.id,
+              content: this.decryptMessage(lastMessage.content),
+              message_type: lastMessage.message_type,
+              created_at: lastMessage.created_at,
+              sender: lastMessage.sender,
+            };
+            
+            if (lastMessageData.sender && baseUrl) {
+              this.addImageUrlToUser(lastMessageData.sender, baseUrl);
+            }
+          }
+
           return {
-            ...conversation.toJSON(),
-            lastMessage: lastMessage
-              ? {
-                  id: lastMessage.id,
-                  content: this.decryptMessage(lastMessage.content),
-                  message_type: lastMessage.message_type,
-                  created_at: lastMessage.created_at,
-                  sender: lastMessage.sender,
-                }
-              : null,
+            ...conversationData,
+            lastMessage: lastMessageData,
           };
         })
       );
@@ -396,7 +500,7 @@ class ChatService {
    * @param {Object} data - Message data
    * @returns {Object} Result with success status and data
    */
-  async sendMessage(data) {
+  async sendMessage(data, baseUrl = null) {
     const transaction = await db.sequelize.transaction();
 
     try {
@@ -485,6 +589,13 @@ class ChatService {
             model: db.User,
             as: "sender",
             attributes: ["id", "name", "email"],
+            include: [
+              {
+                model: db.UserProfile,
+                as: "profile",
+                attributes: ["image_path"],
+              },
+            ],
           },
           {
             model: db.Message,
@@ -494,6 +605,13 @@ class ChatService {
                 model: db.User,
                 as: "sender",
                 attributes: ["id", "name"],
+                include: [
+                  {
+                    model: db.UserProfile,
+                    as: "profile",
+                    attributes: ["image_path"],
+                  },
+                ],
               },
             ],
           },
@@ -506,6 +624,22 @@ class ChatService {
         completeMessage.dataValues.content = this.decryptMessage(
           completeMessage.content
         );
+      }
+
+      // Add image URLs to sender and reply sender if baseUrl provided
+      if (baseUrl) {
+        const messageData = completeMessage.toJSON();
+        
+        if (messageData.sender) {
+          this.addImageUrlToUser(messageData.sender, baseUrl);
+        }
+        
+        if (messageData.replyToMessage && messageData.replyToMessage.sender) {
+          this.addImageUrlToUser(messageData.replyToMessage.sender, baseUrl);
+        }
+        
+        // Update completeMessage with transformed data
+        Object.assign(completeMessage.dataValues, messageData);
       }
 
       await transaction.commit();
@@ -547,9 +681,10 @@ class ChatService {
    * @param {number} userId - User ID (for permission check)
    * @param {number} page - Page number
    * @param {number} limit - Messages per page
+   * @param {string} baseUrl - Base URL of the application (optional)
    * @returns {Object} Messages with pagination info
    */
-  async getConversationMessages(conversationId, userId, page = 1, limit = 50) {
+  async getConversationMessages(conversationId, userId, page = 1, limit = 50, baseUrl = null) {
     try {
       // Verify user is member of conversation
       const isMember = await this.isConversationMember(conversationId, userId);
@@ -569,6 +704,13 @@ class ChatService {
             model: db.User,
             as: "sender",
             attributes: ["id", "name", "email"],
+            include: [
+              {
+                model: db.UserProfile,
+                as: "profile",
+                attributes: ["image_path"],
+              },
+            ],
           },
           {
             model: db.Message,
@@ -578,6 +720,13 @@ class ChatService {
                 model: db.User,
                 as: "sender",
                 attributes: ["id", "name"],
+                include: [
+                  {
+                    model: db.UserProfile,
+                    as: "profile",
+                    attributes: ["image_path"],
+                  },
+                ],
               },
             ],
           },
@@ -589,6 +738,13 @@ class ChatService {
                 model: db.User,
                 as: "user",
                 attributes: ["id", "name"],
+                include: [
+                  {
+                    model: db.UserProfile,
+                    as: "profile",
+                    attributes: ["image_path"],
+                  },
+                ],
               },
             ],
           },
@@ -598,12 +754,33 @@ class ChatService {
         offset,
       });
 
-      // Decrypt message contents
+      // Decrypt message contents and add image URLs
       const decryptedMessages = messages.map((message) => {
         const messageData = message.toJSON();
         if (messageData.content) {
           messageData.content = this.decryptMessage(messageData.content);
         }
+        
+        // Add image URLs if baseUrl provided
+        if (baseUrl) {
+          if (messageData.sender) {
+            this.addImageUrlToUser(messageData.sender, baseUrl);
+          }
+          
+          if (messageData.replyToMessage && messageData.replyToMessage.sender) {
+            this.addImageUrlToUser(messageData.replyToMessage.sender, baseUrl);
+          }
+          
+          if (messageData.statuses) {
+            messageData.statuses = messageData.statuses.map(status => {
+              if (status.user) {
+                this.addImageUrlToUser(status.user, baseUrl);
+              }
+              return status;
+            });
+          }
+        }
+        
         return messageData;
       });
 
@@ -758,9 +935,10 @@ class ChatService {
    * @param {number} userId - User ID
    * @param {string} query - Search query
    * @param {number} conversationId - Optional conversation ID to limit search
+   * @param {string} baseUrl - Base URL of the application (optional)
    * @returns {Object} Search results
    */
-  async searchMessages(userId, query, conversationId = null) {
+  async searchMessages(userId, query, conversationId = null, baseUrl = null) {
     try {
       // Get user's conversation IDs
       const userConversations = await db.ConversationMember.findAll({
@@ -789,6 +967,13 @@ class ChatService {
             model: db.User,
             as: "sender",
             attributes: ["id", "name", "email"],
+            include: [
+              {
+                model: db.UserProfile,
+                as: "profile",
+                attributes: ["image_path"],
+              },
+            ],
           },
           {
             model: db.Conversation,
@@ -800,12 +985,18 @@ class ChatService {
         limit: 50,
       });
 
-      // Decrypt message contents
+      // Decrypt message contents and add image URLs
       const decryptedMessages = messages.map((message) => {
         const messageData = message.toJSON();
         if (messageData.content) {
           messageData.content = this.decryptMessage(messageData.content);
         }
+        
+        // Add image URL to sender if baseUrl provided
+        if (baseUrl && messageData.sender) {
+          this.addImageUrlToUser(messageData.sender, baseUrl);
+        }
+        
         return messageData;
       });
 

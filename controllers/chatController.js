@@ -74,7 +74,8 @@ class ChatController {
   async getUserConversations(req, res) {
     try {
       const userId = req.user.id;
-      const conversations = await chatService.getUserConversations(userId);
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const conversations = await chatService.getUserConversations(userId, baseUrl);
 
       res.json({
         success: true,
@@ -98,6 +99,7 @@ class ChatController {
     try {
       const conversationId = parseInt(req.params.id);
       const userId = req.user.id;
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
 
       // Check if user is member of conversation
       const isMember = await chatService.isConversationMember(conversationId, userId);
@@ -108,7 +110,7 @@ class ChatController {
         });
       }
 
-      const conversation = await chatService.getConversationById(conversationId);
+      const conversation = await chatService.getConversationById(conversationId, baseUrl);
       
       if (!conversation) {
         return res.status(404).json({
@@ -141,8 +143,9 @@ class ChatController {
       const userId = req.user.id;
       const page = parseInt(req.query.page) || 1;
       const limit = Math.min(parseInt(req.query.limit) || 50, 100); // Max 100 messages per request
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
 
-      const result = await chatService.getConversationMessages(conversationId, userId, page, limit);
+      const result = await chatService.getConversationMessages(conversationId, userId, page, limit, baseUrl);
 
       if (result.success) {
         res.json({
@@ -182,6 +185,7 @@ class ChatController {
 
       const conversationId = parseInt(req.params.id);
       const senderId = req.user.id;
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
       const {
         content,
         messageType,
@@ -206,7 +210,7 @@ class ChatController {
         attachmentSize,
         attachmentMimeType,
         metadata
-      });
+      }, baseUrl);
 
       if (result.success) {
         // Emit real-time event if Socket.io is available
@@ -273,6 +277,7 @@ class ChatController {
     try {
       const { q: query, conversation_id: conversationId } = req.query;
       const userId = req.user.id;
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
 
       if (!query || query.trim().length < 2) {
         return res.status(400).json({
@@ -284,7 +289,8 @@ class ChatController {
       const result = await chatService.searchMessages(
         userId,
         query.trim(),
-        conversationId ? parseInt(conversationId) : null
+        conversationId ? parseInt(conversationId) : null,
+        baseUrl
       );
 
       if (result.success) {
@@ -318,7 +324,12 @@ class ChatController {
       const db = require('../models');
 
       const user = await db.User.findByPk(userId, {
-        attributes: ['id', 'name', 'is_online', 'last_seen']
+        attributes: ['id', 'name', 'is_online', 'last_seen'],
+        include: [{
+          model: db.UserProfile,
+          as: 'profile',
+          attributes: ['image_path']
+        }]
       });
 
       if (!user) {
@@ -335,7 +346,8 @@ class ChatController {
           id: user.id,
           name: user.name,
           is_online: user.is_online,
-          last_seen: user.last_seen
+          last_seen: user.last_seen,
+          profile: user.profile
         }
       });
     } catch (error) {
@@ -355,6 +367,7 @@ class ChatController {
     try {
       const conversationId = parseInt(req.params.id);
       const userId = req.user.id;
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
       const db = require('../models');
 
       // Check if user is member of conversation
@@ -375,18 +388,35 @@ class ChatController {
         include: [{
           model: db.User,
           as: 'user',
-          attributes: ['id', 'name']
+          attributes: ['id', 'name'],
+          include: [{
+            model: db.UserProfile,
+            as: 'profile',
+            attributes: ['image_path']
+          }]
         }]
       });
 
       res.json({
         success: true,
         message: 'Typing status retrieved successfully',
-        data: typingUsers.map(ts => ({
-          userId: ts.user.id,
-          userName: ts.user.name,
-          startedTypingAt: ts.started_typing_at
-        }))
+        data: typingUsers.map(ts => {
+          const userData = {
+            userId: ts.user.id,
+            userName: ts.user.name,
+            startedTypingAt: ts.started_typing_at
+          };
+          
+          // Add image URL if profile exists
+          if (ts.user.profile && ts.user.profile.image_path) {
+            userData.profile = {
+              image_path: ts.user.profile.image_path,
+              image_url: `${baseUrl}/api/files/${ts.user.profile.image_path}`
+            };
+          }
+          
+          return userData;
+        })
       });
     } catch (error) {
       logger.error('Error in getTypingStatus:', error);
@@ -407,6 +437,7 @@ class ChatController {
       const page = parseInt(req.query.page) || 1;
       const limit = Math.min(parseInt(req.query.limit) || 20, 50);
       const offset = (page - 1) * limit;
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
       const db = require('../models');
 
       const { count, rows: notifications } = await db.Notification.findAndCountAll({
@@ -417,7 +448,12 @@ class ChatController {
           include: [{
             model: db.User,
             as: 'sender',
-            attributes: ['id', 'name']
+            attributes: ['id', 'name'],
+            include: [{
+              model: db.UserProfile,
+              as: 'profile',
+              attributes: ['image_path']
+            }]
           }]
         }, {
           model: db.Conversation,
@@ -429,11 +465,20 @@ class ChatController {
         offset
       });
 
+      // Add image URLs to notification senders
+      const notificationsWithUrls = notifications.map(notification => {
+        const notificationData = notification.toJSON ? notification.toJSON() : notification;
+        if (notificationData.message && notificationData.message.sender && notificationData.message.sender.profile && notificationData.message.sender.profile.image_path) {
+          notificationData.message.sender.profile.image_url = `${baseUrl}/api/files/${notificationData.message.sender.profile.image_path}`;
+        }
+        return notificationData;
+      });
+
       res.json({
         success: true,
         message: 'Notifications retrieved successfully',
         data: {
-          notifications,
+          notifications: notificationsWithUrls,
           pagination: {
             currentPage: page,
             totalPages: Math.ceil(count / limit),
