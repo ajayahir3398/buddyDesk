@@ -356,7 +356,12 @@ class ChatService {
         })
       );
 
-      return conversationsWithLastMessage;
+      // Filter out conversations that have no messages
+      const conversationsWithMessages = conversationsWithLastMessage.filter(
+        (conversation) => conversation.lastMessage !== null
+      );
+
+      return conversationsWithMessages;
     } catch (error) {
       logger.error("Error getting user conversations:", error);
       return [];
