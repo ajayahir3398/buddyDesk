@@ -10,6 +10,9 @@ const logger = require('./utils/logger');
 const app = express();
 const db = require("./models");
 
+// Trust proxy - Required when behind Nginx/reverse proxy to get correct protocol, IP, etc.
+app.set('trust proxy', true);
+
 app.use(cookieParser());
 
 // Body parsing middleware with larger limits for mobile uploads
