@@ -10,6 +10,7 @@ const UserSkill = db.UserSkill;
 const Address = db.Address;
 const TempAddress = db.TempAddress;
 const PostReport = db.PostReport;
+const PostSwipe = db.PostSwipe;
 const UserBlock = db.UserBlock;
 const logger = require("../utils/logger");
 const {
@@ -1408,12 +1409,12 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
       user_id: { [Op.ne]: userId } // Exclude posts from the current user
     };
 
-    // Exclude reported posts
+    // Exclude reported posts (always)
     if (reportedPostIds.length > 0) {
       where.id = { [Op.notIn]: reportedPostIds };
     }
 
-    // Exclude posts from blocked users
+    // Exclude posts from blocked users (always)
     if (blockedUserIds.length > 0) {
       if (where.user_id && typeof where.user_id === 'object' && where.user_id[Op.ne]) {
         // Combine with existing user_id filter
@@ -1428,8 +1429,34 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
       }
     }
 
-    // Add skill filtering only if isFilterBySkills flag is true
+    // Add skill filtering and swipe filtering only if isFilterBySkills flag is true
     if (isFilterBySkills) {
+      // Get swiped posts by the current user (only when filtering by skills)
+      const swipedPostIds = await PostSwipe.findAll({
+        where: {
+          user_id: userId,
+          [Op.or]: [
+            // Right swipe: permanently hidden (no expiration)
+            { swipe_type: 'right', expires_at: null },
+            // Left swipe: hidden for 120 days (check if not expired)
+            {
+              swipe_type: 'left',
+              expires_at: { [Op.gt]: new Date() } // Not yet expired
+            }
+          ]
+        },
+        attributes: ['post_id']
+      }).then(swipes => swipes.map(s => s.post_id));
+
+      // Exclude swiped posts (both permanent and temporarily hidden)
+      if (swipedPostIds.length > 0) {
+        if (where.id && where.id[Op.notIn]) {
+          // Combine with existing id filter (reported posts)
+          where.id = { [Op.notIn]: [...reportedPostIds, ...swipedPostIds] };
+        } else {
+          where.id = { [Op.notIn]: swipedPostIds };
+        }
+      }
       // Get user's looking_skills for skill matching
       const userProfile = await UserProfile.findOne({
         where: { user_id: userId },
@@ -1783,6 +1810,200 @@ exports.getUserReportedPosts = async (req, res) => {
   }
 };
 
+// Swipe post (left = hide for 120 days, right = hide permanently)
+exports.swipePost = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { swipeType } = req.body;
+
+    // Validate swipe type
+    if (!swipeType || !['left', 'right'].includes(swipeType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid swipe type. Must be 'left' or 'right'",
+      });
+    }
+
+    // Check if post exists
+    const post = await Post.findByPk(id);
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found"
+      });
+    }
+
+    // Check if user is trying to swipe their own post
+    if (post.user_id === userId) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot swipe your own post"
+      });
+    }
+
+    // Calculate expiration date based on swipe type
+    let expiresAt = null;
+    if (swipeType === 'left') {
+      // Left swipe: hide for 120 days
+      const now = new Date();
+      expiresAt = new Date(now.setDate(now.getDate() + 120));
+    }
+    // Right swipe: expires_at remains null (permanent)
+
+    // Check if user already swiped this post
+    const existingSwipe = await PostSwipe.findOne({
+      where: {
+        user_id: userId,
+        post_id: id
+      }
+    });
+
+    if (existingSwipe) {
+      // Update existing swipe
+      await existingSwipe.update({
+        swipe_type: swipeType,
+        expires_at: expiresAt,
+        updated_at: new Date()
+      });
+
+      logger.info('Post swipe updated', {
+        requestId: req.requestId,
+        postId: id,
+        userId: userId,
+        swipeType: swipeType,
+        expiresAt: expiresAt
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Post swipe updated to ${swipeType}`,
+        data: {
+          post_id: id,
+          swipe_type: swipeType,
+          expires_at: expiresAt
+        }
+      });
+    }
+
+    // Create new swipe record
+    const swipe = await PostSwipe.create({
+      user_id: userId,
+      post_id: id,
+      swipe_type: swipeType,
+      expires_at: expiresAt
+    });
+
+    logger.info('Post swiped', {
+      requestId: req.requestId,
+      postId: id,
+      userId: userId,
+      swipeType: swipeType,
+      expiresAt: expiresAt
+    });
+
+    res.status(201).json({
+      success: true,
+      message: swipeType === 'left' 
+        ? "Post hidden for 120 days" 
+        : "Post hidden permanently",
+      data: {
+        swipe_id: swipe.id,
+        post_id: id,
+        swipe_type: swipeType,
+        expires_at: expiresAt
+      }
+    });
+
+  } catch (error) {
+    logger.error("Error swiping post", {
+      requestId: req.requestId,
+      error: error.message,
+      stack: error.stack
+    });
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
+  }
+};
+
+// Get user's swiped posts
+exports.getUserSwipedPosts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const swipeType = req.query.swipeType; // Optional filter: 'left' or 'right'
+
+    const whereClause = { user_id: userId };
+    
+    // Filter by swipe type if provided
+    if (swipeType && ['left', 'right'].includes(swipeType)) {
+      whereClause.swipe_type = swipeType;
+    }
+
+    // Only show active swipes (not expired for left swipes)
+    whereClause[Op.or] = [
+      { swipe_type: 'right', expires_at: null },
+      { swipe_type: 'left', expires_at: { [Op.gt]: new Date() } }
+    ];
+
+    const { count, rows: swipes } = await PostSwipe.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: Post,
+          as: 'post',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'name', 'email']
+            },
+            {
+              model: Skill,
+              as: 'requiredSkill',
+              attributes: ['id', 'name']
+            }
+          ]
+        }
+      ],
+      order: [['created_at', 'DESC']],
+      limit,
+      offset
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Swiped posts retrieved successfully",
+      data: swipes,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(count / limit),
+        totalItems: count,
+        itemsPerPage: limit
+      }
+    });
+
+  } catch (error) {
+    logger.error("Error retrieving swiped posts", {
+      requestId: req.requestId,
+      error: error.message,
+      stack: error.stack
+    });
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   addPost: exports.addPost,
   getPosts: exports.getPosts,
@@ -1796,4 +2017,6 @@ module.exports = {
   getPostsByTempAddressPincode: exports.getPostsByTempAddressPincode,
   reportPost: exports.reportPost,
   getUserReportedPosts: exports.getUserReportedPosts,
+  swipePost: exports.swipePost,
+  getUserSwipedPosts: exports.getUserSwipedPosts,
 };

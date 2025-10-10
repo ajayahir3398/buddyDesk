@@ -71,6 +71,9 @@ db.FeedView = require("./feedView.model")(sequelize, Sequelize.DataTypes);
 db.PostReport = require("./postReport.model")(sequelize, Sequelize.DataTypes);
 db.FeedPostReport = require("./feedPostReport.model")(sequelize, Sequelize.DataTypes);
 
+// Post swipe/interaction model
+db.PostSwipe = require("./postSwipe.model")(sequelize, Sequelize.DataTypes);
+
 // User block model
 db.UserBlock = require("./userBlock.model")(sequelize, Sequelize.DataTypes);
 

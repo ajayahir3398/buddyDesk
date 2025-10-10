@@ -8604,6 +8604,190 @@ const options = {
           }
         }
       },
+      "/posts/{id}/swipe": {
+        post: {
+          summary: "Swipe a post (hide/dismiss)",
+          description: "Swipe left to hide a post for 120 days, or swipe right to hide it permanently. This allows users to manage which posts they see in their feed. Users cannot swipe their own posts.",
+          tags: ["Posts"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { type: "integer" },
+              description: "Post ID to swipe"
+            }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["swipeType"],
+                  properties: {
+                    swipeType: {
+                      type: "string",
+                      enum: ["left", "right"],
+                      description: "Swipe direction: 'left' = hide for 120 days, 'right' = hide permanently"
+                    }
+                  }
+                },
+                examples: {
+                  leftSwipe: {
+                    summary: "Left swipe (temporary hide)",
+                    value: {
+                      swipeType: "left"
+                    }
+                  },
+                  rightSwipe: {
+                    summary: "Right swipe (permanent hide)",
+                    value: {
+                      swipeType: "right"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: "Post swiped successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Post hidden for 120 days" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          swipe_id: { type: "integer", example: 1 },
+                          post_id: { type: "integer", example: 123 },
+                          swipe_type: { type: "string", example: "left" },
+                          expires_at: { type: "string", format: "date-time", example: "2025-02-07T10:00:00.000Z" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            200: {
+              description: "Post swipe updated successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Post swipe updated to right" },
+                      data: {
+                        type: "object",
+                        properties: {
+                          post_id: { type: "integer", example: 123 },
+                          swipe_type: { type: "string", example: "right" },
+                          expires_at: { type: "string", nullable: true, example: null }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            400: {
+              description: "Bad request - Invalid swipe type or trying to swipe own post",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: false },
+                      message: { type: "string", example: "Invalid swipe type. Must be 'left' or 'right'" }
+                    }
+                  }
+                }
+              }
+            },
+            404: { description: "Post not found" },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/posts/swipes/my-swipes": {
+        get: {
+          summary: "Get user's swiped posts",
+          description: "Retrieve a list of posts that the current user has swiped (hidden). Can be filtered by swipe type.",
+          tags: ["Posts"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "page",
+              in: "query",
+              schema: { type: "integer", default: 1 },
+              description: "Page number for pagination"
+            },
+            {
+              name: "limit",
+              in: "query",
+              schema: { type: "integer", default: 10 },
+              description: "Number of items per page"
+            },
+            {
+              name: "swipeType",
+              in: "query",
+              schema: { type: "string", enum: ["left", "right"] },
+              description: "Filter by swipe type (optional)"
+            }
+          ],
+          responses: {
+            200: {
+              description: "Swiped posts retrieved successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Swiped posts retrieved successfully" },
+                      data: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            id: { type: "integer", example: 1 },
+                            user_id: { type: "integer", example: 10 },
+                            post_id: { type: "integer", example: 123 },
+                            swipe_type: { type: "string", example: "left" },
+                            created_at: { type: "string", format: "date-time" },
+                            expires_at: { type: "string", format: "date-time", nullable: true },
+                            post: {
+                              type: "object",
+                              description: "Post details including user and required skill"
+                            }
+                          }
+                        }
+                      },
+                      pagination: {
+                        type: "object",
+                        properties: {
+                          currentPage: { type: "integer", example: 1 },
+                          totalPages: { type: "integer", example: 5 },
+                          totalItems: { type: "integer", example: 50 },
+                          itemsPerPage: { type: "integer", example: 10 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
       "/feed/posts/{id}/report": {
         post: {
           summary: "Report a feed post",

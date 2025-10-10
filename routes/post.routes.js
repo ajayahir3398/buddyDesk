@@ -41,6 +41,12 @@ router.post('/:id/report', authenticateToken, postController.reportPost);
 // Get user's reported posts (requires authentication)
 router.get('/reports/my-reports', authenticateToken, postController.getUserReportedPosts);
 
+// Swipe post (left = hide for 120 days, right = hide permanently) (requires authentication)
+router.post('/:id/swipe', authenticateToken, postController.swipePost);
+
+// Get user's swiped posts (requires authentication)
+router.get('/swipes/my-swipes', authenticateToken, postController.getUserSwipedPosts);
+
 // New enhanced file serving routes (requires authentication)
 // Moved to a more generic route - this endpoint now serves all file types
 // router.get('/files/:category/:filename', postController.serveFileByCategory);
