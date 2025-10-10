@@ -1296,7 +1296,7 @@ exports.getBlockedUsers = async (req, res) => {
             {
               model: UserProfile,
               as: 'profile',
-              attributes: ['image_path', 'bio', 'city', 'state']
+              attributes: ['image_path', 'bio']
             }
           ]
         }
