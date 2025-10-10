@@ -514,6 +514,247 @@ const options = {
             },
           },
         },
+        ChatUserProfile: {
+          type: "object",
+          properties: {
+            image_path: {
+              type: "string",
+              example: "images/profiles/user123.jpg",
+              description: "Relative path to the profile image",
+              nullable: true,
+            },
+            image_url: {
+              type: "string",
+              example: "http://localhost:3000/api/files/images/profiles/user123.jpg",
+              description: "Full URL to access the profile image",
+              nullable: true,
+            },
+          },
+        },
+        ChatUser: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 16,
+              description: "User ID",
+            },
+            name: {
+              type: "string",
+              example: "John Doe",
+              description: "User name",
+            },
+            email: {
+              type: "string",
+              example: "john@example.com",
+              description: "User email",
+              nullable: true,
+            },
+            is_online: {
+              type: "boolean",
+              example: false,
+              description: "Whether the user is currently online",
+            },
+            last_seen: {
+              type: "string",
+              format: "date-time",
+              example: "2025-10-10T19:44:04.679Z",
+              description: "Last seen timestamp",
+              nullable: true,
+            },
+            profile: {
+              $ref: "#/components/schemas/ChatUserProfile",
+            },
+          },
+        },
+        ConversationMember: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              example: "110",
+              description: "Membership ID",
+            },
+            conversation_id: {
+              type: "string",
+              example: "57",
+              description: "Conversation ID",
+            },
+            user_id: {
+              type: "integer",
+              example: 16,
+              description: "User ID",
+            },
+            role: {
+              type: "string",
+              enum: ["admin", "member"],
+              example: "admin",
+              description: "User role in the conversation",
+            },
+            is_muted: {
+              type: "boolean",
+              example: false,
+              description: "Whether the conversation is muted for this user",
+            },
+            is_pinned: {
+              type: "boolean",
+              example: false,
+              description: "Whether the conversation is pinned for this user",
+            },
+            last_read_message_id: {
+              type: "integer",
+              example: null,
+              description: "ID of the last message read by this user",
+              nullable: true,
+            },
+            joined_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-03T17:51:27.185Z",
+              description: "Timestamp when user joined",
+            },
+            left_at: {
+              type: "string",
+              format: "date-time",
+              example: null,
+              description: "Timestamp when user left",
+              nullable: true,
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-03T17:51:27.185Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-03T17:51:27.185Z",
+            },
+            user: {
+              $ref: "#/components/schemas/ChatUser",
+            },
+          },
+        },
+        ChatMessageSender: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
+              example: 19,
+              description: "User ID",
+            },
+            name: {
+              type: "string",
+              example: "Happy Movaliya",
+              description: "User name",
+            },
+            profile: {
+              $ref: "#/components/schemas/ChatUserProfile",
+            },
+          },
+        },
+        LastMessage: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              example: "215",
+              description: "Message ID",
+            },
+            content: {
+              type: "string",
+              example: "Heyy",
+              description: "Message content (decrypted)",
+            },
+            message_type: {
+              type: "string",
+              enum: ["text", "image", "video", "audio", "file", "system"],
+              example: "text",
+              description: "Type of message",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-10-04T07:50:28.961Z",
+              description: "Message creation timestamp",
+            },
+            sender: {
+              $ref: "#/components/schemas/ChatMessageSender",
+            },
+          },
+        },
+        ConversationWithDetails: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              example: "57",
+              description: "Conversation ID",
+            },
+            type: {
+              type: "string",
+              enum: ["private", "group"],
+              example: "private",
+              description: "Type of conversation",
+            },
+            name: {
+              type: "string",
+              example: null,
+              description: "Name of the conversation (for group chats)",
+              nullable: true,
+            },
+            description: {
+              type: "string",
+              example: null,
+              description: "Description of the conversation",
+              nullable: true,
+            },
+            avatar_url: {
+              type: "string",
+              example: null,
+              description: "Avatar URL for the conversation",
+              nullable: true,
+            },
+            created_by: {
+              type: "integer",
+              example: 16,
+              description: "ID of the user who created the conversation",
+            },
+            is_active: {
+              type: "boolean",
+              example: true,
+              description: "Whether the conversation is active",
+            },
+            last_message_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-10-04T07:50:28.968Z",
+              description: "Timestamp of the last message",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-03T17:51:27.154Z",
+              description: "Creation timestamp",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-10-04T07:50:28.968Z",
+              description: "Last update timestamp",
+            },
+            members: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/ConversationMember",
+              },
+              description: "Array of conversation members",
+            },
+            lastMessage: {
+              $ref: "#/components/schemas/LastMessage",
+            },
+          },
+        },
         CreateConversationRequest: {
           type: "object",
           required: ["type"],
@@ -808,9 +1049,8 @@ const options = {
             },
             image_url: {
               type: "string",
-              example:
-                "http://example.com/uploads/images/21be627b-7b01-424a-a0cd-13f31d312eb5.png",
-              description: "Relative image for user profile",
+              example: "http://localhost:3000/api/files/uploads/profiles/user_123_profile.jpg",
+              description: "Full URL to access the profile image",
               nullable: true,
             },
             created_at: {
@@ -2314,6 +2554,29 @@ const options = {
               example: "2024-01-01T00:00:00.000Z",
               description: "Member since date",
             },
+            is_online: {
+              type: "boolean",
+              example: true,
+              description: "Whether the user is currently online",
+            },
+            last_seen: {
+              type: "string",
+              format: "date-time",
+              example: "2025-10-10T19:44:04.679Z",
+              description: "Last seen timestamp",
+              nullable: true,
+            },
+            is_verified: {
+              type: "boolean",
+              example: true,
+              description: "Whether the user is verified",
+            },
+            subscription_tier: {
+              type: "string",
+              enum: ["free", "basic", "premium", "enterprise"],
+              example: "premium",
+              description: "Current subscription tier of the user",
+            },
             profile: {
               type: "object",
               properties: {
@@ -2321,7 +2584,7 @@ const options = {
                   type: "string",
                   enum: ["Male", "Female", "Other"],
                   example: "Male",
-                  description: "Gender (limited public info)",
+                  description: "Gender",
                   nullable: true,
                 },
                 bio: {
@@ -2332,20 +2595,74 @@ const options = {
                   maxLength: 1000,
                   nullable: true,
                 },
-                image_url: {
+                image_path: {
                   type: "string",
-                  example: "http://example.com/uploads/images/21be627b-7b01-424a-a0cd-13f31d312eb5.png",
-                  description: "Relative url for user profile",
+                  example: "images/profiles/user123.jpg",
+                  description: "Relative path to the profile image",
                   nullable: true,
                 },
+                image_url: {
+                  type: "string",
+                  example: "http://localhost:3000/api/files/images/profiles/user123.jpg",
+                  description: "Full URL to access the profile image",
+                  nullable: true,
+                },
+                looking_skills: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { type: "integer", example: 1 },
+                      name: { type: "string", example: "JavaScript" }
+                    }
+                  },
+                  description: "Skills the user is looking for",
+                },
               },
-              description: "Limited public profile information",
+              description: "Public profile information",
+            },
+            skills: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  skill: {
+                    type: "object",
+                    properties: {
+                      id: { type: "integer", example: 1 },
+                      name: { type: "string", example: "JavaScript" },
+                      description: { type: "string", example: "Programming language" }
+                    },
+                    nullable: true,
+                  },
+                  sub_skill: {
+                    type: "object",
+                    properties: {
+                      id: { type: "integer", example: 3 },
+                      name: { type: "string", example: "React" },
+                      description: { type: "string", example: "JavaScript library for building UIs" }
+                    },
+                    nullable: true,
+                  },
+                  proficiency_level: {
+                    type: "string",
+                    example: "Expert",
+                    description: "Skill proficiency level"
+                  }
+                }
+              },
+              description: "All unique skills from user's work profiles",
             },
             work_experience: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
+                  id: {
+                    type: "integer",
+                    example: 1,
+                    description: "Work profile ID",
+                  },
                   company_name: {
                     type: "string",
                     example: "Tech Corp",
@@ -2374,9 +2691,41 @@ const options = {
                     example: "2 years 3 months",
                     description: "Calculated work duration",
                   },
+                  skills: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        skill: {
+                          type: "object",
+                          properties: {
+                            id: { type: "integer", example: 1 },
+                            name: { type: "string", example: "JavaScript" },
+                            description: { type: "string", example: "Programming language" }
+                          },
+                          nullable: true,
+                        },
+                        sub_skill: {
+                          type: "object",
+                          properties: {
+                            id: { type: "integer", example: 3 },
+                            name: { type: "string", example: "React" },
+                            description: { type: "string", example: "JavaScript library for building UIs" }
+                          },
+                          nullable: true,
+                        },
+                        proficiency_level: {
+                          type: "string",
+                          example: "Expert",
+                          description: "Skill proficiency level"
+                        }
+                      }
+                    },
+                    description: "Skills used in this work experience"
+                  }
                 },
               },
-              description: "Public work experience information",
+              description: "Public work experience information with skills",
             },
           },
         },
@@ -5045,7 +5394,7 @@ const options = {
         get: {
           summary: "Get public profile by user ID",
           description:
-            "Retrieve limited public profile information for any user (name, work experience, basic info only)",
+            "Retrieve public profile information for any user including bio, skills, work experience, and profile image",
           tags: ["Users"],
           security: [
             {
@@ -5079,27 +5428,89 @@ const options = {
                       id: 1,
                       name: "John Doe",
                       member_since: "2024-01-01T00:00:00.000Z",
+                      is_online: true,
+                      last_seen: "2025-10-10T19:44:04.679Z",
+                      is_verified: true,
+                      subscription_tier: "premium",
                       profile: {
                         gender: "Male",
-                        image_url: "http://example.com/uploads/images/21be627b-7b01-424a-a0cd-13f31d312eb5.png"
+                        bio: "Experienced software engineer specializing in full-stack development",
+                        image_path: "images/profiles/user123.jpg",
+                        image_url: "http://localhost:3000/api/files/images/profiles/user123.jpg",
+                        looking_skills: [
+                          { id: 1, name: "JavaScript" },
+                          { id: 5, name: "Node.js" }
+                        ]
                       },
+                      skills: [
+                        {
+                          skill: {
+                            id: 1,
+                            name: "JavaScript",
+                            description: "Programming language"
+                          },
+                          sub_skill: {
+                            id: 3,
+                            name: "React",
+                            description: "JavaScript library for building UIs"
+                          },
+                          proficiency_level: "Expert"
+                        },
+                        {
+                          skill: {
+                            id: 5,
+                            name: "Node.js",
+                            description: "JavaScript runtime"
+                          },
+                          sub_skill: null,
+                          proficiency_level: "Advanced"
+                        }
+                      ],
                       work_experience: [
                         {
+                          id: 1,
                           company_name: "Tech Corp",
                           designation: "Senior Developer",
                           start_date: "2022-01-01",
                           end_date: null,
                           duration: "2 years 3 months",
+                          skills: [
+                            {
+                              skill: {
+                                id: 1,
+                                name: "JavaScript",
+                                description: "Programming language"
+                              },
+                              sub_skill: {
+                                id: 3,
+                                name: "React",
+                                description: "JavaScript library for building UIs"
+                              },
+                              proficiency_level: "Expert"
+                            }
+                          ]
                         },
                         {
+                          id: 2,
                           company_name: "Previous Corp",
                           designation: "Junior Developer",
                           start_date: "2020-01-01",
                           end_date: "2021-12-31",
                           duration: "2 years",
-                        },
-                      ],
-                    },
+                          skills: [
+                            {
+                              skill: {
+                                id: 5,
+                                name: "Node.js",
+                                description: "JavaScript runtime"
+                              },
+                              sub_skill: null,
+                              proficiency_level: "Advanced"
+                            }
+                          ]
+                        }
+                      ]
+                    }
                   },
                 },
               },
@@ -7103,6 +7514,7 @@ const options = {
         },
         get: {
           summary: "Get user's conversations",
+          description: "Get all conversations for the authenticated user. Only returns conversations that have at least one message. Includes member details with profile images.",
           tags: ["Chat"],
           security: [{ bearerAuth: [] }],
           responses: {
@@ -7113,18 +7525,27 @@ const options = {
                   schema: {
                     type: "object",
                     properties: {
-                      success: { type: "boolean" },
-                      message: { type: "string" },
+                      success: { 
+                        type: "boolean",
+                        example: true 
+                      },
+                      message: { 
+                        type: "string",
+                        example: "Conversations retrieved successfully"
+                      },
                       data: {
                         type: "array",
                         items: {
-                          $ref: "#/components/schemas/Conversation",
+                          $ref: "#/components/schemas/ConversationWithDetails",
                         },
                       },
                     },
                   },
                 },
               },
+            },
+            500: {
+              description: "Internal server error",
             },
           },
         },
@@ -7369,18 +7790,34 @@ const options = {
                   schema: {
                     type: "object",
                     properties: {
-                      success: { type: "boolean" },
-                      message: { type: "string" },
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "Typing status retrieved successfully" },
                       data: {
                         type: "array",
                         items: {
                           type: "object",
                           properties: {
-                            userId: { type: "integer" },
-                            userName: { type: "string" },
+                            userId: { type: "integer", example: 19 },
+                            userName: { type: "string", example: "Happy Movaliya" },
                             startedTypingAt: {
                               type: "string",
                               format: "date-time",
+                              example: "2025-10-10T19:44:04.679Z"
+                            },
+                            profile: {
+                              type: "object",
+                              properties: {
+                                image_path: {
+                                  type: "string",
+                                  example: "images/profiles/user456.jpg",
+                                  description: "Relative path to the profile image"
+                                },
+                                image_url: {
+                                  type: "string",
+                                  example: "http://localhost:3000/api/files/images/profiles/user456.jpg",
+                                  description: "Full URL to access the profile image"
+                                }
+                              }
                             },
                           },
                         },
@@ -7389,6 +7826,9 @@ const options = {
                   },
                 },
               },
+            },
+            403: {
+              description: "Access denied",
             },
           },
         },
@@ -7499,17 +7939,36 @@ const options = {
                   schema: {
                     type: "object",
                     properties: {
-                      success: { type: "boolean" },
-                      message: { type: "string" },
+                      success: { type: "boolean", example: true },
+                      message: { type: "string", example: "User status retrieved successfully" },
                       data: {
                         type: "object",
                         properties: {
-                          id: { type: "integer" },
-                          name: { type: "string" },
-                          is_online: { type: "boolean" },
+                          id: { type: "integer", example: 19 },
+                          name: { type: "string", example: "Happy Movaliya" },
+                          is_online: { type: "boolean", example: true },
                           last_seen: {
                             type: "string",
                             format: "date-time",
+                            example: "2025-10-10T19:44:04.679Z",
+                            nullable: true
+                          },
+                          profile: {
+                            type: "object",
+                            properties: {
+                              image_path: {
+                                type: "string",
+                                example: "images/profiles/user456.jpg",
+                                description: "Relative path to the profile image",
+                                nullable: true
+                              },
+                              image_url: {
+                                type: "string",
+                                example: "http://localhost:3000/api/files/images/profiles/user456.jpg",
+                                description: "Full URL to access the profile image",
+                                nullable: true
+                              }
+                            }
                           },
                         },
                       },

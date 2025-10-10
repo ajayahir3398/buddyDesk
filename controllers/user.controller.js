@@ -984,16 +984,35 @@ exports.getPublicProfile = async (req, res) => {
         {
           model: UserProfile,
           as: 'profile',
-          attributes: ['gender', 'image_path'] // Only gender and image_path from personal profile for privacy
+          attributes: ['gender', 'image_path', 'bio', 'looking_skills']
         },
         {
           model: WorkProfile,
           as: 'workProfiles',
-          attributes: ['company_name', 'designation', 'start_date', 'end_date'],
+          attributes: ['id', 'company_name', 'designation', 'start_date', 'end_date'],
+          include: [
+            {
+              model: UserSkill,
+              as: 'userSkills',
+              attributes: ['id', 'proficiency_level'],
+              include: [
+                {
+                  model: Skill,
+                  as: 'skill',
+                  attributes: ['id', 'name', 'description']
+                },
+                {
+                  model: SubSkill,
+                  as: 'subSkill',
+                  attributes: ['id', 'name', 'description']
+                }
+              ]
+            }
+          ],
           order: [['start_date', 'DESC']] // Most recent work experience first
         }
       ],
-      attributes: ['id', 'name', 'created_at'] // Limited user data - no email
+      attributes: ['id', 'name', 'created_at', 'is_online', 'last_seen', 'is_verified', 'subscription_tier']
     });
 
     if (!user) {
@@ -1005,21 +1024,73 @@ exports.getPublicProfile = async (req, res) => {
 
     // Generate full URL for profile image if it exists
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    // Collect all unique skills from work profiles
+    const allSkills = [];
+    const skillIds = new Set();
+    
+    user.workProfiles.forEach(work => {
+      work.userSkills.forEach(userSkill => {
+        const skillId = userSkill.skill?.id;
+        const subSkillId = userSkill.subSkill?.id;
+        const uniqueKey = `${skillId}-${subSkillId}`;
+        
+        if (!skillIds.has(uniqueKey)) {
+          skillIds.add(uniqueKey);
+          allSkills.push({
+            skill: userSkill.skill ? {
+              id: userSkill.skill.id,
+              name: userSkill.skill.name,
+              description: userSkill.skill.description
+            } : null,
+            sub_skill: userSkill.subSkill ? {
+              id: userSkill.subSkill.id,
+              name: userSkill.subSkill.name,
+              description: userSkill.subSkill.description
+            } : null,
+            proficiency_level: userSkill.proficiency_level
+          });
+        }
+      });
+    });
+
     // Transform the data for public profile
     const publicProfileData = {
       id: user.id,
       name: user.name,
       member_since: user.created_at,
+      is_online: user.is_online,
+      last_seen: user.last_seen,
+      is_verified: user.is_verified,
+      subscription_tier: user.subscription_tier,
       profile: {
         gender: user.profile?.gender || null,
-        image_url: user.profile?.image_path ? `${baseUrl}/api/files/${user.profile.image_path}` : null
+        bio: user.profile?.bio || null,
+        image_path: user.profile?.image_path || null,
+        image_url: user.profile?.image_path ? `${baseUrl}/api/files/${user.profile.image_path}` : null,
+        looking_skills: user.profile?.looking_skills || []
       },
+      skills: allSkills,
       work_experience: user.workProfiles.map(work => ({
+        id: work.id,
         company_name: work.company_name,
         designation: work.designation,
         start_date: work.start_date,
         end_date: work.end_date,
-        duration: calculateWorkDuration(work.start_date, work.end_date)
+        duration: calculateWorkDuration(work.start_date, work.end_date),
+        skills: work.userSkills.map(userSkill => ({
+          skill: userSkill.skill ? {
+            id: userSkill.skill.id,
+            name: userSkill.skill.name,
+            description: userSkill.skill.description
+          } : null,
+          sub_skill: userSkill.subSkill ? {
+            id: userSkill.subSkill.id,
+            name: userSkill.subSkill.name,
+            description: userSkill.subSkill.description
+          } : null,
+          proficiency_level: userSkill.proficiency_level
+        }))
       }))
     };
 
