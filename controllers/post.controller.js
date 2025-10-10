@@ -1592,7 +1592,11 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
     });
 
     postsWithUrls = postsWithUrls.map(post => {
-      const lookingSkillsIds = post.user.profile.looking_skills.map(skill => skill.id) || []
+      // Safely access nested properties with optional chaining and default to empty array
+      const lookingSkills = post.user?.profile?.looking_skills || [];
+      const lookingSkillsIds = Array.isArray(lookingSkills) 
+        ? lookingSkills.map(skill => typeof skill === 'object' ? skill.id : skill)
+        : [];
       const userPostsList = userPosts.filter(userPost => lookingSkillsIds.includes(userPost.required_skill_id))
       post.inExchangeSkillPost = userPostsList.length > 0 ? userPostsList[0] : null
       return post
