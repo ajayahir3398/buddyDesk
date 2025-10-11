@@ -215,7 +215,28 @@ class ChatController {
       if (result.success) {
         // Emit real-time event if Socket.io is available
         if (req.app.get('io')) {
-          req.app.get('io').to(`conversation_${conversationId}`).emit('new_message', result.data);
+          const io = req.app.get('io');
+          
+          // Emit message to conversation members
+          io.to(`conversation_${conversationId}`).emit('new_message', result.data);
+          
+          // Emit conversation update to refresh conversation lists
+          io.to(`conversation_${conversationId}`).emit('conversation_updated', {
+            conversationId: conversationId,
+            lastMessage: {
+              id: result.data.id,
+              content: result.data.content,
+              message_type: result.data.message_type,
+              created_at: result.data.created_at,
+              sender_id: senderId,
+              sender: {
+                id: result.data.sender.id,
+                name: result.data.sender.name,
+                profile: result.data.sender.profile
+              }
+            },
+            last_message_at: new Date()
+          });
         }
 
         res.status(201).json({

@@ -122,6 +122,24 @@ function initializeSocket(server) {
             // Emit message to all conversation members
             io.to(`conversation_${data.conversationId}`).emit('new_message', result.data);
 
+            // Emit conversation update to refresh conversation lists
+            io.to(`conversation_${data.conversationId}`).emit('conversation_updated', {
+              conversationId: data.conversationId,
+              lastMessage: {
+                id: result.data.id,
+                content: result.data.content,
+                message_type: result.data.message_type,
+                created_at: result.data.created_at,
+                sender_id: socket.userId,
+                sender: {
+                  id: result.data.sender.id,
+                  name: result.data.sender.name,
+                  profile: result.data.sender.profile
+                }
+              },
+              last_message_at: new Date()
+            });
+
             // Send push notifications to offline users
             await chatService.sendNotificationsForMessage(result.data);
           } else {

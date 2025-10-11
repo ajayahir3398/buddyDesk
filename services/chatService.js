@@ -900,6 +900,58 @@ class ChatService {
   }
 
   /**
+   * Get conversation members
+   * @param {number} conversationId - Conversation ID
+   * @returns {Array} Array of conversation members
+   */
+  async getConversationMembers(conversationId) {
+    try {
+      const members = await db.ConversationMember.findAll({
+        where: {
+          conversation_id: conversationId,
+          left_at: null
+        },
+        attributes: ['user_id', 'role']
+      });
+
+      return members;
+    } catch (error) {
+      logger.error('Error getting conversation members:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get unread message count for a specific user in a conversation
+   * @param {number} conversationId - Conversation ID
+   * @param {number} userId - User ID
+   * @returns {number} Unread message count
+   */
+  async getUnreadCount(conversationId, userId) {
+    try {
+      const count = await db.MessageStatus.count({
+        where: {
+          user_id: userId,
+          status: { [Op.ne]: 'read' }
+        },
+        include: [{
+          model: db.Message,
+          as: 'message',
+          where: {
+            conversation_id: conversationId,
+            is_deleted: false
+          }
+        }]
+      });
+
+      return count;
+    } catch (error) {
+      logger.error('Error getting unread count:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Send notifications for a new message
    * @param {Object} message - Message object
    * @returns {boolean} Success status
