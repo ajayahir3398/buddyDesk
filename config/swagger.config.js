@@ -48,7 +48,7 @@ const options = {
       title: "BuddyDesk API",
       version: "1.0.0",
       description:
-        "Complete API for BuddyDesk platform including user authentication, enhanced profile management with addresses, temporary addresses, and work profiles with skills integration, and skills management.",
+        "Complete API for BuddyDesk platform including user authentication, enhanced profile management with addresses, temporary addresses, and work profiles with skills integration, skills management, and real-time chat with Socket.IO support.\n\n**Real-time Features:** This API includes Socket.IO support for real-time chat messaging, conversation updates, typing indicators, read receipts, and online status. See Socket.IO documentation for event details.",
       contact: {
         name: "API Support",
         email: "support@buddydesk.com",
@@ -7870,6 +7870,107 @@ const options = {
             },
             400: {
               description: "Failed to mark message as read",
+            },
+          },
+        },
+      },
+      "/chat/conversations/{id}/read": {
+        put: {
+          summary: "Mark all messages in a conversation as read",
+          description: "Marks all unread messages in a conversation as read for the authenticated user (bulk operation)",
+          tags: ["Chat"],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: {
+                type: "integer",
+              },
+              description: "Conversation ID",
+            },
+          ],
+          responses: {
+            200: {
+              description: "Messages marked as read successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: {
+                        type: "boolean",
+                        example: true,
+                      },
+                      message: {
+                        type: "string",
+                        example: "Marked 5 messages as read",
+                      },
+                      data: {
+                        type: "object",
+                        properties: {
+                          conversationId: {
+                            type: "integer",
+                            example: 123,
+                          },
+                          messageCount: {
+                            type: "integer",
+                            example: 5,
+                            description: "Number of messages marked as read",
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Failed to mark messages as read",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: {
+                        type: "boolean",
+                        example: false,
+                      },
+                      message: {
+                        type: "string",
+                        example: "Failed to mark messages as read",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            403: {
+              description: "Access denied - not a member of this conversation",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      success: {
+                        type: "boolean",
+                        example: false,
+                      },
+                      message: {
+                        type: "string",
+                        example: "Access denied. You are not a member of this conversation.",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            404: {
+              description: "Conversation not found",
+            },
+            500: {
+              description: "Internal server error",
             },
           },
         },

@@ -103,6 +103,21 @@ function initializeSocket(server) {
         logger.info(`User ${socket.userId} left conversation ${conversationId}`);
       });
 
+      // Handle manual conversation list refresh (for sync/error recovery)
+      socket.on('refresh_conversation_list', async () => {
+        try {
+          const conversations = await chatService.getUserConversations(socket.userId);
+          socket.emit('conversation_list_refreshed', {
+            conversations,
+            timestamp: new Date()
+          });
+          logger.info(`User ${socket.userId} manually refreshed conversation list`);
+        } catch (error) {
+          logger.error('Error refreshing conversation list:', error);
+          socket.emit('error', { message: 'Failed to refresh conversation list' });
+        }
+      });
+
       // Handle sending messages
       socket.on('send_message', async (data) => {
         try {
@@ -200,6 +215,44 @@ function initializeSocket(server) {
           });
         } catch (error) {
           logger.error('Error marking message as read:', error);
+        }
+      });
+
+      // Handle marking all messages in a conversation as read (bulk operation)
+      socket.on('mark_conversation_read', async (data) => {
+        try {
+          const { conversationId } = data;
+
+          // Verify user is member of conversation
+          const isMember = await chatService.isConversationMember(conversationId, socket.userId);
+          if (!isMember) {
+            socket.emit('error', { message: 'Not authorized' });
+            return;
+          }
+
+          // Mark all unread messages as read
+          const result = await chatService.markConversationAsRead(conversationId, socket.userId);
+
+          if (result.success) {
+            // Notify other members about read receipts
+            socket.to(`conversation_${conversationId}`).emit('conversation_read', {
+              conversationId,
+              userId: socket.userId,
+              readAt: new Date(),
+              messageCount: result.count
+            });
+
+            // Confirm to the user
+            socket.emit('conversation_marked_read', {
+              conversationId,
+              messageCount: result.count
+            });
+
+            logger.info(`User ${socket.userId} marked ${result.count} messages as read in conversation ${conversationId}`);
+          }
+        } catch (error) {
+          logger.error('Error marking conversation as read:', error);
+          socket.emit('error', { message: 'Failed to mark messages as read' });
         }
       });
 

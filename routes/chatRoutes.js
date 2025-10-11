@@ -84,6 +84,12 @@ router.put('/messages/:id/read',
 );
 
 
+router.put('/conversations/:id/read',
+  validateConversationId,
+  chatController.markConversationAsRead
+);
+
+
 router.get('/search', 
   searchRateLimit,
   validateSearch,

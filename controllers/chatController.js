@@ -291,6 +291,60 @@ class ChatController {
   }
 
   /**
+   * Mark all messages in a conversation as read (bulk operation)
+   * PUT /api/chat/conversations/:id/read
+   */
+  async markConversationAsRead(req, res) {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const userId = req.user.id;
+
+      // Check if user is member of conversation
+      const isMember = await chatService.isConversationMember(conversationId, userId);
+      if (!isMember) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. You are not a member of this conversation.'
+        });
+      }
+
+      const result = await chatService.markConversationAsRead(conversationId, userId);
+
+      if (result.success) {
+        // Emit real-time event if Socket.io is available
+        if (req.app.get('io')) {
+          req.app.get('io').to(`conversation_${conversationId}`).emit('conversation_read', {
+            conversationId,
+            userId,
+            readAt: new Date(),
+            messageCount: result.count
+          });
+        }
+
+        res.json({
+          success: true,
+          message: result.message,
+          data: {
+            conversationId,
+            messageCount: result.count
+          }
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error || 'Failed to mark messages as read'
+        });
+      }
+    } catch (error) {
+      logger.error('Error in markConversationAsRead:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  /**
    * Search messages
    * GET /api/chat/search
    */

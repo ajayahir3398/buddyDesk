@@ -855,6 +855,74 @@ class ChatService {
   }
 
   /**
+   * Mark all messages in a conversation as read (bulk operation)
+   * @param {number} conversationId - Conversation ID
+   * @param {number} userId - User ID
+   * @returns {Object} Result with success status and count
+   */
+  async markConversationAsRead(conversationId, userId) {
+    try {
+      // Get all unread messages in this conversation for this user
+      const unreadMessages = await db.MessageStatus.findAll({
+        where: {
+          user_id: userId,
+          status: { [Op.ne]: 'read' }
+        },
+        include: [{
+          model: db.Message,
+          as: 'message',
+          where: {
+            conversation_id: conversationId,
+            is_deleted: false
+          },
+          attributes: ['id']
+        }],
+        attributes: ['id', 'message_id']
+      });
+
+      if (unreadMessages.length === 0) {
+        return {
+          success: true,
+          count: 0,
+          message: 'No unread messages'
+        };
+      }
+
+      // Update all to read status
+      const [updatedCount] = await db.MessageStatus.update(
+        {
+          status: "read",
+          read_at: new Date(),
+        },
+        {
+          where: {
+            user_id: userId,
+            status: { [Op.ne]: 'read' },
+            message_id: {
+              [Op.in]: unreadMessages.map(um => um.message_id)
+            }
+          },
+        }
+      );
+
+      logger.info(`Marked ${updatedCount} messages as read for user ${userId} in conversation ${conversationId}`);
+
+      return {
+        success: true,
+        count: updatedCount,
+        message: `Marked ${updatedCount} messages as read`
+      };
+    } catch (error) {
+      logger.error("Error marking conversation as read:", error);
+      return {
+        success: false,
+        count: 0,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Update typing status
    * @param {number} conversationId - Conversation ID
    * @param {number} userId - User ID
