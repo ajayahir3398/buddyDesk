@@ -84,6 +84,9 @@ db.Feedback = require("./feedback.model")(sequelize, Sequelize.DataTypes);
 db.Subscription = require("./subscription.model")(sequelize, Sequelize.DataTypes);
 db.SubscriptionEvent = require("./subscriptionEvent.model")(sequelize, Sequelize.DataTypes);
 
+// Password reset OTP model
+db.PasswordResetOTP = require("./passwordResetOTP.model")(sequelize, Sequelize.DataTypes);
+
 // Set up associations
 Object.keys(db).forEach(modelName => {
     if (db[modelName].associate) {

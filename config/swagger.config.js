@@ -48,7 +48,7 @@ const options = {
       title: "BuddyDesk API",
       version: "1.0.0",
       description:
-        "Complete API for BuddyDesk platform including user authentication, enhanced profile management with addresses, temporary addresses, and work profiles with skills integration, skills management, and real-time chat with Socket.IO support.\n\n**Real-time Features:** This API includes Socket.IO support for real-time chat messaging, conversation updates, typing indicators, read receipts, and online status. See Socket.IO documentation for event details.",
+        "Complete API for BuddyDesk platform including user authentication, password reset with email OTP verification, enhanced profile management with addresses, temporary addresses, and work profiles with skills integration, skills management, and real-time chat with Socket.IO support.\n\n**Password Reset:** Secure forgot password flow with email OTP verification. OTPs expire in 10 minutes with a maximum of 5 verification attempts.\n\n**Real-time Features:** This API includes Socket.IO support for real-time chat messaging, conversation updates, typing indicators, read receipts, and online status. See Socket.IO documentation for event details.",
       contact: {
         name: "API Support",
         email: "support@buddydesk.com",
@@ -248,6 +248,97 @@ const options = {
           properties: {
             success: { type: "boolean", example: true },
             message: { type: "string", example: "Password changed successfully" },
+          },
+        },
+        ForgotPassword: {
+          type: "object",
+          required: ["email"],
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+              example: "john.doe@example.com",
+              description: "Email address where OTP will be sent",
+              maxLength: 255,
+            },
+          },
+        },
+        ForgotPasswordResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "OTP has been sent to your email address. Please check your inbox." },
+            data: {
+              type: "object",
+              properties: {
+                email: { type: "string", example: "john.doe@example.com" },
+                expires_in_minutes: { type: "integer", example: 10 },
+              },
+            },
+          },
+        },
+        VerifyOTP: {
+          type: "object",
+          required: ["email", "otp"],
+          properties: {
+            email: {
+              type: "string",
+              format: "email",
+              example: "john.doe@example.com",
+              description: "Email address associated with the OTP",
+              maxLength: 255,
+            },
+            otp: {
+              type: "string",
+              pattern: "^[0-9]{6}$",
+              example: "123456",
+              description: "6-digit OTP received via email",
+              minLength: 6,
+              maxLength: 6,
+            },
+          },
+        },
+        VerifyOTPResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "OTP verified successfully. You can now reset your password." },
+            data: {
+              type: "object",
+              properties: {
+                reset_token: { 
+                  type: "string", 
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                  description: "JWT token for password reset (valid for 15 minutes)"
+                },
+                expires_in_minutes: { type: "integer", example: 15 },
+              },
+            },
+          },
+        },
+        ResetPassword: {
+          type: "object",
+          required: ["reset_token", "new_password"],
+          properties: {
+            reset_token: {
+              type: "string",
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+              description: "Reset token received from verify-reset-otp endpoint",
+            },
+            new_password: {
+              type: "string",
+              example: "NewSecureP@ssw0rd123",
+              description: "New password (8-128 characters, must contain uppercase, lowercase, number, and special character)",
+              minLength: 8,
+              maxLength: 128,
+            },
+          },
+        },
+        ResetPasswordResponse: {
+          type: "object",
+          properties: {
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Password has been reset successfully. Please login with your new password." },
           },
         },
         LoginResponse: {
@@ -3870,6 +3961,318 @@ const options = {
                   example: {
                     success: false,
                     message: "User with this email does not exist, please register yourself",
+                  },
+                },
+              },
+            },
+            500: {
+              description: "Internal server error",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/users/forgot-password": {
+        post: {
+          summary: "Request password reset OTP",
+          description: "Sends a 6-digit OTP to the user's email address for password reset. OTP is valid for 10 minutes and has a maximum of 5 verification attempts.",
+          tags: ["Users"],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ForgotPassword",
+                },
+                examples: {
+                  valid: {
+                    summary: "Valid email",
+                    value: {
+                      email: "john.doe@example.com",
+                    },
+                  },
+                  invalid_email: {
+                    summary: "Invalid email format",
+                    value: {
+                      email: "invalid-email",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "OTP sent successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ForgotPasswordResponse",
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Validation error",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ValidationError",
+                  },
+                },
+              },
+            },
+            404: {
+              description: "User not found",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                  example: {
+                    success: false,
+                    message: "No account found with this email address",
+                  },
+                },
+              },
+            },
+            500: {
+              description: "Internal server error (e.g., email sending failed)",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                  example: {
+                    success: false,
+                    message: "Failed to send OTP email. Please try again later.",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/users/verify-reset-otp": {
+        post: {
+          summary: "Verify password reset OTP",
+          description: "Verifies the OTP sent to the user's email and returns a reset token. Maximum 5 attempts allowed per OTP.",
+          tags: ["Users"],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/VerifyOTP",
+                },
+                examples: {
+                  valid: {
+                    summary: "Valid OTP",
+                    value: {
+                      email: "john.doe@example.com",
+                      otp: "123456",
+                    },
+                  },
+                  invalid_otp: {
+                    summary: "Invalid OTP",
+                    value: {
+                      email: "john.doe@example.com",
+                      otp: "999999",
+                    },
+                  },
+                  wrong_format: {
+                    summary: "Wrong OTP format",
+                    value: {
+                      email: "john.doe@example.com",
+                      otp: "12345",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "OTP verified successfully, reset token provided",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/VerifyOTPResponse",
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Validation error or invalid/expired OTP",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                  examples: {
+                    invalid_otp: {
+                      summary: "Invalid OTP",
+                      value: {
+                        success: false,
+                        message: "Invalid OTP. 4 attempt(s) remaining.",
+                      },
+                    },
+                    expired_otp: {
+                      summary: "Expired OTP",
+                      value: {
+                        success: false,
+                        message: "OTP has expired. Please request a new OTP.",
+                      },
+                    },
+                    max_attempts: {
+                      summary: "Maximum attempts exceeded",
+                      value: {
+                        success: false,
+                        message: "Maximum verification attempts exceeded. Please request a new OTP.",
+                      },
+                    },
+                    no_otp_found: {
+                      summary: "No OTP request found",
+                      value: {
+                        success: false,
+                        message: "No OTP request found. Please request a new OTP.",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            404: {
+              description: "User not found",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                  example: {
+                    success: false,
+                    message: "No account found with this email address",
+                  },
+                },
+              },
+            },
+            500: {
+              description: "Internal server error",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      "/users/reset-password": {
+        post: {
+          summary: "Reset password with verified token",
+          description: "Resets the user's password using the verified reset token. All active sessions will be invalidated and a confirmation email will be sent.",
+          tags: ["Users"],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ResetPassword",
+                },
+                examples: {
+                  valid: {
+                    summary: "Valid reset request",
+                    value: {
+                      reset_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      new_password: "NewSecureP@ssw0rd123",
+                    },
+                  },
+                  weak_password: {
+                    summary: "Weak password",
+                    value: {
+                      reset_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                      new_password: "weak",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: "Password reset successfully",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/ResetPasswordResponse",
+                  },
+                },
+              },
+            },
+            400: {
+              description: "Validation error or invalid/expired token",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                  examples: {
+                    invalid_token: {
+                      summary: "Invalid reset token",
+                      value: {
+                        success: false,
+                        message: "Invalid reset token",
+                      },
+                    },
+                    expired_token: {
+                      summary: "Expired reset token",
+                      value: {
+                        success: false,
+                        message: "Reset token has expired. Please request a new OTP.",
+                      },
+                    },
+                    invalid_request: {
+                      summary: "Invalid or expired reset request",
+                      value: {
+                        success: false,
+                        message: "Invalid or expired reset request. Please request a new OTP.",
+                      },
+                    },
+                    validation_error: {
+                      summary: "Password validation error",
+                      value: {
+                        success: false,
+                        message: "Validation failed",
+                        errors: [
+                          {
+                            field: "new_password",
+                            message: "New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+                          },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            404: {
+              description: "User not found",
+              content: {
+                "application/json": {
+                  schema: {
+                    $ref: "#/components/schemas/Error",
+                  },
+                  example: {
+                    success: false,
+                    message: "User not found",
                   },
                 },
               },

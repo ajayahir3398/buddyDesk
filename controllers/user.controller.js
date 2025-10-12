@@ -18,6 +18,8 @@ const NotificationSettings = db.NotificationSettings; // Added NotificationSetti
 const TermsAcceptance = db.TermsAcceptance; // Added TermsAcceptance import
 const UserBlock = db.UserBlock; // Added UserBlock import
 const Subscription = db.Subscription; // Added Subscription import
+const PasswordResetOTP = db.PasswordResetOTP; // Added PasswordResetOTP import
+const emailService = require('../services/emailService'); // Added email service import
 
 // Generate access token (short-lived)
 const generateAccessToken = (user) => {
@@ -1409,6 +1411,295 @@ exports.getBlockedUsers = async (req, res) => {
 
   } catch (error) {
     console.error('Get blocked users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Generate OTP (6-digit number)
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Forgot password - Send OTP to email
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if user exists
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this email address'
+      });
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    
+    // Hash the OTP before storing
+    const saltRounds = 10;
+    const hashedOTP = await bcrypt.hash(otp, saltRounds);
+
+    // Set expiration time (10 minutes from now)
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+    // Delete any existing OTPs for this user
+    await PasswordResetOTP.destroy({
+      where: { user_id: user.id }
+    });
+
+    // Create new OTP record
+    await PasswordResetOTP.create({
+      user_id: user.id,
+      email: email,
+      otp: hashedOTP,
+      expires_at: expiresAt,
+      is_verified: false,
+      attempts: 0
+    });
+
+    // Send OTP via email
+    try {
+      await emailService.sendOTPEmail(email, otp, user.name || 'User');
+      
+      res.status(200).json({
+        success: true,
+        message: 'OTP has been sent to your email address. Please check your inbox.',
+        data: {
+          email: email,
+          expires_in_minutes: 10
+        }
+      });
+    } catch (emailError) {
+      console.error('Email sending error:', emailError);
+      
+      // Delete the OTP record if email fails
+      await PasswordResetOTP.destroy({
+        where: { user_id: user.id }
+      });
+
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP email. Please try again later.',
+        error: emailError.message
+      });
+    }
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Verify OTP
+exports.verifyResetOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this email address'
+      });
+    }
+
+    // Find the OTP record
+    const otpRecord = await PasswordResetOTP.findOne({
+      where: {
+        user_id: user.id,
+        email: email,
+        is_verified: false
+      },
+      order: [['created_at', 'DESC']]
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({
+        success: false,
+        message: 'No OTP request found. Please request a new OTP.'
+      });
+    }
+
+    // Check if OTP has expired
+    if (new Date() > new Date(otpRecord.expires_at)) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP has expired. Please request a new OTP.'
+      });
+    }
+
+    // Check maximum attempts (limit to 5 attempts)
+    if (otpRecord.attempts >= 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum verification attempts exceeded. Please request a new OTP.'
+      });
+    }
+
+    // Verify OTP
+    const isOTPValid = await bcrypt.compare(otp, otpRecord.otp);
+
+    // Increment attempts
+    await otpRecord.update({
+      attempts: otpRecord.attempts + 1
+    });
+
+    if (!isOTPValid) {
+      const remainingAttempts = 5 - (otpRecord.attempts + 1);
+      return res.status(400).json({
+        success: false,
+        message: `Invalid OTP. ${remainingAttempts} attempt(s) remaining.`
+      });
+    }
+
+    // Mark OTP as verified
+    await otpRecord.update({
+      is_verified: true,
+      verified_at: new Date()
+    });
+
+    // Generate a temporary token for password reset (valid for 15 minutes)
+    const resetToken = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        otpId: otpRecord.id,
+        type: 'password_reset'
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP verified successfully. You can now reset your password.',
+      data: {
+        reset_token: resetToken,
+        expires_in_minutes: 15
+      }
+    });
+
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Reset password with verified OTP
+exports.resetPassword = async (req, res) => {
+  try {
+    const { reset_token, new_password } = req.body;
+
+    // Verify reset token
+    let decoded;
+    try {
+      decoded = jwt.verify(reset_token, process.env.JWT_SECRET);
+      
+      if (decoded.type !== 'password_reset') {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid reset token'
+        });
+      }
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Reset token has expired. Please request a new OTP.'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid reset token'
+      });
+    }
+
+    // Verify OTP record is still verified and valid
+    const otpRecord = await PasswordResetOTP.findOne({
+      where: {
+        id: decoded.otpId,
+        user_id: decoded.userId,
+        is_verified: true
+      }
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset request. Please request a new OTP.'
+      });
+    }
+
+    // Find user
+    const user = await User.findByPk(decoded.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(new_password, saltRounds);
+
+    // Update user password
+    await user.update({
+      password: hashedPassword,
+      updated_at: new Date()
+    });
+
+    // Delete the OTP record
+    await PasswordResetOTP.destroy({
+      where: { user_id: user.id }
+    });
+
+    // Invalidate all active sessions for security
+    await SessionLog.update(
+      {
+        is_active: false,
+        revoked_at: new Date(),
+        reason: 'Password reset'
+      },
+      {
+        where: {
+          user_id: user.id,
+          is_active: true
+        }
+      }
+    );
+
+    // Send password changed confirmation email
+    try {
+      await emailService.sendPasswordChangedEmail(user.email, user.name || 'User');
+    } catch (emailError) {
+      console.error('Password changed email error:', emailError);
+      // Don't fail the request if email fails
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Password has been reset successfully. Please login with your new password.'
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

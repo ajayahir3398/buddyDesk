@@ -44,7 +44,7 @@ const validateUserRegistration = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail()
+    .normalizeEmail({ gmail_remove_dots: false })
     .isLength({ max: 255 })
     .withMessage('Email is too long'),
   
@@ -88,7 +88,7 @@ const validateUserLogin = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
   
   body('password')
     .notEmpty()
@@ -112,7 +112,7 @@ const validateUserUpdate = [
     .trim()
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail()
+    .normalizeEmail({ gmail_remove_dots: false })
     .isLength({ max: 255 })
     .withMessage('Email is too long'),
   
@@ -181,7 +181,7 @@ const validateEmail = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
   
   handleValidationErrors
 ];
@@ -207,7 +207,7 @@ const validateLogin = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
   
   body('password')
     .notEmpty()
@@ -349,7 +349,7 @@ const validateProfileUpdate = [
     .trim()
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail()
+    .normalizeEmail({ gmail_remove_dots: false })
     .isLength({ max: 255 })
     .withMessage('Email is too long'),
   
@@ -727,7 +727,7 @@ const validateChangePassword = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail(),
+    .normalizeEmail({ gmail_remove_dots: false }),
   
   body('new_password')
     .notEmpty()
@@ -769,6 +769,59 @@ const validateFeedback = [
   handleValidationErrors
 ];
 
+// Forgot password validation
+const validateForgotPassword = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email address')
+    .normalizeEmail({ gmail_remove_dots: false }),
+  
+  handleValidationErrors
+];
+
+// Verify OTP validation
+const validateVerifyOTP = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email address')
+    .normalizeEmail({ gmail_remove_dots: false }),
+  
+  body('otp')
+    .notEmpty()
+    .withMessage('OTP is required')
+    .isLength({ min: 6, max: 6 })
+    .withMessage('OTP must be 6 digits')
+    .isNumeric()
+    .withMessage('OTP must contain only numbers'),
+  
+  handleValidationErrors
+];
+
+// Reset password validation
+const validateResetPassword = [
+  body('reset_token')
+    .notEmpty()
+    .withMessage('Reset token is required')
+    .isString()
+    .withMessage('Reset token must be a valid string'),
+  
+  body('new_password')
+    .notEmpty()
+    .withMessage('New password is required')
+    .isLength({ min: 8, max: 128 })
+    .withMessage('New password must be between 8 and 128 characters')
+    .matches(patterns.password)
+    .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+  
+  handleValidationErrors
+];
+
 module.exports = {
   handleValidationErrors,
   validateUserRegistration,
@@ -790,5 +843,8 @@ module.exports = {
   validatePostUpdate,
   validateChangePassword,
   validateFeedback,
+  validateForgotPassword,
+  validateVerifyOTP,
+  validateResetPassword,
   patterns
 };
