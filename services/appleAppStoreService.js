@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const fetch = require('node-fetch');
+const axios = require('axios');
 const fs = require('fs');
 const db = require('../models');
 const logger = require('../utils/logger');
@@ -59,6 +59,7 @@ async function makeAppleAPIRequest(endpoint, method = 'GET', body = null) {
     
     const options = {
       method,
+      url,
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -66,24 +67,23 @@ async function makeAppleAPIRequest(endpoint, method = 'GET', body = null) {
     };
 
     if (body) {
-      options.body = JSON.stringify(body);
+      options.data = body;
     }
 
-    const response = await fetch(url, options);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Apple API error: ${response.status} - ${errorText}`);
-    }
-
-    return await response.json();
+    const response = await axios(options);
+    return response.data;
   } catch (error) {
+    // Axios error handling
+    const errorMessage = error.response 
+      ? `Apple API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`
+      : error.message;
+    
     logger.error('Apple API request failed', {
       endpoint,
-      error: error.message,
+      error: errorMessage,
       stack: error.stack
     });
-    throw error;
+    throw new Error(errorMessage);
   }
 }
 
