@@ -159,6 +159,21 @@ exports.login = async (req, res) => {
       console.log(`User ${user.id} (${user.email}) account reactivated after ${daysSinceDeletion} days`);
     }
 
+    // Invalidate all existing active sessions for this user (single device login enforcement)
+    await SessionLog.update(
+      {
+        is_active: false,
+        revoked_at: new Date(),
+        reason: 'New login from another device'
+      },
+      {
+        where: {
+          user_id: user.id,
+          is_active: true
+        }
+      }
+    );
+
     // Generate tokens
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
