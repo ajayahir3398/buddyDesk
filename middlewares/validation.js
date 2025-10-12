@@ -44,7 +44,7 @@ const validateUserRegistration = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail()
+    .toLowerCase()
     .isLength({ max: 255 })
     .withMessage('Email is too long'),
   
@@ -88,7 +88,7 @@ const validateUserLogin = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail(),
+    .toLowerCase(),
   
   body('password')
     .notEmpty()
@@ -112,7 +112,7 @@ const validateUserUpdate = [
     .trim()
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail()
+    .toLowerCase()
     .isLength({ max: 255 })
     .withMessage('Email is too long'),
   
@@ -181,7 +181,7 @@ const validateEmail = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail(),
+    .toLowerCase(),
   
   handleValidationErrors
 ];
@@ -207,7 +207,7 @@ const validateLogin = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail(),
+    .toLowerCase(),
   
   body('password')
     .notEmpty()
@@ -349,7 +349,7 @@ const validateProfileUpdate = [
     .trim()
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail()
+    .toLowerCase()
     .isLength({ max: 255 })
     .withMessage('Email is too long'),
   
@@ -727,7 +727,7 @@ const validateChangePassword = [
     .withMessage('Email is required')
     .isEmail()
     .withMessage('Please provide a valid email address')
-    .normalizeEmail(),
+    .toLowerCase(),
   
   body('new_password')
     .notEmpty()
@@ -769,6 +769,39 @@ const validateFeedback = [
   handleValidationErrors
 ];
 
+// Forgot password validation
+const validateForgotPassword = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email address')
+    .toLowerCase(),
+  
+  handleValidationErrors
+];
+
+// Reset password validation
+const validateResetPassword = [
+  body('token')
+    .trim()
+    .notEmpty()
+    .withMessage('Reset token is required')
+    .isLength({ min: 1, max: 500 })
+    .withMessage('Invalid reset token'),
+  
+  body('new_password')
+    .notEmpty()
+    .withMessage('New password is required')
+    .isLength({ min: 8, max: 128 })
+    .withMessage('New password must be between 8 and 128 characters')
+    .matches(patterns.password)
+    .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+  
+  handleValidationErrors
+];
+
 module.exports = {
   handleValidationErrors,
   validateUserRegistration,
@@ -790,5 +823,7 @@ module.exports = {
   validatePostUpdate,
   validateChangePassword,
   validateFeedback,
+  validateForgotPassword,
+  validateResetPassword,
   patterns
 };

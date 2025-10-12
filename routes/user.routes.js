@@ -6,6 +6,8 @@ const {
     validateUserLogin,
     validateProfileUpdate,
     validateChangePassword,
+    validateForgotPassword,
+    validateResetPassword,
 } = require('../middlewares/validation');
 const { uploadProfileImage, handleUploadError } = require('../middlewares/upload');
 const { validateFileSecurityMiddleware } = require('../middleware/fileSecurityValidation');
@@ -18,6 +20,10 @@ router.post('/login', validateUserLogin, userController.login);
 router.post('/refresh-token', userController.refreshToken);
 router.post('/logout', userController.logout);
 router.post('/change-password', validateChangePassword, userController.changePassword);
+
+// Password reset routes (public - no authentication required)
+router.post('/forgot-password', validateForgotPassword, userController.forgotPassword);
+router.post('/reset-password', validateResetPassword, userController.resetPassword);
 
 // Profile routes (require authentication)
 router.get('/profile', authenticateToken, userController.getProfile);

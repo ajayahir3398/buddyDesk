@@ -62,6 +62,16 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 'free',
       comment: 'Current subscription tier of the user'
     },
+    reset_token: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Token used for password reset verification'
+    },
+    reset_token_expiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Expiry timestamp for the reset token'
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
