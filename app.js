@@ -23,9 +23,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(requestIdMiddleware);
 app.use(cors());
 
-// Serve static files from public directory (for password reset page)
-app.use(express.static('public'));
-
 // Swagger UI setup
 app.use('/api-docs', (req, res, next) => {
   // Disable CSP for swagger docs
