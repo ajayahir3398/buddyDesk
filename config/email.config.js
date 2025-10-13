@@ -1,10 +1,10 @@
 module.exports = {
-  HOST: process.env.EMAIL_HOST || 'buddydesk.in',
-  PORT: process.env.EMAIL_PORT || 465,
-  SECURE: process.env.EMAIL_SECURE === 'true' || true, // true for port 465, false for other ports
-  USER: process.env.EMAIL_USER || 'no-reply@buddydesk.in',
+  HOST: process.env.EMAIL_HOST,
+  PORT: process.env.EMAIL_PORT, // Changed from 465 to 587
+  SECURE: process.env.EMAIL_SECURE === 'true', // Changed to false for STARTTLS
+  USER: process.env.EMAIL_USER,
   PASSWORD: process.env.EMAIL_PASSWORD,
-  FROM_NAME: process.env.EMAIL_FROM_NAME || 'BuddyDesk',
-  FROM_EMAIL: process.env.EMAIL_FROM_EMAIL || 'no-reply@buddydesk.in'
+  FROM_NAME: process.env.EMAIL_FROM_NAME,
+  FROM_EMAIL: process.env.EMAIL_FROM_EMAIL
 };
 
