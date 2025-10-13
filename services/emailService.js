@@ -7,6 +7,19 @@ let transporter = null;
 
 const createTransporter = () => {
     if (!transporter) {
+        // Validate required email configuration
+        if (!emailConfig.HOST || !emailConfig.PORT || !emailConfig.USER || !emailConfig.PASSWORD) {
+            logger.error('Missing required email configuration:', {
+                hasHost: !!emailConfig.HOST,
+                hasPort: !!emailConfig.PORT,
+                hasUser: !!emailConfig.USER,
+                hasPassword: !!emailConfig.PASSWORD,
+                passwordLength: emailConfig.PASSWORD ? emailConfig.PASSWORD.length : 0,
+                passwordStartsWith: emailConfig.PASSWORD ? emailConfig.PASSWORD.substring(0, 3) : 'N/A'
+            });
+            throw new Error('Email service is not properly configured. Please check environment variables.');
+        }
+
         const transportConfig = {
             host: emailConfig.HOST,
             port: parseInt(emailConfig.PORT),
@@ -29,7 +42,8 @@ const createTransporter = () => {
             port: transportConfig.port,
             secure: transportConfig.secure,
             user: transportConfig.auth.user,
-            // Don't log the password
+            passwordConfigured: !!transportConfig.auth.pass,
+            passwordLength: transportConfig.auth.pass ? transportConfig.auth.pass.length : 0
         });
 
         transporter = nodemailer.createTransport(transportConfig);
