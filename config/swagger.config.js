@@ -135,6 +135,11 @@ const options = {
               example: "free",
               description: "Current subscription tier of the user",
             },
+            is_subscribed: {
+              type: "boolean",
+              example: false,
+              description: "Whether the user has an active subscription (true if subscription_details is not null)",
+            },
             subscription_details: {
               type: "object",
               nullable: true,
@@ -2066,6 +2071,51 @@ const options = {
               type: "integer",
               example: 5,
               description: "Number of users who have signed up using this user's referral code",
+            },
+            is_blocked: {
+              type: "boolean",
+              example: false,
+              description: "Whether the user is blocked due to excessive reporting",
+            },
+            report_count: {
+              type: "integer",
+              example: 0,
+              description: "Total number of reports made by this user",
+            },
+            is_verified: {
+              type: "boolean",
+              example: false,
+              description: "Whether the user is verified",
+            },
+            subscription_tier: {
+              type: "string",
+              enum: ["free", "basic", "premium", "enterprise"],
+              example: "free",
+              description: "Current subscription tier of the user",
+            },
+            is_subscribed: {
+              type: "boolean",
+              example: false,
+              description: "Whether the user has an active subscription",
+            },
+            subscription_details: {
+              type: "object",
+              nullable: true,
+              description: "Active subscription details (null if no active subscription)",
+              properties: {
+                id: { type: "string", format: "uuid", example: "123e4567-e89b-12d3-a456-426614174000" },
+                platform: { type: "string", enum: ["play", "appstore"], example: "play" },
+                product_id: { type: "string", example: "premium_monthly" },
+                status: { 
+                  type: "string", 
+                  enum: ["active", "canceled", "expired", "grace_period", "on_hold", "paused", "pending", "in_retry", "revoked"],
+                  example: "active" 
+                },
+                is_auto_renewing: { type: "boolean", example: true },
+                purchase_date: { type: "string", format: "date-time", example: "2024-01-01T00:00:00.000Z" },
+                expiry_date: { type: "string", format: "date-time", example: "2024-02-01T00:00:00.000Z" },
+                is_trial: { type: "boolean", example: false }
+              }
             },
             created_at: {
               type: "string",
@@ -5037,6 +5087,12 @@ const options = {
                       email: "john.doe@example.com",
                       referral_code: "ABC123",
                       referred_user_count: 5,
+                      is_blocked: false,
+                      report_count: 0,
+                      is_verified: false,
+                      subscription_tier: "free",
+                      is_subscribed: false,
+                      subscription_details: null,
                       created_at: "2024-01-01T00:00:00.000Z",
                       updated_at: "2024-01-01T00:00:00.000Z",
                       profile: {

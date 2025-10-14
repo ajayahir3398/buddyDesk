@@ -520,6 +520,7 @@ exports.getProfile = async (req, res) => {
       report_count: user.report_count || 0,
       is_verified: user.is_verified || false,
       subscription_tier: user.subscription_tier || 'free',
+      is_subscribed: !!activeSubscription,
       subscription_details: activeSubscription ? {
         id: activeSubscription.id,
         platform: activeSubscription.platform,
@@ -699,6 +700,7 @@ exports.getProfileById = async (req, res) => {
       report_count: user.report_count || 0,
       is_verified: user.is_verified || false,
       subscription_tier: user.subscription_tier || 'free',
+      is_subscribed: !!activeSubscription,
       subscription_details: activeSubscription ? {
         id: activeSubscription.id,
         platform: activeSubscription.platform,
