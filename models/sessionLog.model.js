@@ -13,8 +13,14 @@ module.exports = (sequelize, DataTypes) => {
         key: 'id'
       }
     },
-    refresh_token: {
+    session_id: {
       type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      comment: 'Unique identifier for this session, stored in JWT tokens'
+    },
+    refresh_token: {
+      type: DataTypes.TEXT,
       allowNull: true
     },
     user_agent: {

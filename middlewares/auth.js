@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../models');
 const TokenBlacklist = db.TokenBlacklist;
+const SessionLog = db.SessionLog;
 
 const authenticateToken = async (req, res, next) => {
   try {
@@ -36,10 +37,38 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
+    // Check if session is still active (single device login enforcement)
+    if (decoded.sessionId) {
+      const session = await SessionLog.findOne({
+        where: {
+          session_id: decoded.sessionId,
+          user_id: decoded.userId
+        }
+      });
+
+      if (!session) {
+        return res.status(401).json({
+          success: false,
+          message: 'Session not found'
+        });
+      }
+
+      if (!session.is_active) {
+        return res.status(401).json({
+          success: false,
+          message: 'Session has been revoked. Please login again.'
+        });
+      }
+
+      // Update last_used_at timestamp
+      await session.update({ last_used_at: new Date() });
+    }
+
     // Add user info to request
     req.user = {
       id: decoded.userId,
-      email: decoded.email
+      email: decoded.email,
+      sessionId: decoded.sessionId
     };
 
     next();

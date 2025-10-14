@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const db = require("../models");
 const User = db.User;
 const SessionLog = db.SessionLog;
@@ -22,11 +23,12 @@ const PasswordResetOTP = db.PasswordResetOTP; // Added PasswordResetOTP import
 const emailService = require('../services/emailService'); // Added email service import
 
 // Generate access token (short-lived)
-const generateAccessToken = (user) => {
+const generateAccessToken = (user, sessionId) => {
   return jwt.sign(
     {
       userId: user.id,
       email: user.email,
+      sessionId: sessionId,
       type: 'access'
     },
     process.env.JWT_SECRET,
@@ -35,11 +37,12 @@ const generateAccessToken = (user) => {
 };
 
 // Generate refresh token (long-lived)
-const generateRefreshToken = (user) => {
+const generateRefreshToken = (user, sessionId) => {
   return jwt.sign(
     {
       userId: user.id,
       email: user.email,
+      sessionId: sessionId,
       type: 'refresh'
     },
     process.env.JWT_SECRET,
@@ -174,13 +177,17 @@ exports.login = async (req, res) => {
       }
     );
 
-    // Generate tokens
-    const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
+    // Generate unique session ID
+    const sessionId = crypto.randomBytes(32).toString('hex');
 
-    // Save refresh token to session_logs
+    // Generate tokens with session ID
+    const accessToken = generateAccessToken(user, sessionId);
+    const refreshToken = generateRefreshToken(user, sessionId);
+
+    // Save session to session_logs
     await SessionLog.create({
       user_id: user.id,
+      session_id: sessionId,
       refresh_token: refreshToken,
       user_agent: req.get('User-Agent'),
       ip_address: req.ip || req.connection.remoteAddress,
@@ -257,8 +264,8 @@ exports.refreshToken = async (req, res) => {
       });
     }
 
-    // Generate new access token
-    const newAccessToken = generateAccessToken(user);
+    // Generate new access token with the same session ID
+    const newAccessToken = generateAccessToken(user, decoded.sessionId);
 
     // Update last_used_at in session_logs
     await sessionLog.update({
