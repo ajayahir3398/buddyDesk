@@ -7,6 +7,7 @@ const swaggerSpecs = require('./config/swagger.config');
 const errorHandler = require('./middlewares/errorHandler');
 const requestIdMiddleware = require('./middlewares/requestId');
 const logger = require('./utils/logger');
+const path = require('path');
 const app = express();
 const db = require("./models");
 
@@ -109,6 +110,17 @@ app.use('/api/terms', termsRoutes);
 app.use('/api/iap', iapRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/health', healthRoutes);
+
+app.get('/app-ads.txt', (req, res) => {
+  const filePath = path.join(__dirname, 'public', 'app-ads.txt');
+  res.setHeader('Content-Type', 'text/plain');
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      logger.error('Error serving app-ads.txt:', err);
+      res.status(404).send('File not found');
+    }
+  });
+});
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

@@ -33,8 +33,8 @@ const createTransporter = () => {
                 rejectUnauthorized: false // For self-signed certificates
             },
             // Add debugging
-            logger: process.env.NODE_ENV === 'development' ? true : false,
-            debug: process.env.NODE_ENV === 'development' ? true : false,
+            logger: true,
+            debug: true,
         };
 
         logger.info('Creating email transporter with config:', {
