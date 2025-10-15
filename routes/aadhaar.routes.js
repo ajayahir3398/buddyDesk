@@ -71,16 +71,52 @@ const zipUpload = multer({
     }
 });
 
-// All Swagger documentation for Aadhaar verification APIs is defined in config/swagger.config.js
-
 // Apply common middlewares to all routes
 router.use(authenticateToken); // Authentication required for all Aadhaar routes
 router.use(sanitizeRequest); // Sanitize sensitive data for logging
 router.use(validateVerificationRateLimit); // Rate limiting
 
 /**
- * POST /api/aadhaar/verify-zip
- * Verify Aadhaar ZIP file (offline eKYC)
+ * @swagger
+ * /aadhaar/verify-zip:
+ *   post:
+ *     summary: Verify Aadhaar ZIP file (offline eKYC)
+ *     description: Verifies offline eKYC ZIP files containing XML and certificate files with share code decryption
+ *     tags:
+ *       - Aadhaar Verification
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/AadhaarZIPVerificationRequest'
+ *     responses:
+ *       '200':
+ *         description: Verification completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AadhaarVerificationResult'
+ *       '400':
+ *         description: Invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AadhaarErrorResponse'
+ *       '401':
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/verify-zip',
     authenticateToken,
@@ -93,8 +129,48 @@ router.post('/verify-zip',
 );
 
 /**
- * POST /api/aadhaar/verify-xml
- * Verify Aadhaar XML data (offline eKYC)
+ * @swagger
+ * /aadhaar/verify-xml:
+ *   post:
+ *     summary: Verify Aadhaar XML data (offline eKYC)
+ *     description: Verifies Aadhaar XML data extracted from offline eKYC
+ *     tags:
+ *       - Aadhaar Verification
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - xmlData
+ *               - shareCode
+ *             properties:
+ *               xmlData:
+ *                 type: string
+ *                 description: Base64 encoded XML data
+ *               shareCode:
+ *                 type: string
+ *                 description: Share code for decryption (4 digits)
+ *     responses:
+ *       '200':
+ *         description: Verification completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AadhaarVerificationResult'
+ *       '400':
+ *         description: Invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AadhaarErrorResponse'
+ *       '401':
+ *         description: Unauthorized
+ *       '500':
+ *         description: Internal server error
  */
 router.post('/verify-xml',
     authenticateToken,
@@ -104,8 +180,53 @@ router.post('/verify-xml',
 );
 
 /**
- * POST /api/aadhaar/verify-qr
- * Verify Aadhaar QR code from image
+ * @swagger
+ * /aadhaar/verify-qr:
+ *   post:
+ *     summary: Verify Aadhaar QR code
+ *     description: Verifies Aadhaar QR codes from image files
+ *     tags:
+ *       - Aadhaar Verification
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - qrImage
+ *             properties:
+ *               qrImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: QR code image file (JPEG, PNG, BMP, GIF, WebP - Max 5MB)
+ *     responses:
+ *       '200':
+ *         description: QR verification completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AadhaarVerificationResult'
+ *       '400':
+ *         description: Invalid request data or file
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AadhaarErrorResponse'
+ *       '401':
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/verify-qr',
     authenticateToken,
@@ -117,8 +238,46 @@ router.post('/verify-qr',
 );
 
 /**
- * POST /api/aadhaar/validate-number
- * Validate Aadhaar number format and checksum
+ * @swagger
+ * /aadhaar/validate-number:
+ *   post:
+ *     summary: Validate Aadhaar number format
+ *     description: Validates Aadhaar number format and Verhoeff checksum
+ *     tags:
+ *       - Aadhaar Verification
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/AadhaarNumberValidationRequest'
+ *     responses:
+ *       '200':
+ *         description: Number validation completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AadhaarVerificationResult'
+ *       '400':
+ *         description: Invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AadhaarErrorResponse'
+ *       '401':
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/validate-number',
     validateAadhaarNumber,
@@ -126,8 +285,42 @@ router.post('/validate-number',
 );
 
 /**
- * GET /api/aadhaar/verification-status
- * Get user's Aadhaar verification status
+ * @swagger
+ * /aadhaar/verification-status:
+ *   get:
+ *     summary: Get user's Aadhaar verification status
+ *     description: Get the current Aadhaar verification status for the authenticated user
+ *     tags:
+ *       - Aadhaar Verification
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Verification status retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     isVerified:
+ *                       type: boolean
+ *                       example: true
+ *                     verificationType:
+ *                       type: string
+ *                       enum: [XML, QR, NUMBER]
+ *                     lastVerifiedAt:
+ *                       type: string
+ *                       format: date-time
+ *       '401':
+ *         description: Unauthorized
+ *       '500':
+ *         description: Internal server error
  */
 router.get('/verification-status',
     authenticateToken,
@@ -135,8 +328,50 @@ router.get('/verification-status',
 );
 
 /**
- * GET /api/aadhaar/verification-history
- * Get verification history for the authenticated user
+ * @swagger
+ * /aadhaar/verification-history:
+ *   get:
+ *     summary: Get verification history
+ *     description: Retrieves verification history for the authenticated user
+ *     tags:
+ *       - Aadhaar Verification
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: limit
+ *         in: query
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of records to return
+ *       - name: offset
+ *         in: query
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *         description: Number of records to skip
+ *     responses:
+ *       '200':
+ *         description: Verification history retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AadhaarVerificationHistory'
+ *       '401':
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/verification-history',
     authenticateToken,
@@ -145,8 +380,64 @@ router.get('/verification-history',
 );
 
 /**
- * GET /api/aadhaar/verification/:verificationId
- * Get details of a specific verification
+ * @swagger
+ * /aadhaar/verification/{verificationId}:
+ *   get:
+ *     summary: Get verification details
+ *     description: Retrieves detailed information about a specific verification
+ *     tags:
+ *       - Aadhaar Verification
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: verificationId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Verification ID
+ *     responses:
+ *       '200':
+ *         description: Verification details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 requestId:
+ *                   type: string
+ *                   format: uuid
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     verificationId:
+ *                       type: string
+ *                       format: uuid
+ *                     verificationType:
+ *                       type: string
+ *                       enum: [XML, QR, NUMBER]
+ *                     verificationStatus:
+ *                       type: string
+ *                       enum: [SUCCESS, FAILED, PENDING]
+ *                     maskedAadhaarNumber:
+ *                       type: string
+ *                       example: XXXX XXXX 1234
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *       '401':
+ *         description: Unauthorized
+ *       '404':
+ *         description: Verification not found
+ *       '500':
+ *         description: Internal server error
  */
 router.get('/verification/:verificationId',
     authenticateToken,
