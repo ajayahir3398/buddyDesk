@@ -15,8 +15,228 @@ const { validateFileSecurityMiddleware } = require('../middleware/fileSecurityVa
 
 const router = express.Router();
 
-// Routes
+/**
+ * @swagger
+ * /users/register:
+ *   post:
+ *     summary: "Register a new user (Step 1: Send OTP)"
+ *     description: "Initiates user registration by sending an OTP to the provided email address for verification. Validates referral code if provided."
+ *     tags:
+ *       - Users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "John Doe"
+ *                 description: "User's full name"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "john.doe@example.com"
+ *                 description: "User's email address"
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: "SecurePass123"
+ *                 description: "User's password"
+ *               referred_by:
+ *                 type: string
+ *                 example: "ABC123"
+ *                 description: "Referral code of the user who invited this user"
+ *     responses:
+ *       '200':
+ *         description: "OTP sent successfully"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Verification OTP sent to your email. Please verify your email to complete registration."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                       example: "john.doe@example.com"
+ *                     expiresIn:
+ *                       type: integer
+ *                       example: 10
+ *                       description: "OTP expiration time in minutes"
+ *       '400':
+ *         description: "Invalid request data or invalid referral code"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '409':
+ *         description: "User already exists or registration in progress"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '500':
+ *         description: "Internal server error"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/register', validateUserRegistration, userController.register);
+
+/**
+ * @swagger
+ * /users/verify-registration-otp:
+ *   post:
+ *     summary: "Verify registration OTP (Step 2: Complete registration)"
+ *     description: "Verifies the OTP sent to the user's email and completes the user registration"
+ *     tags:
+ *       - Users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "john.doe@example.com"
+ *                 description: "User's email address"
+ *               otp:
+ *                 type: string
+ *                 example: "123456"
+ *                 description: "6-digit OTP received via email"
+ *     responses:
+ *       '201':
+ *         description: "User registered successfully"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "User registered successfully and email verified"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           example: 1
+ *                         name:
+ *                           type: string
+ *                           example: "John Doe"
+ *                         email:
+ *                           type: string
+ *                           example: "john.doe@example.com"
+ *                         email_verified:
+ *                           type: boolean
+ *                           example: true
+ *                         referral_code:
+ *                           type: string
+ *                           example: "ABC123"
+ *       '400':
+ *         description: "Invalid request data, OTP, or registration expired"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '500':
+ *         description: "Internal server error"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/verify-registration-otp', userController.verifyRegistrationOTP);
+
+/**
+ * @swagger
+ * /users/login:
+ *   post:
+ *     summary: "Login user"
+ *     description: "Authenticate user with email and password"
+ *     tags:
+ *       - Users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "john.doe@example.com"
+ *                 description: "User's email address"
+ *               password:
+ *                 type: string
+ *                 example: "SecurePass123"
+ *                 description: "User's password"
+ *     responses:
+ *       '200':
+ *         description: "Login successful"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Login successful"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *                     accessToken:
+ *                       type: string
+ *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                       description: "JWT access token"
+ *       '401':
+ *         description: "Invalid credentials"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '500':
+ *         description: "Internal server error"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/login', validateUserLogin, userController.login);
 router.post('/refresh-token', userController.refreshToken);
 router.post('/logout', userController.logout);

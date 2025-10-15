@@ -332,11 +332,113 @@ const sendPasswordChangedEmail = async (email, name) => {
     return sendEmail({ to: email, subject, text, html });
 };
 
+// Send email verification OTP
+const sendEmailVerificationOTP = async (email, name, otp) => {
+    const subject = 'Email Verification OTP - BUDDyDESK';
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        .container {
+          background-color: #f9f9f9;
+          border-radius: 10px;
+          padding: 30px;
+        }
+        .header {
+          text-align: center;
+          color: #4CAF50;
+        }
+        .otp-code {
+          background-color: #4CAF50;
+          color: white;
+          font-size: 24px;
+          font-weight: bold;
+          text-align: center;
+          padding: 15px;
+          border-radius: 5px;
+          margin: 20px 0;
+          letter-spacing: 3px;
+        }
+        .security-notice {
+          background-color: #fff3cd;
+          border: 1px solid #ffeaa7;
+          border-radius: 5px;
+          padding: 15px;
+          margin: 20px 0;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Email Verification - BUDDyDESK</h1>
+        </div>
+        <p>Hello <strong>${name}</strong>,</p>
+        <p>Thank you for registering with BUDDyDESK! To complete your registration, please verify your email address using the OTP code below:</p>
+        
+        <div class="otp-code">${otp}</div>
+        
+        <p><strong>This OTP is valid for 10 minutes only.</strong></p>
+        
+        <div class="security-notice">
+          <h3>🔒 Security Notice:</h3>
+          <ul>
+            <li>Never share this OTP with anyone</li>
+            <li>BUDDyDESK will never ask for your OTP via phone or email</li>
+            <li>If you didn't request this verification, please ignore this email</li>
+          </ul>
+        </div>
+        
+        <p>If you have any concerns about your account security, please contact our support team.</p>
+        
+        <p>Best regards,<br>The BUDDyDESK Team</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+    const text = `
+    Email Verification OTP - BUDDyDESK
+    
+    Hello ${name},
+    
+    Thank you for registering with BUDDyDESK! To complete your registration, please verify your email address using the OTP code below:
+    
+    Your OTP Code: ${otp}
+    
+    This OTP is valid for 10 minutes only.
+    
+    Security Notice:
+    - Never share this OTP with anyone
+    - BUDDyDESK will never ask for your OTP via phone or email
+    - If you didn't request this verification, please ignore this email
+    
+    If you have any concerns about your account security, please contact our support team.
+    
+    Best regards,
+    BUDDyDESK Team
+  `;
+
+    return sendEmail({ to: email, subject, text, html });
+};
+
 module.exports = {
     sendEmail,
     sendOTPEmail,
     sendWelcomeEmail,
     sendPasswordChangedEmail,
+    sendEmailVerificationOTP,
     verifyConnection
 };
 

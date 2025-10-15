@@ -87,6 +87,9 @@ db.SubscriptionEvent = require("./subscriptionEvent.model")(sequelize, Sequelize
 // Password reset OTP model
 db.PasswordResetOTP = require("./passwordResetOTP.model")(sequelize, Sequelize.DataTypes);
 
+// Pending registration model
+db.PendingRegistration = require("./pendingRegistration.model")(sequelize, Sequelize.DataTypes);
+
 // Set up associations
 Object.keys(db).forEach(modelName => {
     if (db[modelName].associate) {

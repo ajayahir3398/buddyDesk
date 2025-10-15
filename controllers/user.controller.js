@@ -20,6 +20,7 @@ const TermsAcceptance = db.TermsAcceptance; // Added TermsAcceptance import
 const UserBlock = db.UserBlock; // Added UserBlock import
 const Subscription = db.Subscription; // Added Subscription import
 const PasswordResetOTP = db.PasswordResetOTP; // Added PasswordResetOTP import
+const PendingRegistration = db.PendingRegistration; // Added PendingRegistration import
 const emailService = require('../services/emailService'); // Added email service import
 
 // Generate access token (short-lived)
@@ -50,48 +51,187 @@ const generateRefreshToken = (user, sessionId) => {
   );
 };
 
-// Register a new user
+// Register a new user (Step 1: Store data temporarily and send OTP)
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, referred_by } = req.body; // Added referred_by
+    const { name, email, password, referred_by } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+
+    // Validate referral code if provided
+    if (referred_by) {
+      const referrer = await User.findOne({ where: { referral_code: referred_by } });
+      if (!referrer) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid referral code'
+        });
+      }
+    }
+
+    // Check if there's already a pending registration for this email
+    const existingPending = await PendingRegistration.findOne({ where: { email } });
+    if (existingPending) {
+      // Check if it's expired
+      if (new Date() > existingPending.expires_at) {
+        // Delete expired pending registration
+        await existingPending.destroy();
+      } else {
+        return res.status(409).json({
+          success: false,
+          message: 'Registration already in progress for this email. Please check your email for OTP or wait for it to expire.'
+        });
+      }
+    }
+
+    // Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOTP = await bcrypt.hash(otp, 10);
+
+    // Set expiration time (10 minutes for registration)
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Store pending registration with all user data
+    await PendingRegistration.create({
+      email,
+      name,
+      password: hashedPassword,
+      referred_by,
+      otp: hashedOTP,
+      expires_at: expiresAt,
+      is_verified: false,
+      attempts: 0
+    });
+
+    // Send OTP email
+    try {
+      await emailService.sendEmailVerificationOTP(email, name || 'User', otp);
+    } catch (emailError) {
+      console.error('Email verification OTP send error:', emailError);
+      // Clean up pending registration if email fails
+      await PendingRegistration.destroy({ where: { email } });
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send verification email'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Verification OTP sent to your email. Please verify your email to complete registration.',
+      data: {
+        email: email,
+        expiresIn: 10 // minutes
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Verify registration OTP and complete user registration
+exports.verifyRegistrationOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and OTP are required'
+      });
+    }
+
+    // Find the pending registration
+    const pendingRegistration = await PendingRegistration.findOne({
+      where: { email }
+    });
+
+    if (!pendingRegistration) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending registration found for this email'
+      });
+    }
+
+    // Check if OTP is already verified
+    if (pendingRegistration.is_verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration already completed'
+      });
+    }
+
+    // Check if registration has expired
+    if (new Date() > pendingRegistration.expires_at) {
+      // Clean up expired registration
+      await pendingRegistration.destroy();
+      return res.status(400).json({
+        success: false,
+        message: 'Registration has expired. Please start the registration process again.'
+      });
+    }
+
+    // Check attempt limit (max 5 attempts)
+    if (pendingRegistration.attempts >= 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Too many verification attempts. Please start the registration process again.'
+      });
+    }
+
+    // Verify OTP
+    const isOTPValid = await bcrypt.compare(otp, pendingRegistration.otp);
+    if (!isOTPValid) {
+      // Increment attempts
+      await pendingRegistration.update({ attempts: pendingRegistration.attempts + 1 });
+
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP'
+      });
+    }
 
     // Generate a unique referral code for the new user
     let referralCode;
     let isUnique = false;
     while (!isUnique) {
-      referralCode = Math.random().toString(36).substring(2, 8).toUpperCase(); // Simple 6-char alphanumeric code
+      referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const existingReferralUser = await User.findOne({ where: { referral_code: referralCode } });
       if (!existingReferralUser) {
         isUnique = true;
       }
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-        return res.status(409).json({
-          success: false,
-          message: 'User with this email already exists'
-        });
-      }
-
-    // Hash the password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create new user
+    // Create the user account
     const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      referral_code: referralCode, // Store the generated referral code
-      referred_by: referred_by, // Store the referral code of who invited them
+      name: pendingRegistration.name,
+      email: pendingRegistration.email,
+      password: pendingRegistration.password,
+      referral_code: referralCode,
+      referred_by: pendingRegistration.referred_by,
+      email_verified: true, // Mark as verified since OTP was validated
       created_at: new Date()
     });
 
-    // Log referral if referred_by is present
-    if (referred_by) {
-      const referrer = await User.findOne({ where: { referral_code: referred_by } });
+    // Log referral if referred_by is present and still valid
+    if (pendingRegistration.referred_by) {
+      const referrer = await User.findOne({ where: { referral_code: pendingRegistration.referred_by } });
       if (referrer) {
         await ReferralLog.create({
           referrer_id: referrer.id,
@@ -99,15 +239,42 @@ exports.register = async (req, res) => {
           status: 'signed_up',
           created_at: new Date()
         });
+      } else {
+        // Referral code is no longer valid, but we'll still create the user
+        console.log(`Warning: Referral code ${pendingRegistration.referred_by} is no longer valid for user ${user.email}`);
       }
+    }
+
+    // Mark pending registration as verified and clean up
+    await pendingRegistration.update({
+      is_verified: true,
+      verified_at: new Date()
+    });
+
+    // Send welcome email
+    try {
+      await emailService.sendWelcomeEmail(user.email, user.name);
+    } catch (emailError) {
+      console.error('Welcome email error:', emailError);
+      // Don't fail the registration if welcome email fails
     }
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully'
+      message: 'User registered successfully and email verified',
+      data: {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          email_verified: user.email_verified,
+          referral_code: user.referral_code
+        }
+      }
     });
 
   } catch (error) {
+    console.error('Verify registration OTP error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
