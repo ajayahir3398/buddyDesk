@@ -187,13 +187,15 @@ exports.resendRegistrationOTP = async (req, res) => {
       });
     }
 
-    // Check if too many attempts (max 3 resends)
-    if (pendingRegistration.attempts >= 3) {
+    // Check for rate limiting - max 3 resends per registration session
+    const resendAttempts = pendingRegistration.resend_attempts || 0;
+    if (resendAttempts >= 3) {
       return res.status(400).json({
         success: false,
-        message: 'Too many OTP requests. Please wait before requesting another OTP.'
+        message: 'Too many resend requests. Please start the registration process again.'
       });
     }
+
 
     // Generate new OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -202,11 +204,12 @@ exports.resendRegistrationOTP = async (req, res) => {
     // Update expiration time (10 minutes from now)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Update pending registration with new OTP and reset attempts
+    // Update pending registration with new OTP and increment resend attempts
     await pendingRegistration.update({
       otp: hashedOTP,
       expires_at: expiresAt,
-      attempts: 0 // Reset attempts for new OTP
+      attempts: 0, // Reset OTP verification attempts for new OTP
+      resend_attempts: resendAttempts + 1
     });
 
     // Send new OTP email

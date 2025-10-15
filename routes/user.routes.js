@@ -180,7 +180,7 @@ router.post('/verify-registration-otp', userController.verifyRegistrationOTP);
  * /users/resend-registration-otp:
  *   post:
  *     summary: "Resend registration OTP"
- *     description: "Resends the verification OTP for pending user registration. Can be used when the original OTP was not received or has expired."
+ *     description: "Resends the verification OTP for pending user registration. Can be used when the original OTP was not received or has expired. Rate limited to 3 resends per registration session."
  *     tags:
  *       - Users
  *     requestBody:
@@ -222,7 +222,7 @@ router.post('/verify-registration-otp', userController.verifyRegistrationOTP);
  *                       example: 10
  *                       description: "OTP expiration time in minutes"
  *       '400':
- *         description: "Invalid request data, no pending registration, or too many attempts"
+ *         description: "Invalid request data, no pending registration, or too many resend attempts"
  *         content:
  *           application/json:
  *             schema:

@@ -46,6 +46,11 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 0,
       comment: 'Number of verification attempts'
     },
+    resend_attempts: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      comment: 'Number of times OTP has been resent'
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
@@ -69,6 +74,9 @@ module.exports = (sequelize, DataTypes) => {
       },
       {
         fields: ['is_verified']
+      },
+      {
+        fields: ['resend_attempts']
       }
     ]
   });
