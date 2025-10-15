@@ -86,7 +86,7 @@ exports.register = async (req, res) => {
       } else {
         return res.status(409).json({
           success: false,
-          message: 'Registration already in progress for this email. Please check your email for OTP or wait for it to expire.'
+          message: 'Registration already in progress for this email. Please check your email for OTP, use resend OTP, or wait for it to expire.'
         });
       }
     }
@@ -130,6 +130,99 @@ exports.register = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Verification OTP sent to your email. Please verify your email to complete registration.',
+      data: {
+        email: email,
+        expiresIn: 10 // minutes
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Resend registration OTP
+exports.resendRegistrationOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Find the pending registration
+    const pendingRegistration = await PendingRegistration.findOne({
+      where: { email }
+    });
+
+    if (!pendingRegistration) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending registration found for this email'
+      });
+    }
+
+    // Check if OTP is already verified
+    if (pendingRegistration.is_verified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration already completed'
+      });
+    }
+
+    // Check if registration has expired
+    if (new Date() > pendingRegistration.expires_at) {
+      // Clean up expired registration
+      await pendingRegistration.destroy();
+      return res.status(400).json({
+        success: false,
+        message: 'Registration has expired. Please start the registration process again.'
+      });
+    }
+
+    // Check if too many attempts (max 3 resends)
+    if (pendingRegistration.attempts >= 3) {
+      return res.status(400).json({
+        success: false,
+        message: 'Too many OTP requests. Please wait before requesting another OTP.'
+      });
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOTP = await bcrypt.hash(otp, 10);
+
+    // Update expiration time (10 minutes from now)
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Update pending registration with new OTP and reset attempts
+    await pendingRegistration.update({
+      otp: hashedOTP,
+      expires_at: expiresAt,
+      attempts: 0 // Reset attempts for new OTP
+    });
+
+    // Send new OTP email
+    try {
+      await emailService.sendEmailVerificationOTP(email, pendingRegistration.name || 'User', otp);
+    } catch (emailError) {
+      console.error('Email verification OTP resend error:', emailError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send verification email'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Verification OTP resent to your email. Please verify your email to complete registration.',
       data: {
         email: email,
         expiresIn: 10 // minutes

@@ -822,6 +822,21 @@ const validateResetPassword = [
   handleValidationErrors
 ];
 
+// Resend registration OTP validation
+const validateResendRegistrationOTP = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email address')
+    .normalizeEmail({ gmail_remove_dots: false })
+    .isLength({ max: 255 })
+    .withMessage('Email is too long'),
+
+  handleValidationErrors
+];
+
 module.exports = {
   handleValidationErrors,
   validateUserRegistration,
@@ -846,5 +861,6 @@ module.exports = {
   validateForgotPassword,
   validateVerifyOTP,
   validateResetPassword,
+  validateResendRegistrationOTP,
   patterns
 };

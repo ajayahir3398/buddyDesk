@@ -9,6 +9,7 @@ const {
     validateForgotPassword,
     validateVerifyOTP,
     validateResetPassword,
+    validateResendRegistrationOTP,
 } = require('../middlewares/validation');
 const { uploadProfileImage, handleUploadError } = require('../middlewares/upload');
 const { validateFileSecurityMiddleware } = require('../middleware/fileSecurityValidation');
@@ -173,6 +174,67 @@ router.post('/register', validateUserRegistration, userController.register);
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/verify-registration-otp', userController.verifyRegistrationOTP);
+
+/**
+ * @swagger
+ * /users/resend-registration-otp:
+ *   post:
+ *     summary: "Resend registration OTP"
+ *     description: "Resends the verification OTP for pending user registration. Can be used when the original OTP was not received or has expired."
+ *     tags:
+ *       - Users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "john.doe@example.com"
+ *                 description: "User's email address for which to resend OTP"
+ *     responses:
+ *       '200':
+ *         description: "OTP resent successfully"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Verification OTP resent to your email. Please verify your email to complete registration."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                       example: "john.doe@example.com"
+ *                     expiresIn:
+ *                       type: integer
+ *                       example: 10
+ *                       description: "OTP expiration time in minutes"
+ *       '400':
+ *         description: "Invalid request data, no pending registration, or too many attempts"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       '500':
+ *         description: "Internal server error"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/resend-registration-otp', validateResendRegistrationOTP, userController.resendRegistrationOTP);
 
 /**
  * @swagger
