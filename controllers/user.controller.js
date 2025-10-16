@@ -668,7 +668,7 @@ exports.getProfile = async (req, res) => {
           include: [
             {
               model: UserSkill,
-              as: 'user_skills',
+              as: 'userSkills',
               attributes: ['id', 'proficiency_level', 'created_at', 'updated_at'],
               include: [
                 {
