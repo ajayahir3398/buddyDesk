@@ -599,9 +599,29 @@ exports.logout = async (req, res) => {
           expired_at: new Date(decoded.exp * 1000),
           reason: 'User logout'
         });
+        logger.info('Access token blacklisted successfully', { userId: req.user?.id });
       } catch (error) {
-        // Token might be invalid or expired, ignore
-        console.log('Access token blacklist error:', error.message);
+        // Token might be invalid, expired, or already blacklisted
+        if (error.message.includes('value too long')) {
+          logger.error('Token too long for blacklist storage', { 
+            tokenLength: accessToken.length,
+            userId: req.user?.id 
+          });
+        } else if (error.name === 'JsonWebTokenError') {
+          logger.warn('Invalid token during logout', { 
+            error: error.message,
+            userId: req.user?.id 
+          });
+        } else if (error.name === 'TokenExpiredError') {
+          logger.info('Expired token during logout', { 
+            userId: req.user?.id 
+          });
+        } else {
+          logger.warn('Token blacklist error during logout', { 
+            error: error.message,
+            userId: req.user?.id 
+          });
+        }
       }
     }
 
@@ -648,7 +668,7 @@ exports.getProfile = async (req, res) => {
           include: [
             {
               model: UserSkill,
-              as: 'userSkills',
+              as: 'user_skills',
               attributes: ['id', 'proficiency_level', 'created_at', 'updated_at'],
               include: [
                 {
