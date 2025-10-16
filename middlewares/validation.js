@@ -284,13 +284,13 @@ const validateDate = (fieldName) => [
 const validateAtLeastOneField = (req, res, next) => {
   const { 
     name, email, phone, dob, gender, bio, addresses, temp_addresses, work_profiles,
-    notification_settings
+    notification_settings, android_app_version, ios_app_version
   } = req.body;
   
-  if (!name && !email && !phone && !dob && !gender && !bio && !addresses && !temp_addresses && !work_profiles && !notification_settings) {
+  if (!name && !email && !phone && !dob && !gender && !bio && !addresses && !temp_addresses && !work_profiles && !notification_settings && !android_app_version && !ios_app_version) {
     return res.status(400).json({
       success: false,
-      message: 'At least one field (name, email, phone, dob, gender, bio, addresses, temp_addresses, work_profiles, or notification_settings) must be provided for update'
+      message: 'At least one field (name, email, phone, dob, gender, bio, addresses, temp_addresses, work_profiles, notification_settings, android_app_version, or ios_app_version) must be provided for update'
     });
   }
   
@@ -405,6 +405,26 @@ const validateProfileUpdate = [
     .trim()
     .isLength({ max: 1000 })
     .withMessage('Bio must not exceed 1000 characters'),
+
+  // Android app version validation (optional)
+  validateNotEmpty('android_app_version', 'Android app version'),
+  body('android_app_version')
+    .optional()
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('Android app version must not exceed 20 characters')
+    .matches(/^[\d\.]+$/)
+    .withMessage('Android app version must contain only numbers and dots'),
+
+  // iOS app version validation (optional)
+  validateNotEmpty('ios_app_version', 'iOS app version'),
+  body('ios_app_version')
+    .optional()
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('iOS app version must not exceed 20 characters')
+    .matches(/^[\d\.]+$/)
+    .withMessage('iOS app version must contain only numbers and dots'),
 
   // Address validation (optional array)
   body('addresses')

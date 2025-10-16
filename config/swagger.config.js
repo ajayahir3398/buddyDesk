@@ -1164,6 +1164,20 @@ const options = {
               description: "Full URL to access the profile image",
               nullable: true,
             },
+            android_app_version: {
+              type: "string",
+              example: "1.2.3",
+              description: "Current Android app version used by the user",
+              maxLength: 20,
+              nullable: true,
+            },
+            ios_app_version: {
+              type: "string",
+              example: "1.2.3",
+              description: "Current iOS app version used by the user",
+              maxLength: 20,
+              nullable: true,
+            },
             created_at: {
               type: "string",
               format: "date-time",
@@ -2264,6 +2278,20 @@ const options = {
                       maxLength: 1000,
                       nullable: true,
                     },
+                    android_app_version: {
+                      type: "string",
+                      example: "1.2.3",
+                      description: "Current Android app version used by the user",
+                      maxLength: 20,
+                      nullable: true,
+                    },
+                    ios_app_version: {
+                      type: "string",
+                      example: "1.2.3",
+                      description: "Current iOS app version used by the user",
+                      maxLength: 20,
+                      nullable: true,
+                    },
                     created_at: {
                       type: "string",
                       format: "date-time",
@@ -2482,6 +2510,20 @@ const options = {
               description:
                 "Array of skill objects that the user is looking for",
             },
+            android_app_version: {
+              type: "string",
+              example: "1.2.3",
+              description: "Current Android app version used by the user (numbers and dots only, max 20 characters)",
+              maxLength: 20,
+              pattern: "^[\\d\\.]+$",
+            },
+            ios_app_version: {
+              type: "string",
+              example: "1.2.3",
+              description: "Current iOS app version used by the user (numbers and dots only, max 20 characters)",
+              maxLength: 20,
+              pattern: "^[\\d\\.]+$",
+            },
             addresses: {
               type: "array",
               description:
@@ -2699,7 +2741,7 @@ const options = {
           },
           additionalProperties: false,
           description:
-            "At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses, temp_addresses, and work_profiles completely replace existing data when provided. Notification settings can be updated individually or together.",
+            "At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses, temp_addresses, and work_profiles completely replace existing data when provided. Notification settings can be updated individually or together. App version fields (android_app_version, ios_app_version) can be updated to track user's current app versions.",
         },
         PublicProfile: {
           type: "object",
@@ -4855,6 +4897,8 @@ const options = {
                         image_path: "/uploads/profiles/john_doe_profile.jpg",
                         image_url:
                           "http://example.com/uploads/images/21be627b-7b01-424a-a0cd-13f31d312eb5.png",
+                        android_app_version: "1.2.3",
+                        ios_app_version: "1.1.0",
                         looking_skills: [
                           { id: 1, name: "JavaScript" },
                           { id: 3, name: "React" },
@@ -5006,7 +5050,7 @@ const options = {
         put: {
           summary: "Update user profile",
           description:
-            "Update profile information including basic details, addresses, temporary addresses, work profiles with skills, and notification settings. At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses, temp_addresses, and work_profiles completely replace existing data when provided. Notification settings can be updated individually or all together.",
+            "Update profile information including basic details, addresses, temporary addresses, work profiles with skills, notification settings, and app versions. At least one field must be provided. All fields are optional but cannot be empty, null, or undefined if provided. Addresses, temp_addresses, and work_profiles completely replace existing data when provided. Notification settings can be updated individually or all together. App version fields (android_app_version, ios_app_version) can be updated to track user's current app versions.",
           tags: ["Users"],
           security: [
             {
@@ -5088,6 +5132,13 @@ const options = {
                     summary: "Update bio only",
                     value: {
                       bio: "Passionate developer with 8+ years of experience in creating scalable web applications and mentoring teams.",
+                    },
+                  },
+                  update_app_versions: {
+                    summary: "Update app versions",
+                    value: {
+                      android_app_version: "1.2.3",
+                      ios_app_version: "1.1.0",
                     },
                   },
                   looking_skills_only: {
@@ -5257,6 +5308,8 @@ const options = {
                         image_path: "/uploads/profiles/john_doe_profile.jpg",
                         image_url:
                           "http://example.com/uploads/images/21be627b-7b01-424a-a0cd-13f31d312eb5.png",
+                        android_app_version: "1.2.3",
+                        ios_app_version: "1.1.0",
                         created_at: "2024-01-01T00:00:00.000Z",
                         updated_at: "2024-01-15T10:30:00.000Z",
                       },

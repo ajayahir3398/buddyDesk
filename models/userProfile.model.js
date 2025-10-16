@@ -42,6 +42,16 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: [],
       comment: 'Array of skill IDs that the user is looking for'
     },
+    android_app_version: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'Current Android app version used by the user'
+    },
+    ios_app_version: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'Current iOS app version used by the user'
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW

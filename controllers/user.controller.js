@@ -639,7 +639,7 @@ exports.getProfile = async (req, res) => {
         {
           model: UserProfile,
           as: 'profile',
-          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'image_path', 'looking_skills', 'created_at', 'updated_at']
+          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'image_path', 'looking_skills', 'android_app_version', 'ios_app_version', 'created_at', 'updated_at']
         },
         {
           model: WorkProfile,
@@ -858,7 +858,7 @@ exports.getProfileById = async (req, res) => {
         {
           model: UserProfile,
           as: 'profile',
-          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'image_path', 'looking_skills', 'created_at', 'updated_at']
+          attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'image_path', 'looking_skills', 'android_app_version', 'ios_app_version', 'created_at', 'updated_at']
         },
         {
           model: WorkProfile,
@@ -1032,7 +1032,7 @@ exports.updateProfile = async (req, res) => {
     const userId = req.user.id;
     const { 
       name, email, phone, dob, gender, bio, looking_skills, addresses, temp_addresses, work_profiles,
-      notification_settings
+      notification_settings, android_app_version, ios_app_version
     } = req.body;
 
     const fieldsToUpdate = {};
@@ -1054,6 +1054,8 @@ exports.updateProfile = async (req, res) => {
     if (gender !== undefined) profileFieldsToUpdate.gender = gender;
     if (bio !== undefined) profileFieldsToUpdate.bio = bio;
     if (looking_skills !== undefined) profileFieldsToUpdate.looking_skills = looking_skills || [];
+    if (android_app_version !== undefined) profileFieldsToUpdate.android_app_version = android_app_version;
+    if (ios_app_version !== undefined) profileFieldsToUpdate.ios_app_version = ios_app_version;
 
     // 🔑 Managed transaction (auto rollback on error)
     await db.sequelize.transaction(async (transaction) => {
@@ -1208,7 +1210,7 @@ exports.updateProfile = async (req, res) => {
     // --- FETCH UPDATED DATA ---
     const updatedUser = await User.findByPk(userId, {
       include: [
-        { model: UserProfile, as: 'profile', attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'image_path', 'looking_skills', 'created_at', 'updated_at'] },
+        { model: UserProfile, as: 'profile', attributes: ['id', 'phone', 'dob', 'gender', 'bio', 'image_path', 'looking_skills', 'android_app_version', 'ios_app_version', 'created_at', 'updated_at'] },
         {
           model: WorkProfile, as: 'workProfiles',
           attributes: ['id', 'company_name', 'designation', 'start_date', 'end_date', 'created_at', 'updated_at'],
