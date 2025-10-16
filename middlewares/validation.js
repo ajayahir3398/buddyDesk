@@ -283,14 +283,14 @@ const validateDate = (fieldName) => [
 // Custom validation to check if at least one field is provided
 const validateAtLeastOneField = (req, res, next) => {
   const { 
-    name, email, phone, dob, bio, addresses, temp_addresses, work_profiles,
+    name, email, phone, dob, gender, bio, addresses, temp_addresses, work_profiles,
     notification_settings
   } = req.body;
   
-  if (!name && !email && !phone && !dob && !bio && !addresses && !temp_addresses && !work_profiles && !notification_settings) {
+  if (!name && !email && !phone && !dob && !gender && !bio && !addresses && !temp_addresses && !work_profiles && !notification_settings) {
     return res.status(400).json({
       success: false,
-      message: 'At least one field (name, email, phone, dob, bio, addresses, temp_addresses, work_profiles, or notification_settings) must be provided for update'
+      message: 'At least one field (name, email, phone, dob, gender, bio, addresses, temp_addresses, work_profiles, or notification_settings) must be provided for update'
     });
   }
   
@@ -390,6 +390,13 @@ const validateProfileUpdate = [
       }
       return true;
     }),
+
+  // Gender validation (optional but not empty if provided)
+  validateNotEmpty('gender', 'Gender'),
+  body('gender')
+    .optional()
+    .isIn(['Male', 'Female', 'Other'])
+    .withMessage('Gender must be one of: Male, Female, Other'),
 
   // Bio validation (optional text)
   validateNotEmpty('bio', 'Bio'),

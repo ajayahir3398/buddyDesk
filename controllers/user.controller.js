@@ -1031,7 +1031,7 @@ exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const { 
-      name, email, phone, dob, bio, looking_skills, addresses, temp_addresses, work_profiles,
+      name, email, phone, dob, gender, bio, looking_skills, addresses, temp_addresses, work_profiles,
       notification_settings
     } = req.body;
 
@@ -1051,6 +1051,7 @@ exports.updateProfile = async (req, res) => {
     }
     if (phone !== undefined) profileFieldsToUpdate.phone = phone;
     if (dob !== undefined) profileFieldsToUpdate.dob = dob || null;
+    if (gender !== undefined) profileFieldsToUpdate.gender = gender;
     if (bio !== undefined) profileFieldsToUpdate.bio = bio;
     if (looking_skills !== undefined) profileFieldsToUpdate.looking_skills = looking_skills || [];
 

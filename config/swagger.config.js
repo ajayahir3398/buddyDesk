@@ -2452,6 +2452,12 @@ const options = {
               description:
                 "Date of birth in YYYY-MM-DD format (must be at least 13 years old and not more than 120 years ago)",
             },
+            gender: {
+              type: "string",
+              enum: ["Male", "Female", "Other"],
+              example: "Male",
+              description: "User gender (Male, Female, or Other)",
+            },
             bio: {
               type: "string",
               example:
@@ -5028,6 +5034,7 @@ const options = {
                       email: "john.smith@example.com",
                       phone: "+1234567890",
                       dob: "1990-05-15",
+                      gender: "Male",
                       bio: "Software engineer with expertise in full-stack development and team leadership.",
                       looking_skills: [
                         { id: 1, name: "JavaScript" },
@@ -5062,6 +5069,12 @@ const options = {
                     summary: "Update email only",
                     value: {
                       email: "newemail@example.com",
+                    },
+                  },
+                  gender_only: {
+                    summary: "Update gender only",
+                    value: {
+                      gender: "Female",
                     },
                   },
                   phone_and_dob: {
@@ -5160,6 +5173,7 @@ const options = {
                       name: "John Smith Updated",
                       phone: "+1234567890",
                       dob: "1990-05-15",
+                      gender: "Male",
                       bio: "Experienced software developer with 10+ years in full-stack development. Passionate about creating innovative solutions and mentoring junior developers.",
                       addresses: [
                         {
