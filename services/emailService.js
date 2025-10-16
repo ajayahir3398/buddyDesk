@@ -236,6 +236,7 @@ const sendWelcomeEmail = async (email, name) => {
     <html>
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
         body {
           font-family: Arial, sans-serif;
@@ -244,33 +245,178 @@ const sendWelcomeEmail = async (email, name) => {
           max-width: 600px;
           margin: 0 auto;
           padding: 20px;
+          background-color: #f8f9fa;
         }
         .container {
-          background-color: #f9f9f9;
-          border-radius: 10px;
-          padding: 30px;
+          background-color: #ffffff;
+          border-radius: 15px;
+          padding: 40px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .header {
           text-align: center;
-          color: #4CAF50;
+          margin-bottom: 30px;
+        }
+        .header h1 {
+          color: #2c3e50;
+          font-size: 28px;
+          margin: 0;
+          font-weight: bold;
+        }
+        .brand-name {
+          color: #3498db;
+          font-weight: bold;
+          font-size: 24px;
+        }
+        .tribe-name {
+          color: #e74c3c;
+          font-weight: bold;
+        }
+        .greeting {
+          font-size: 18px;
+          margin-bottom: 20px;
+        }
+        .intro-text {
+          font-size: 16px;
+          margin-bottom: 25px;
+          color: #555;
+        }
+        .features {
+          background-color: #f8f9fa;
+          border-radius: 10px;
+          padding: 25px;
+          margin: 25px 0;
+        }
+        .features h3 {
+          color: #2c3e50;
+          margin-top: 0;
+          margin-bottom: 15px;
+        }
+        .feature-item {
+          margin: 12px 0;
+          font-size: 16px;
+          color: #555;
+        }
+        .cta-section {
+          text-align: center;
+          margin: 30px 0;
+        }
+        .cta-button {
+          display: inline-block;
+          background-color: #3498db;
+          color: white;
+          padding: 15px 30px;
+          text-decoration: none;
+          border-radius: 25px;
+          font-weight: bold;
+          font-size: 16px;
+          transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+          background-color: #2980b9;
+        }
+        .community-text {
+          font-style: italic;
+          color: #7f8c8d;
+          margin: 20px 0;
+          text-align: center;
+        }
+        .support-section {
+          background-color: #ecf0f1;
+          border-radius: 10px;
+          padding: 20px;
+          margin: 25px 0;
+          text-align: center;
+        }
+        .footer {
+          text-align: center;
+          margin-top: 30px;
+          padding-top: 20px;
+          border-top: 2px solid #ecf0f1;
+          color: #7f8c8d;
+        }
+        .footer .team-name {
+          color: #2c3e50;
+          font-weight: bold;
+          font-size: 18px;
+        }
+        .footer .powered-by {
+          color: #95a5a6;
+          font-size: 14px;
+          margin-top: 10px;
+        }
+        .emoji {
+          font-size: 20px;
         }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h1>Welcome to BUDDyDESK! 🎉</h1>
+          <h1>Hey <span class="tribe-name">${name}</span>! <span class="emoji">👋</span></h1>
+          <p class="brand-name">Welcome to 𝐁𝐔𝐃𝐃𝐲𝐃𝐄𝐒𝐊</p>
         </div>
-        <p>Hello <strong>${name}</strong>,</p>
-        <p>Thank you for joining BUDDyDESK! We're excited to have you on board.</p>
-        <p>Get started by completing your profile and connecting with other professionals.</p>
-        <p>Best regards,<br>The BUDDyDESK Team</p>
+        
+        <p class="intro-text">the world where learning meets sharing - and where every skill matters.</p>
+        
+        <p class="intro-text">You're now officially a <span class="tribe-name">𝐁𝐮𝐝𝐝𝐲𝐃𝐞𝐬𝐤𝐢𝐚𝐧</span> - part of a growing movement of creators, learners, and changemakers who believe in skill over currency. <span class="emoji">🌍</span></p>
+        
+        <div class="features">
+          <h3>Here's what you can start doing right away:</h3>
+          <div class="feature-item"><span class="emoji">✨</span> Create your profile - tell the world what you can teach.</div>
+          <div class="feature-item"><span class="emoji">📸</span> Post your skills - show your talent, projects, or creativity.</div>
+          <div class="feature-item"><span class="emoji">🤝</span> Connect & collaborate - find your learning buddy or teaching match within your area.</div>
+        </div>
+        
+        <p class="community-text">At <span class="brand-name">𝐁𝐔𝐃𝐃𝐲𝐃𝐄𝐒𝐊</span>, you don't just join an app - you join a community powered by skills, passion, and purpose.</p>
+        
+        <div class="cta-section">
+          <a href="http://buddydesk.in/" class="cta-button">Your journey begins here →</a>
+        </div>
+        
+        <div class="support-section">
+          <p>If you ever need help, we're always here for you at <strong>apps@buddydesk.in</strong></p>
+        </div>
+        
+        <p style="text-align: center; font-size: 18px; color: #2c3e50; margin: 25px 0;">Let's make skill-sharing the new trend.</p>
+        
+        <p style="text-align: center; font-size: 16px; color: #3498db; margin: 20px 0;">Welcome to the tribe, <span class="tribe-name">𝐁𝐮𝐝𝐝𝐲𝐃𝐞𝐬𝐤𝐢𝐚𝐧</span>! <span class="emoji">💙</span></p>
+        
+        <div class="footer">
+          <p class="team-name">Warm regards,<br>Team BuddyDesk</p>
+          <p class="powered-by">Powered by 7Sisters</p>
+        </div>
       </div>
     </body>
     </html>
   `;
 
-    const text = `Welcome to BUDDyDESK! Hello ${name}, Thank you for joining BUDDyDESK!`;
+    const text = `
+Hey ${name}! 👋
+
+Welcome to BUDDyDESK, the world where learning meets sharing - and where every skill matters.
+
+You're now officially a BuddyDeskian - part of a growing movement of creators, learners, and changemakers who believe in skill over currency. 🌍
+
+Here's what you can start doing right away:
+✨ Create your profile - tell the world what you can teach.
+📸 Post your skills - show your talent, projects, or creativity.
+🤝 Connect & collaborate - find your learning buddy or teaching match within your area.
+
+At BUDDyDESK, you don't just join an app - you join a community powered by skills, passion, and purpose.
+
+Your journey begins here → http://buddydesk.in/
+
+If you ever need help, we're always here for you at apps@buddydesk.in
+
+Let's make skill-sharing the new trend.
+
+Welcome to the tribe, BuddyDeskian! 💙
+
+Warm regards,
+Team BuddyDesk
+Powered by 7Sisters
+  `;
 
     return sendEmail({ to: email, subject, text, html });
 };
