@@ -13,7 +13,7 @@ const logger = require('../utils/logger');
  */
 const messageRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 60, // 60 messages per minute
+  max: 200, // 60 messages per minute
   message: {
     success: false,
     message: 'Too many messages sent. Please wait before sending another message.',
@@ -126,7 +126,7 @@ const searchRateLimit = rateLimit({
  */
 const generalChatRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 300, // 300 requests per hour
+  max: 30000, // 300 requests per hour
   message: {
     success: false,
     message: 'Too many requests. Please wait before making another request.',

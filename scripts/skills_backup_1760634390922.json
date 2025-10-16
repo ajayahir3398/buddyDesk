@@ -1,0 +1,631 @@
+{
+  "skills": [
+    {
+      "id": 1,
+      "name": "Academic Help",
+      "description": "Educational support, tutoring, and academic assistance",
+      "subSkills": [
+        {
+          "id": 1,
+          "name": "Assignment Proofreading",
+          "description": "Reviewing and improving academic assignments"
+        },
+        {
+          "id": 2,
+          "name": "College Project Guidance",
+          "description": "Help with college projects and research work"
+        },
+        {
+          "id": 3,
+          "name": "Exam Notes Sharing",
+          "description": "Sharing study materials and exam preparation notes"
+        },
+        {
+          "id": 4,
+          "name": "Research Paper Help",
+          "description": "Assistance with research papers and academic writing"
+        },
+        {
+          "id": 5,
+          "name": "Subject Tutoring (Math, Physics, etc.)",
+          "description": "One-on-one tutoring for various academic subjects"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Art & Creativity",
+      "description": "Creative arts, crafts, and artistic skills",
+      "subSkills": [
+        {
+          "id": 6,
+          "name": "Animation",
+          "description": "2D and 3D animation techniques"
+        },
+        {
+          "id": 7,
+          "name": "Drawing & Sketching",
+          "description": "Basic to advanced drawing and sketching techniques"
+        },
+        {
+          "id": 8,
+          "name": "Graphic Design",
+          "description": "Digital design and visual communication"
+        },
+        {
+          "id": 9,
+          "name": "Painting",
+          "description": "Various painting styles and techniques"
+        },
+        {
+          "id": 10,
+          "name": "Photography",
+          "description": "Photography skills and camera techniques"
+        },
+        {
+          "id": 11,
+          "name": "Video Editing",
+          "description": "Video editing and post-production skills"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Cooking & Food",
+      "description": "Culinary skills, cooking classes, and food preparation",
+      "subSkills": [
+        {
+          "id": 12,
+          "name": "Baking",
+          "description": "Baking and pastry making skills"
+        },
+        {
+          "id": 13,
+          "name": "Cooking Lessons",
+          "description": "Basic to advanced cooking techniques"
+        },
+        {
+          "id": 14,
+          "name": "Meal Planning",
+          "description": "Planning balanced and budget-friendly meals"
+        },
+        {
+          "id": 15,
+          "name": "Nutrition Advice",
+          "description": "Healthy eating and nutrition guidance"
+        },
+        {
+          "id": 16,
+          "name": "Regional Cuisine (Gujarati, South Indian, etc.)",
+          "description": "Traditional regional cooking styles"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Creative Skills",
+      "description": "Creative abilities, design, and artistic talents",
+      "subSkills": [
+        {
+          "id": 17,
+          "name": "Instagram Reels Editing",
+          "description": "Social media content creation and editing"
+        },
+        {
+          "id": 18,
+          "name": "Logo Making",
+          "description": "Logo design and branding services"
+        },
+        {
+          "id": 19,
+          "name": "Meme Making / Creative Writing",
+          "description": "Creative content creation and writing"
+        },
+        {
+          "id": 20,
+          "name": "Photography (for college events)",
+          "description": "Event photography and documentation"
+        },
+        {
+          "id": 21,
+          "name": "Poster/Flyer Design (for college fests)",
+          "description": "Design services for college events and promotions"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Education & Tutoring",
+      "description": "Teaching, mentoring, and educational services",
+      "subSkills": [
+        {
+          "id": 22,
+          "name": "English",
+          "description": "English language and literature tutoring"
+        },
+        {
+          "id": 23,
+          "name": "Exam Preparation (UPSC, NEET, SSC, etc.)",
+          "description": "Preparation for competitive exams"
+        },
+        {
+          "id": 24,
+          "name": "Maths",
+          "description": "Mathematics tutoring and problem solving"
+        },
+        {
+          "id": 25,
+          "name": "Science",
+          "description": "Science subjects tutoring and experiments"
+        },
+        {
+          "id": 26,
+          "name": "Spoken Languages (Hindi, Gujarati, English, etc.)",
+          "description": "Conversational language learning"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Event & Fest Skills",
+      "description": "Event planning, festival organization, and celebration skills",
+      "subSkills": [
+        {
+          "id": 27,
+          "name": "Anchoring Tips",
+          "description": "Event anchoring and hosting skills"
+        },
+        {
+          "id": 28,
+          "name": "Decoration Crafts",
+          "description": "Event decoration and craft making"
+        },
+        {
+          "id": 29,
+          "name": "Event Management",
+          "description": "Event planning and management services"
+        },
+        {
+          "id": 30,
+          "name": "Hosting Icebreakers & Games",
+          "description": "Event games and icebreaker activities"
+        },
+        {
+          "id": 31,
+          "name": "Sponsorship Pitch Deck Help",
+          "description": "Creating sponsorship proposals and pitch decks"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Fashion & Grooming",
+      "description": "Fashion advice, styling, and personal grooming",
+      "subSkills": [
+        {
+          "id": 32,
+          "name": "Hair Styling",
+          "description": "Hair styling and grooming techniques"
+        },
+        {
+          "id": 33,
+          "name": "Makeup",
+          "description": "Makeup application and beauty techniques"
+        },
+        {
+          "id": 34,
+          "name": "Mehendi Art",
+          "description": "Traditional mehendi and henna art"
+        },
+        {
+          "id": 35,
+          "name": "Personal Styling",
+          "description": "Personal fashion and style consultation"
+        },
+        {
+          "id": 36,
+          "name": "Skin Care Tips",
+          "description": "Skincare routines and beauty advice"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Fitness & Sports",
+      "description": "Physical fitness, sports training, and athletic activities",
+      "subSkills": [
+        {
+          "id": 37,
+          "name": "Diet Plans on a Budget",
+          "description": "Affordable diet and nutrition plans"
+        },
+        {
+          "id": 38,
+          "name": "Home Workout Guidance",
+          "description": "Home-based fitness routines and guidance"
+        },
+        {
+          "id": 39,
+          "name": "Martial Arts",
+          "description": "Martial arts training and self-defense"
+        },
+        {
+          "id": 40,
+          "name": "Running Partner / Routine Builder",
+          "description": "Running partner and routine development"
+        },
+        {
+          "id": 41,
+          "name": "Sports Coaching (Cricket, Badminton, etc.)",
+          "description": "Coaching for various sports activities"
+        },
+        {
+          "id": 42,
+          "name": "Yoga Partner",
+          "description": "Yoga practice partner and guidance"
+        },
+        {
+          "id": 43,
+          "name": "Zumba/Group Exercise Coach",
+          "description": "Group fitness and dance exercise coaching"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Freelancing & Side Hustles",
+      "description": "Freelance work, side projects, and entrepreneurial skills",
+      "subSkills": [
+        {
+          "id": 44,
+          "name": "Cryptocurrency Basics",
+          "description": "Cryptocurrency education and investment basics"
+        },
+        {
+          "id": 45,
+          "name": "Freelance Profile Setup (Fiverr, Upwork)",
+          "description": "Setting up freelance profiles and portfolios"
+        },
+        {
+          "id": 46,
+          "name": "Instagram Page Growth Tips",
+          "description": "Social media growth and marketing strategies"
+        },
+        {
+          "id": 47,
+          "name": "Money-Saving Apps Advice",
+          "description": "Financial apps and money-saving tips"
+        },
+        {
+          "id": 48,
+          "name": "YouTube Setup Help",
+          "description": "YouTube channel setup and content creation"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Fun & Personal",
+      "description": "Entertainment, hobbies, and personal interests",
+      "subSkills": [
+        {
+          "id": 49,
+          "name": "Gaming Partner (BGMI, FIFA, Valorant)",
+          "description": "Gaming partner for various video games"
+        },
+        {
+          "id": 50,
+          "name": "Movie Night Planner",
+          "description": "Planning and organizing movie nights"
+        },
+        {
+          "id": 51,
+          "name": "Netflix Recommendations",
+          "description": "Movie and TV show recommendations"
+        },
+        {
+          "id": 52,
+          "name": "Relationship Advice",
+          "description": "Personal relationship guidance and advice"
+        },
+        {
+          "id": 53,
+          "name": "Tarot / Astrology",
+          "description": "Tarot reading and astrological guidance"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Language & Communication",
+      "description": "Language learning, communication skills, and translation",
+      "subSkills": [
+        {
+          "id": 54,
+          "name": "Content Writing",
+          "description": "Content creation and writing skills"
+        },
+        {
+          "id": 55,
+          "name": "Job Interview Practice",
+          "description": "Interview preparation and mock interviews"
+        },
+        {
+          "id": 56,
+          "name": "Presentation Skills",
+          "description": "Professional presentation and communication skills"
+        },
+        {
+          "id": 57,
+          "name": "Public Speaking",
+          "description": "Public speaking and presentation skills"
+        },
+        {
+          "id": 58,
+          "name": "Resume Building",
+          "description": "Resume writing and career document preparation"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Lifestyle & Well-being",
+      "description": "Health, wellness, and lifestyle improvement",
+      "subSkills": [
+        {
+          "id": 59,
+          "name": "Goal Planning",
+          "description": "Personal goal setting and achievement strategies"
+        },
+        {
+          "id": 60,
+          "name": "Habit Building",
+          "description": "Building positive habits and routines"
+        },
+        {
+          "id": 61,
+          "name": "Life Coaching",
+          "description": "Personal development and life guidance"
+        },
+        {
+          "id": 62,
+          "name": "Meditation",
+          "description": "Meditation and mindfulness practices"
+        },
+        {
+          "id": 63,
+          "name": "Stress Management",
+          "description": "Stress relief and mental wellness techniques"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Music & Dance",
+      "description": "Musical instruments, dance classes, and performance arts",
+      "subSkills": [
+        {
+          "id": 64,
+          "name": "Beatboxing / Rap Writing",
+          "description": "Beatboxing and rap writing skills"
+        },
+        {
+          "id": 65,
+          "name": "Classical Dance",
+          "description": "Traditional classical dance forms"
+        },
+        {
+          "id": 66,
+          "name": "DJing / Music Mixing",
+          "description": "DJ skills and music mixing techniques"
+        },
+        {
+          "id": 67,
+          "name": "Guitar",
+          "description": "Guitar lessons and playing techniques"
+        },
+        {
+          "id": 68,
+          "name": "Keyboard/Piano",
+          "description": "Piano and keyboard lessons"
+        },
+        {
+          "id": 69,
+          "name": "Modern Dance",
+          "description": "Contemporary and modern dance styles"
+        },
+        {
+          "id": 70,
+          "name": "Singing",
+          "description": "Vocal training and singing techniques"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Parenting & Home",
+      "description": "Parenting advice, home management, and family skills",
+      "subSkills": [
+        {
+          "id": 71,
+          "name": "Baby Sitting",
+          "description": "Childcare and babysitting services"
+        },
+        {
+          "id": 72,
+          "name": "Home Organization",
+          "description": "Home organization and decluttering tips"
+        },
+        {
+          "id": 73,
+          "name": "Kids Homework Help",
+          "description": "Assistance with children's homework and studies"
+        },
+        {
+          "id": 74,
+          "name": "Storytelling",
+          "description": "Storytelling and creative writing for children"
+        },
+        {
+          "id": 75,
+          "name": "Toy Repair",
+          "description": "Repairing and maintaining children's toys"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Personality & Communication",
+      "description": "Personal development, communication, and social skills",
+      "subSkills": [
+        {
+          "id": 76,
+          "name": "Debating",
+          "description": "Debate skills and argumentation techniques"
+        },
+        {
+          "id": 77,
+          "name": "English Speaking Buddy",
+          "description": "English conversation practice partner"
+        },
+        {
+          "id": 78,
+          "name": "Interview Preparation",
+          "description": "Interview skills and preparation guidance"
+        },
+        {
+          "id": 79,
+          "name": "Public Speaking Practice",
+          "description": "Public speaking practice and improvement"
+        },
+        {
+          "id": 80,
+          "name": "Stage Hosting Tips",
+          "description": "Event hosting and stage presence skills"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Repairs & Fixes",
+      "description": "Handyman services, repairs, and maintenance",
+      "subSkills": [
+        {
+          "id": 81,
+          "name": "Bicycle Repair",
+          "description": "Bicycle maintenance and repair services"
+        },
+        {
+          "id": 82,
+          "name": "Electrician Help",
+          "description": "Electrical work and wiring assistance"
+        },
+        {
+          "id": 83,
+          "name": "Home Appliance Fixing",
+          "description": "Repair and maintenance of household appliances"
+        },
+        {
+          "id": 84,
+          "name": "Mobile/Computer Repair",
+          "description": "Repair services for mobile phones and computers"
+        },
+        {
+          "id": 85,
+          "name": "Plumbing Help",
+          "description": "Plumbing repairs and installations"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Tech & Digital Skills",
+      "description": "Technology, digital tools, and computer skills",
+      "subSkills": [
+        {
+          "id": 86,
+          "name": "App Development",
+          "description": "Mobile app development and programming"
+        },
+        {
+          "id": 87,
+          "name": "Excel/Google Sheets",
+          "description": "Spreadsheet and data management skills"
+        },
+        {
+          "id": 88,
+          "name": "Social Media Management",
+          "description": "Social media strategy and content management"
+        },
+        {
+          "id": 89,
+          "name": "UI/UX Design",
+          "description": "User interface and user experience design"
+        },
+        {
+          "id": 90,
+          "name": "Video Editing",
+          "description": "Digital video editing and post-production"
+        },
+        {
+          "id": 91,
+          "name": "Web Design",
+          "description": "Website design and development"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Travel & Local Help",
+      "description": "Travel guidance, local knowledge, and tourism assistance",
+      "subSkills": [
+        {
+          "id": 92,
+          "name": "Bike/Car Knowledge",
+          "description": "Vehicle maintenance and driving tips"
+        },
+        {
+          "id": 93,
+          "name": "Cheap Travel Hacks",
+          "description": "Budget travel tips and money-saving advice"
+        },
+        {
+          "id": 94,
+          "name": "Hostel Cooking",
+          "description": "Cooking tips for hostel and shared living spaces"
+        },
+        {
+          "id": 95,
+          "name": "Itinerary Suggestions",
+          "description": "Travel itinerary recommendations and planning"
+        },
+        {
+          "id": 96,
+          "name": "Local Guide",
+          "description": "Local area knowledge and guidance"
+        },
+        {
+          "id": 97,
+          "name": "Public Transport Help",
+          "description": "Public transportation guidance and tips"
+        },
+        {
+          "id": 98,
+          "name": "Room Setup Help",
+          "description": "Room decoration and setup assistance"
+        },
+        {
+          "id": 99,
+          "name": "Second-hand Books Exchange",
+          "description": "Book exchange and sharing services"
+        },
+        {
+          "id": 100,
+          "name": "Travel Planning",
+          "description": "Travel itinerary and trip planning assistance"
+        }
+      ]
+    }
+  ],
+  "timestamp": "2025-10-16T17:06:30.921Z"
+}

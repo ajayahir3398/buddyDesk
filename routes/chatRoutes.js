@@ -26,12 +26,10 @@ const {
  */
 
 // Apply general rate limiting to all chat routes
-router.use(generalChatRateLimit);
+// router.use(generalChatRateLimit);
 
 // Apply authentication middleware to all routes
 router.use(authMiddleware);
-
-
 
 
 router.post('/conversations', 
