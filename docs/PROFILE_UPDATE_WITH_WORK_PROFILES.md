@@ -42,7 +42,7 @@ Content-Type: application/json
       "designation": "Senior Software Engineer",
       "start_date": "2022-01-15",
       "end_date": "2024-06-30",
-      "user_skills": [
+      "userSkills": [
         {
           "skill_id": 1,
           "sub_skill_id": 3,
@@ -60,7 +60,7 @@ Content-Type: application/json
       "designation": "Full Stack Developer",
       "start_date": "2020-03-01",
       "end_date": "2021-12-31",
-      "user_skills": [
+      "userSkills": [
         {
           "skill_id": 3,
           "sub_skill_id": 5,
@@ -310,7 +310,7 @@ Content-Type: application/json
       "designation": "Tech Lead",
       "start_date": "2024-01-01",
       "end_date": null,
-      "user_skills": [
+      "userSkills": [
         {
           "skill_id": 1,
           "proficiency_level": "Expert"

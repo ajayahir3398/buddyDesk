@@ -1173,8 +1173,8 @@ exports.updateProfile = async (req, res) => {
               end_date: wp.end_date ? new Date(wp.end_date) : null
             }, { transaction });
 
-            if (wp.user_skills && wp.user_skills.length > 0) {
-              await Promise.all(wp.user_skills.map(us => UserSkill.create({
+            if (wp.userSkills && wp.userSkills.length > 0) {
+              await Promise.all(wp.userSkills.map(us => UserSkill.create({
                 work_profile_id: newWP.id,
                 skill_id: us.skill_id,
                 sub_skill_id: us.sub_skill_id || null,

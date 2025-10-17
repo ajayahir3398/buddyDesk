@@ -2668,7 +2668,7 @@ const options = {
                       "Employment end date (YYYY-MM-DD format, must be after start_date, null for current employment)",
                     nullable: true,
                   },
-                  user_skills: {
+                  userSkills: {
                     type: "array",
                     description:
                       "Array of skills associated with this work profile",
@@ -5202,7 +5202,7 @@ const options = {
                           designation: "Senior Software Engineer",
                           start_date: "2022-01-15",
                           end_date: "2024-06-30",
-                          user_skills: [
+                          userSkills: [
                             {
                               skill_id: 1,
                               sub_skill_id: 3,
@@ -5254,7 +5254,7 @@ const options = {
                           designation: "Lead Developer",
                           start_date: "2024-07-01",
                           end_date: null,
-                          user_skills: [
+                          userSkills: [
                             {
                               skill_id: 1,
                               sub_skill_id: 2,
@@ -5540,7 +5540,7 @@ const options = {
                         errors: [
                           {
                             field:
-                              "work_profiles.0.user_skills.0.proficiency_level",
+                              "work_profiles.0.userSkills.0.proficiency_level",
                             message:
                               "Proficiency level must be one of: Beginner, Intermediate, Expert",
                             value: "Advanced",
