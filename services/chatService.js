@@ -359,6 +359,12 @@ class ChatService {
    */
   async getUserConversations(userId, baseUrl) {
     try {
+      // Get users blocked by the current user (same pattern as post filtering)
+      const blockedUserIds = await db.UserBlock.findAll({
+        where: { blocker_id: userId },
+        attributes: ['blocked_id']
+      }).then(blocks => blocks.map(b => b.blocked_id));
+
       // First, get conversation IDs where user is a member
       const userConversations = await db.ConversationMember.findAll({
         where: {
@@ -374,7 +380,14 @@ class ChatService {
         return [];
       }
 
-      // Then get full conversation details with ALL members
+      // Then get full conversation details with ALL members (excluding blocked users)
+      const memberWhereCondition = { left_at: null }; // Only active members
+      
+      // Exclude blocked users from conversation members
+      if (blockedUserIds.length > 0) {
+        memberWhereCondition.user_id = { [Op.notIn]: blockedUserIds };
+      }
+
       const conversations = await db.Conversation.findAll({
         where: {
           id: { [Op.in]: conversationIds },
@@ -383,7 +396,7 @@ class ChatService {
           {
             model: db.ConversationMember,
             as: "members",
-            where: { left_at: null }, // Only active members
+            where: memberWhereCondition,
             include: [
               {
                 model: db.User,
@@ -406,8 +419,14 @@ class ChatService {
       // Get last message for each conversation
       const conversationsWithLastMessage = await Promise.all(
         conversations.map(async (conversation) => {
+          // Build where condition for last message (exclude messages from blocked users)
+          const messageWhereCondition = { conversation_id: conversation.id };
+          if (blockedUserIds.length > 0) {
+            messageWhereCondition.sender_id = { [Op.notIn]: blockedUserIds };
+          }
+
           const lastMessage = await db.Message.findOne({
-            where: { conversation_id: conversation.id },
+            where: messageWhereCondition,
             include: [
               {
                 model: db.User,
@@ -456,7 +475,15 @@ class ChatService {
             }
           }
 
-          // Get unread message count for current user
+          // Get unread message count for current user (excluding messages from blocked users)
+          const unreadMessageWhereCondition = {
+            conversation_id: conversation.id,
+            is_deleted: false
+          };
+          if (blockedUserIds.length > 0) {
+            unreadMessageWhereCondition.sender_id = { [Op.notIn]: blockedUserIds };
+          }
+
           const unreadCount = await db.MessageStatus.count({
             where: {
               user_id: userId,
@@ -465,10 +492,7 @@ class ChatService {
             include: [{
               model: db.Message,
               as: 'message',
-              where: {
-                conversation_id: conversation.id,
-                is_deleted: false
-              }
+              where: unreadMessageWhereCondition
             }]
           });
 
@@ -712,13 +736,25 @@ class ChatService {
         throw new Error("User is not a member of this conversation");
       }
 
+      // Get users blocked by the current user (same pattern as post filtering)
+      const blockedUserIds = await db.UserBlock.findAll({
+        where: { blocker_id: userId },
+        attributes: ['blocked_id']
+      }).then(blocks => blocks.map(b => b.blocked_id));
+
       const offset = (page - 1) * limit;
 
+      // Build where condition for messages (exclude messages from blocked users)
+      const messageWhereCondition = {
+        conversation_id: conversationId,
+        is_deleted: false,
+      };
+      if (blockedUserIds.length > 0) {
+        messageWhereCondition.sender_id = { [Op.notIn]: blockedUserIds };
+      }
+
       const { count, rows: messages } = await db.Message.findAndCountAll({
-        where: {
-          conversation_id: conversationId,
-          is_deleted: false,
-        },
+        where: messageWhereCondition,
         include: [
           {
             model: db.User,
