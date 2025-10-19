@@ -1550,7 +1550,7 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
             {
               model: UserProfile,
               as: "profile",
-              attributes: ["looking_skills"],
+              attributes: ["looking_skills", "image_path"],
             },
             {
               model: TempAddress,
@@ -1597,7 +1597,7 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
     // Generate full URLs for attachments
     const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    // Simple post processing - just generate attachment URLs
+    // Simple post processing - generate attachment URLs and user profile image URL
     let postsWithUrls = posts.map((post) => {
       const postData = post.toJSON ? post.toJSON() : post;
 
@@ -1607,6 +1607,11 @@ exports.getPostsByTempAddressPincode = async (req, res) => {
           postData.attachments,
           baseUrl
         );
+      }
+
+      // Generate user profile image URL
+      if (postData.user && postData.user.profile && postData.user.profile.image_path) {
+        postData.user.profile.image_url = `${baseUrl}/api/files/${postData.user.profile.image_path}`;
       }
 
       return postData;
