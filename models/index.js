@@ -83,6 +83,7 @@ db.Feedback = require("./feedback.model")(sequelize, Sequelize.DataTypes);
 // Subscription models (In-App Purchases)
 db.Subscription = require("./subscription.model")(sequelize, Sequelize.DataTypes);
 db.SubscriptionEvent = require("./subscriptionEvent.model")(sequelize, Sequelize.DataTypes);
+db.SubscriptionPurchaseData = require("./subscriptionPurchaseData.model")(sequelize, Sequelize.DataTypes);
 
 // Password reset OTP model
 db.PasswordResetOTP = require("./passwordResetOTP.model")(sequelize, Sequelize.DataTypes);

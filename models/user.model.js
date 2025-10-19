@@ -122,6 +122,7 @@ module.exports = (sequelize, DataTypes) => {
     
     // Subscription-related associations
     User.hasMany(models.Subscription, { foreignKey: 'user_id', as: 'subscriptions' });
+    User.hasMany(models.SubscriptionPurchaseData, { foreignKey: 'user_id', as: 'subscriptionPurchaseData' });
   };
 
   return User;

@@ -53,6 +53,45 @@ router.post('/validate', authenticateToken, [
 
 /**
  * @swagger
+ * /iap/store-purchase-data:
+ *   post:
+ *     summary: Store subscription purchase data as JSON string
+ *     tags: [In-App Purchases]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - platform
+ *               - purchase_data
+ *             properties:
+ *               platform:
+ *                 type: string
+ *                 enum: [play, appstore]
+ *                 description: Purchase platform (play store or app store)
+ *               purchase_data:
+ *                 type: string
+ *                 description: Raw purchase data as string (can be JSON or any other format)
+ *                 example: '{"productId":"premium_monthly","purchaseToken":"abc123"}'
+ *     responses:
+ *       201:
+ *         description: Purchase data stored successfully
+ *       400:
+ *         description: Invalid request data
+ *       500:
+ *         description: Server error
+ */
+router.post('/store-purchase-data', authenticateToken, [
+  body('platform').isIn(['play', 'appstore']).withMessage('Platform must be play or appstore'),
+  body('purchase_data').isString().notEmpty().withMessage('Purchase data as string is required')
+], iapController.storePurchaseData);
+
+/**
+ * @swagger
  * /iap/subscriptions:
  *   get:
  *     summary: Get user's subscriptions

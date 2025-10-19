@@ -401,5 +401,75 @@ exports.handleAppleWebhook = async (req, res) => {
   }
 };
 
+/**
+ * Store subscription purchase data (raw JSON string format)
+ * POST /api/iap/store-purchase-data
+ */
+exports.storePurchaseData = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { platform, purchase_data } = req.body;
+
+    // Validate required fields
+    if (!platform || !purchase_data) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: platform, purchase_data'
+      });
+    }
+
+    // Validate platform
+    if (!['play', 'appstore'].includes(platform)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid platform. Must be "play" or "appstore"'
+      });
+    }
+
+    logger.info('Storing subscription purchase data', {
+      userId,
+      platform,
+      dataLength: purchase_data.length,
+      requestId: req.requestId
+    });
+
+    // Create subscription purchase data record with the raw string data
+    const purchaseRecord = await db.SubscriptionPurchaseData.create({
+      user_id: userId,
+      platform: platform,
+      purchase_data: purchase_data,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Subscription purchase data stored successfully',
+      data: {
+        purchase_data: {
+          id: purchaseRecord.id,
+          user_id: purchaseRecord.user_id,
+          platform: purchaseRecord.platform,
+          created_at: purchaseRecord.created_at
+        }
+      }
+    });
+
+  } catch (error) {
+    logger.error('Store purchase data error', {
+      userId: req.user?.id,
+      error: error.message,
+      stack: error.stack,
+      requestId: req.requestId
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to store purchase data',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
 module.exports = exports;
 
