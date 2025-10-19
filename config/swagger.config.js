@@ -1830,8 +1830,42 @@ const options = {
                   },
                   description: "User temporary addresses",
                 },
+                profile: {
+                  type: "object",
+                  properties: {
+                    looking_skills: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          id: { type: "integer", example: 1 },
+                          name: { type: "string", example: "JavaScript" }
+                        }
+                      },
+                      description: "Skills the user is looking for",
+                      example: [
+                        { id: 1, name: "JavaScript" },
+                        { id: 3, name: "React" }
+                      ]
+                    },
+                    image_path: {
+                      type: "string",
+                      example: "images/ed089205-b9dc-4ada-ac9f-741f7318f361.jpg",
+                      description: "Relative path to user profile image",
+                      nullable: true
+                    },
+                    image_url: {
+                      type: "string",
+                      example: "http://localhost:3000/api/files/images/ed089205-b9dc-4ada-ac9f-741f7318f361.jpg",
+                      description: "Full URL to user profile image",
+                      nullable: true
+                    }
+                  },
+                  description: "User profile information",
+                  nullable: true
+                }
               },
-              description: "User information with temporary addresses",
+              description: "User information with temporary addresses and profile",
             },
             requiredSkill: {
               type: "object",
@@ -6974,6 +7008,14 @@ const options = {
                               state: null,
                             },
                           ],
+                          profile: {
+                            looking_skills: [
+                              { id: 1, name: "JavaScript" },
+                              { id: 3, name: "React" }
+                            ],
+                            image_path: "images/ed089205-b9dc-4ada-ac9f-741f7318f361.jpg",
+                            image_url: "http://localhost:3000/api/files/images/ed089205-b9dc-4ada-ac9f-741f7318f361.jpg"
+                          }
                         },
                         requiredSkill: {
                           id: 1,
@@ -7020,6 +7062,14 @@ const options = {
                               state: null,
                             },
                           ],
+                          profile: {
+                            looking_skills: [
+                              { id: 3, name: "Design" },
+                              { id: 5, name: "UI/UX Design" }
+                            ],
+                            image_path: "images/jane-profile.jpg",
+                            image_url: "http://localhost:3000/api/files/images/jane-profile.jpg"
+                          }
                         },
                         requiredSkill: {
                           id: 3,
