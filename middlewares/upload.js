@@ -2,6 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const Busboy = require('busboy');
 const constants = require('../utils/constants');
 const logger = require('../utils/logger');
 
@@ -186,15 +187,286 @@ const validateFileAccess = (filePath) => {
   }
 };
 
+// Enhanced file validation function for streaming uploads
+const isValidFileType = (mimetype, filename) => {
+  // Check if file type is allowed
+  if (!constants.FILE_UPLOAD.ALLOWED_TYPES.includes(mimetype)) {
+    return { valid: false, error: `File type ${mimetype} is not allowed. Allowed types: ${constants.FILE_UPLOAD.ALLOWED_TYPES.join(', ')}` };
+  }
+
+  // Additional security check: validate file extension matches MIME type
+  const extension = path.extname(filename).toLowerCase();
+  const allowedExtensions = {
+    'image/jpeg': ['.jpg', '.jpeg'],
+    'image/png': ['.png'],
+    'image/gif': ['.gif'],
+    'image/jpg': ['.jpg', '.jpeg'],
+    'audio/mpeg': ['.mp3', '.mpeg'],
+    'audio/mp3': ['.mp3'],
+    'audio/wav': ['.wav'],
+    'audio/ogg': ['.ogg'],
+    'application/pdf': ['.pdf'],
+    'application/zip': ['.zip'],
+    'application/x-zip-compressed': ['.zip'],
+    'application/octet-stream': ['.zip', '.bin'] // Allow for potentially misdetected zip files
+  };
+
+  const expectedExtensions = allowedExtensions[mimetype];
+  if (expectedExtensions && expectedExtensions.includes(extension)) {
+    return { valid: true };
+  } else {
+    return { valid: false, error: `File extension ${extension} doesn't match MIME type ${mimetype}` };
+  }
+};
+
+// Streaming upload middleware using busboy for optimal performance
+const createStreamingUploadMiddleware = (options = {}) => {
+  const {
+    fieldNames = ['attachments', 'attachment', 'profile_image'],
+    maxFiles = 10,
+    maxFileSize = constants.FILE_UPLOAD.MAX_SIZE
+  } = options;
+
+  return (req, res, next) => {
+    // Store files array to maintain compatibility with existing controllers
+    req.files = [];
+    req.file = null; // For single file uploads
+    req.body = {}; // Store form data
+
+    let filesProcessed = 0;
+    let totalSize = 0;
+    const errors = [];
+
+    const busboy = Busboy({ 
+      headers: req.headers,
+      limits: {
+        fileSize: maxFileSize,
+        files: maxFiles + 1 // Allow one extra to detect overflow
+      }
+    });
+
+    busboy.on('field', (fieldname, value, info) => {
+      req.body[fieldname] = value;
+    });
+
+    busboy.on('file', (fieldname, file, info) => {
+      const { filename, mimeType, encoding } = info;
+
+      // Check file count limit
+      if (filesProcessed >= maxFiles) {
+        file.resume(); // Drain the stream
+        errors.push(`Too many files. Maximum ${maxFiles} files allowed`);
+        return;
+      }
+
+      // Validate file type
+      const validation = isValidFileType(mimeType, filename);
+      if (!validation.valid) {
+        file.resume(); // Drain the stream
+        errors.push(validation.error);
+        return;
+      }
+
+      // Determine destination directory
+      const { dir } = getFileCategory(mimeType);
+      if (!dir) {
+        file.resume(); // Drain the stream
+        errors.push(`Unsupported file category for ${mimeType}`);
+        return;
+      }
+
+      // Generate unique filename
+      const uniqueId = uuidv4();
+      const extension = path.extname(filename).toLowerCase();
+      const fileName = `${uniqueId}${extension}`;
+      const filePath = path.join(dir, fileName);
+
+      // Create write stream
+      const writeStream = fs.createWriteStream(filePath);
+      let fileSize = 0;
+      let isComplete = false;
+
+      // Handle file stream
+      file.on('data', (chunk) => {
+        fileSize += chunk.length;
+        totalSize += chunk.length;
+
+        // Check total size limit across all files
+        if (totalSize > maxFileSize * maxFiles) { // Allow reasonable total size
+          writeStream.destroy();
+          file.resume();
+          errors.push(`Total upload size exceeds limit`);
+          return;
+        }
+
+        // Check individual file size limit
+        if (fileSize > maxFileSize) {
+          writeStream.destroy();
+          file.resume();
+          fs.unlink(filePath, () => {}); // Cleanup partial file
+          errors.push(`File ${filename} too large. Maximum size allowed is ${maxFileSize / (1024 * 1024)}MB`);
+          return;
+        }
+
+        if (!writeStream.destroyed && !writeStream.writableEnded) {
+          writeStream.write(chunk);
+        }
+      });
+
+      file.on('end', () => {
+        if (!writeStream.destroyed && !writeStream.writableEnded) {
+          writeStream.end();
+        }
+      });
+
+      file.on('error', (err) => {
+        logger.error('File stream error', {
+          requestId: req.requestId,
+          filename,
+          error: err.message
+        });
+        if (!writeStream.destroyed && !writeStream.writableEnded) {
+          writeStream.destroy();
+        }
+        fs.unlink(filePath, () => {}); // Cleanup partial file
+        errors.push(`Error processing file ${filename}: ${err.message}`);
+      });
+
+      writeStream.on('finish', () => {
+        filesProcessed++;
+        isComplete = true;
+
+        // Create file object compatible with multer format
+        const fileObj = {
+          fieldname: fieldname,
+          originalname: filename,
+          encoding: encoding,
+          mimetype: mimeType,
+          size: fileSize,
+          path: filePath,
+          destination: dir,
+          filename: fileName
+        };
+
+        req.files.push(fileObj);
+
+        // For single file uploads, also set req.file
+        if (fieldNames.includes(fieldname) && fieldNames.length === 1) {
+          req.file = fileObj;
+        }
+
+        logger.info('File uploaded successfully via streaming', {
+          requestId: req.requestId,
+          filename: fileName,
+          originalName: filename,
+          size: fileSize,
+          mimetype: mimeType
+        });
+      });
+
+      writeStream.on('error', (err) => {
+        logger.error('Write stream error', {
+          requestId: req.requestId,
+          filename,
+          error: err.message
+        });
+        fs.unlink(filePath, () => {}); // Cleanup partial file
+        errors.push(`Error saving file ${filename}: ${err.message}`);
+      });
+    });
+
+    busboy.on('finish', () => {
+      if (errors.length > 0) {
+        // Cleanup any uploaded files on error
+        if (req.files && req.files.length > 0) {
+          req.files.forEach(file => {
+            deleteFile(file.path);
+          });
+        }
+        
+        logger.error('Busboy upload errors', {
+          requestId: req.requestId,
+          errors,
+          filesProcessed
+        });
+
+        return res.status(400).json({
+          success: false,
+          message: errors.join(', '),
+          errors: errors
+        });
+      }
+
+      logger.info('Busboy upload completed', {
+        requestId: req.requestId,
+        filesProcessed,
+        totalSize
+      });
+
+      next();
+    });
+
+    busboy.on('error', (err) => {
+      logger.error('Busboy error', {
+        requestId: req.requestId,
+        error: err.message
+      });
+
+      // Cleanup any uploaded files on error
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          deleteFile(file.path);
+        });
+      }
+
+      res.status(400).json({
+        success: false,
+        message: `Upload error: ${err.message}`
+      });
+    });
+
+    // Pipe request to busboy for processing
+    req.pipe(busboy);
+  };
+};
+
+// New streaming upload middlewares for different use cases
+const uploadSingleStreaming = createStreamingUploadMiddleware({
+  fieldNames: ['attachment'],
+  maxFiles: 1
+});
+
+const uploadMultipleStreaming = createStreamingUploadMiddleware({
+  fieldNames: ['attachments', 'attachment'],
+  maxFiles: 10
+});
+
+const uploadProfileImageStreaming = createStreamingUploadMiddleware({
+  fieldNames: ['profile_image'],
+  maxFiles: 1
+});
+
 module.exports = {
+  // Original multer-based uploads (kept for backward compatibility)
   uploadSingle,
   uploadMultiple,
   uploadProfileImage,
   handleUploadError,
+  
+  // New streaming uploads using busboy (recommended for better performance)
+  uploadSingleStreaming,
+  uploadMultipleStreaming,
+  uploadProfileImageStreaming,
+  
+  // Helper functions
   deleteFile,
   getFileUrl,
   getFileCategoryFromPath,
   validateFileAccess,
+  isValidFileType,
+  createStreamingUploadMiddleware,
+  
+  // Configuration
   storage,
   uploadsDir,
   imagesDir,

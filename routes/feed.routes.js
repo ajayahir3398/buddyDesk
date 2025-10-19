@@ -1,7 +1,7 @@
 const express = require('express');
 const feedController = require('../controllers/feedController');
 const { authenticateToken } = require('../middlewares/auth');
-const { uploadMultiple, handleUploadError } = require('../middlewares/upload');
+const { uploadMultiple, uploadMultipleStreaming, handleUploadError } = require('../middlewares/upload');
 const { validateFileSecurityMiddleware } = require('../middleware/fileSecurityValidation');
 const { checkUserBlocked } = require('../middlewares/blockCheck');
 
@@ -11,7 +11,8 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Feed Posts (create requires user not to be blocked)
-router.post('/posts', checkUserBlocked, uploadMultiple, validateFileSecurityMiddleware, handleUploadError, feedController.createFeedPost);
+// Using streaming upload for better performance
+router.post('/posts', checkUserBlocked, uploadMultipleStreaming, validateFileSecurityMiddleware, handleUploadError, feedController.createFeedPost);
 router.get('/posts', feedController.getFeed);
 router.get('/posts/my-posts', feedController.getUserFeedPosts);
 router.get('/posts/:id', feedController.getFeedPost);

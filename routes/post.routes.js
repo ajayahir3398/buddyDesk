@@ -2,14 +2,15 @@ const express = require('express');
 const postController = require('../controllers/post.controller');
 const { authenticateToken } = require('../middlewares/auth');
 const { validatePostCreation, validatePostUpdate } = require('../middlewares/validation');
-const { uploadMultiple, handleUploadError } = require('../middlewares/upload');
+const { uploadMultiple, uploadMultipleStreaming, handleUploadError } = require('../middlewares/upload');
 const { validateFileSecurityMiddleware } = require('../middleware/fileSecurityValidation');
 const { checkUserBlocked } = require('../middlewares/blockCheck');
 
 const router = express.Router();
 
 // Create a new post with optional file attachments (requires authentication and user not blocked)
-router.post('/', authenticateToken, checkUserBlocked, uploadMultiple, validateFileSecurityMiddleware, handleUploadError, validatePostCreation, postController.addPost);
+// Using streaming upload for better performance
+router.post('/', authenticateToken, checkUserBlocked, uploadMultipleStreaming, validateFileSecurityMiddleware, handleUploadError, validatePostCreation, postController.addPost);
 
 // Get all posts with optional filtering and pagination (requires authentication)
 router.get('/', authenticateToken, postController.getPosts);
@@ -27,7 +28,8 @@ router.get('/:id', authenticateToken, postController.getPostById);
 router.put('/:id', authenticateToken, validatePostUpdate, postController.updatePost);
 
 // Add attachments to existing post (requires authentication)
-router.post('/:id/attachments', authenticateToken, uploadMultiple, validateFileSecurityMiddleware, handleUploadError, postController.addAttachment);
+// Using streaming upload for better performance
+router.post('/:id/attachments', authenticateToken, uploadMultipleStreaming, validateFileSecurityMiddleware, handleUploadError, postController.addAttachment);
 
 // Download attachment by ID
 router.get('/attachments/:attachmentId/download', authenticateToken, postController.downloadAttachment);
