@@ -14,6 +14,7 @@ module.exports = {
     KEY_ID: process.env.APPLE_KEY_ID || '', // Your App Store Connect API Key ID
     ISSUER_ID: process.env.APPLE_ISSUER_ID || '', // Your App Store Connect Issuer ID
     PRIVATE_KEY_PATH: process.env.APPLE_PRIVATE_KEY_PATH || './config/apple-private-key.p8',
+    SHARED_SECRET: process.env.APPLE_SHARED_SECRET || '', // App-specific shared secret for receipt validation
     // Use sandbox for testing
     USE_SANDBOX: process.env.APPLE_USE_SANDBOX === 'true' || process.env.NODE_ENV !== 'production',
   },

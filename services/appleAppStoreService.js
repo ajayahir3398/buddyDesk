@@ -162,29 +162,276 @@ function decodeJWS(signedPayload) {
 
 /**
  * Verify and parse Apple receipt (for initial purchase validation)
- * @param {string} transactionId - Transaction ID from client
+ * @param {string} purchaseToken - Transaction ID (StoreKit 2) or receipt data (StoreKit 1)
  * @returns {Object} Subscription details
  */
-async function verifySubscription(transactionId) {
+async function verifySubscription(purchaseToken) {
   try {
-    const transactionInfo = await getTransactionInfo(transactionId);
-    
-    // Decode the signed transaction info
-    const decodedTransaction = decodeJWS(transactionInfo.signedTransactionInfo);
-    
-    logger.info('Apple subscription verified', {
-      transactionId: transactionId.substring(0, 20) + '...',
-      productId: decodedTransaction.productId
-    });
+    // Determine if this is StoreKit 1 receipt or StoreKit 2 transaction ID
+    if (isReceiptData(purchaseToken)) {
+      // StoreKit 1: Base64 receipt validation
+      return await verifyReceipt(purchaseToken);
+    } else {
+      // StoreKit 2: Transaction ID validation
+      const transactionInfo = await getTransactionInfo(purchaseToken);
+      
+      // Decode the signed transaction info
+      const decodedTransaction = decodeJWS(transactionInfo.signedTransactionInfo);
+      
+      logger.info('Apple subscription verified (StoreKit 2)', {
+        transactionId: purchaseToken.substring(0, 20) + '...',
+        productId: decodedTransaction.productId
+      });
 
-    return parseTransactionData(decodedTransaction, transactionInfo);
+      return parseTransactionData(decodedTransaction, transactionInfo);
+    }
   } catch (error) {
     logger.error('Apple subscription verification failed', {
-      transactionId: transactionId.substring(0, 20) + '...',
+      purchaseToken: purchaseToken.substring(0, 20) + '...',
       error: error.message
     });
     throw error;
   }
+}
+
+/**
+ * Check if the input is a base64 receipt (StoreKit 1) or transaction ID (StoreKit 2)
+ * @param {string} input - The input string to check
+ * @returns {boolean} True if it's a receipt, false if it's a transaction ID
+ */
+function isReceiptData(input) {
+  // Receipt data is typically much longer and contains specific patterns
+  // Transaction IDs are usually shorter alphanumeric strings
+  return input.length > 500 && input.includes('MII'); // Common receipt pattern
+}
+
+/**
+ * Get human-readable error message for Apple receipt validation status codes
+ * @param {number} status - Apple status code
+ * @returns {string} Human-readable error message
+ */
+function getAppleErrorMessage(status) {
+  const errorMessages = {
+    21000: 'The App Store could not read the JSON object you provided',
+    21002: 'The data in the receipt-data property was malformed or missing',
+    21003: 'The receipt could not be authenticated',
+    21004: 'The shared secret you provided does not match the shared secret on file for your account',
+    21005: 'The receipt server is not currently available',
+    21006: 'This receipt is valid but the subscription has expired',
+    21007: 'This receipt is from the sandbox environment, but it was sent to the production environment for verification',
+    21008: 'This receipt is from the production environment, but it was sent to the sandbox environment for verification',
+    21009: 'Internal data access error',
+    21010: 'The user account cannot be found or has been deleted'
+  };
+  
+  return errorMessages[status] || `Unknown Apple error code: ${status}`;
+}
+
+/**
+ * Verify Apple receipt using StoreKit 1 API
+ * @param {string} receiptData - Base64 encoded receipt
+ * @returns {Object} Subscription details
+ */
+async function verifyReceipt(receiptData) {
+  let cleanReceiptData;
+  
+  try {
+    // Validate receipt data
+    if (!receiptData || typeof receiptData !== 'string') {
+      throw new Error('Receipt data is required and must be a string');
+    }
+
+    // Clean the receipt data - remove any extra whitespace, quotes, or JSON formatting
+    cleanReceiptData = receiptData.trim();
+    
+    // Check if this might be JSON-encoded data
+    if (cleanReceiptData.startsWith('{') || cleanReceiptData.startsWith('[')) {
+      logger.warn('Receipt data appears to be JSON encoded, this should be raw base64');
+      try {
+        const parsed = JSON.parse(cleanReceiptData);
+        if (typeof parsed === 'string') {
+          cleanReceiptData = parsed;
+        } else if (parsed.receipt || parsed.receiptData) {
+          cleanReceiptData = parsed.receipt || parsed.receiptData;
+        } else {
+          throw new Error('Unable to extract receipt data from JSON');
+        }
+      } catch (jsonError) {
+        logger.warn('Failed to parse JSON receipt data', { error: jsonError.message });
+      }
+    }
+    
+    // Remove any surrounding quotes if they exist
+    if ((cleanReceiptData.startsWith('"') && cleanReceiptData.endsWith('"')) ||
+        (cleanReceiptData.startsWith("'") && cleanReceiptData.endsWith("'"))) {
+      cleanReceiptData = cleanReceiptData.slice(1, -1);
+    }
+
+    // Remove any whitespace characters (newlines, tabs, etc.)
+    cleanReceiptData = cleanReceiptData.replace(/\s/g, '');
+
+    if (cleanReceiptData.length < 100) {
+      throw new Error('Receipt data appears to be too short (likely truncated)');
+    }
+
+    // Check if it's valid base64
+    const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+    if (!base64Regex.test(cleanReceiptData)) {
+      logger.error('Receipt data validation failed', {
+        originalLength: receiptData.length,
+        cleanedLength: cleanReceiptData.length,
+        originalStart: receiptData.substring(0, 50),
+        cleanedStart: cleanReceiptData.substring(0, 50),
+        hasInvalidChars: !base64Regex.test(cleanReceiptData)
+      });
+      throw new Error('Receipt data is not valid base64 after cleaning');
+    }
+
+    // Log receipt info for debugging (first/last 20 chars)
+    logger.info('Validating Apple receipt', {
+      originalLength: receiptData.length,
+      cleanedLength: cleanReceiptData.length,
+      receiptStart: cleanReceiptData.substring(0, 20),
+      receiptEnd: cleanReceiptData.substring(cleanReceiptData.length - 20),
+      hasSharedSecret: !!iapConfig.APPLE_APPSTORE.SHARED_SECRET,
+      environment: iapConfig.APPLE_APPSTORE.USE_SANDBOX ? 'sandbox' : 'production'
+    });
+
+    const url = iapConfig.APPLE_APPSTORE.USE_SANDBOX
+      ? 'https://sandbox.itunes.apple.com/verifyReceipt'
+      : 'https://buy.itunes.apple.com/verifyReceipt';
+
+    const body = {
+      'receipt-data': cleanReceiptData, // Use the cleaned receipt data
+      'password': iapConfig.APPLE_APPSTORE.SHARED_SECRET || '', // App-specific shared secret
+      'exclude-old-transactions': true
+    };
+
+    logger.info('Sending request to Apple', {
+      url,
+      hasPassword: !!body.password,
+      passwordLength: body.password ? body.password.length : 0
+    });
+
+    const response = await axios.post(url, body, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const result = response.data;
+
+    logger.info('Apple response received', {
+      status: result.status,
+      environment: result.environment,
+      hasReceipt: !!result.receipt,
+      hasLatestReceiptInfo: !!(result.latest_receipt_info && result.latest_receipt_info.length)
+    });
+
+    // Handle sandbox/production receipt mismatch
+    if (result.status === 21007 && !iapConfig.APPLE_APPSTORE.USE_SANDBOX) {
+      // Receipt is from sandbox but we're in production, retry with sandbox
+      logger.info('Retrying receipt validation with sandbox');
+      const sandboxResponse = await axios.post(
+        'https://sandbox.itunes.apple.com/verifyReceipt',
+        body,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      return parseReceiptResponse(sandboxResponse.data, cleanReceiptData);
+    }
+
+    return parseReceiptResponse(result, cleanReceiptData);
+  } catch (error) {
+    logger.error('Apple receipt verification failed', {
+      error: error.message,
+      originalLength: receiptData?.length || 0,
+      cleanedLength: cleanReceiptData?.length || 0,
+      receiptStart: cleanReceiptData?.substring(0, 20) || 'N/A',
+      hasSharedSecret: !!iapConfig.APPLE_APPSTORE.SHARED_SECRET,
+      environment: iapConfig.APPLE_APPSTORE.USE_SANDBOX ? 'sandbox' : 'production'
+    });
+    throw error;
+  }
+}
+
+/**
+ * Parse Apple receipt response into our format
+ * @param {Object} receiptResponse - Apple's receipt verification response
+ * @param {string} receiptData - Original receipt data
+ * @returns {Object} Parsed subscription info
+ */
+function parseReceiptResponse(receiptResponse, receiptData) {
+  if (receiptResponse.status !== 0) {
+    const errorMessage = getAppleErrorMessage(receiptResponse.status);
+    logger.error('Apple receipt verification failed', {
+      status: receiptResponse.status,
+      error: errorMessage,
+      receiptLength: receiptData?.length || 0,
+      environment: receiptResponse.environment
+    });
+    throw new Error(`Apple receipt verification failed with status: ${receiptResponse.status} - ${errorMessage}`);
+  }
+
+  const receipt = receiptResponse.receipt;
+  const latestReceiptInfo = receiptResponse.latest_receipt_info || [];
+
+  if (!latestReceiptInfo.length) {
+    throw new Error('No subscription found in receipt');
+  }
+
+  // Get the latest transaction (most recent subscription)
+  const latestTransaction = latestReceiptInfo.reduce((latest, current) => {
+    const currentDate = new Date(parseInt(current.expires_date_ms));
+    const latestDate = new Date(parseInt(latest.expires_date_ms));
+    return currentDate > latestDate ? current : latest;
+  });
+
+  // Determine status based on expiry
+  const expiryDate = new Date(parseInt(latestTransaction.expires_date_ms));
+  const now = new Date();
+  let status = 'active';
+  
+  if (expiryDate < now) {
+    status = 'expired';
+  }
+
+  // Check for cancellation
+  if (receiptResponse.pending_renewal_info) {
+    const renewalInfo = receiptResponse.pending_renewal_info.find(
+      info => info.original_transaction_id === latestTransaction.original_transaction_id
+    );
+    if (renewalInfo && renewalInfo.auto_renew_status === '0') {
+      status = 'cancelled';
+    }
+  }
+
+  logger.info('Apple receipt verified (StoreKit 1)', {
+    productId: latestTransaction.product_id,
+    status,
+    expiresDate: expiryDate
+  });
+
+  return {
+    purchaseToken: latestTransaction.transaction_id,
+    originalTransactionId: latestTransaction.original_transaction_id,
+    orderId: latestTransaction.web_order_line_item_id || latestTransaction.transaction_id,
+    productId: latestTransaction.product_id,
+    purchaseDate: new Date(parseInt(latestTransaction.purchase_date_ms)),
+    expiryDate: expiryDate,
+    isAutoRenewing: receiptResponse.pending_renewal_info ? 
+      receiptResponse.pending_renewal_info.some(info => info.auto_renew_status === '1') : true,
+    isTrial: latestTransaction.is_trial_period === 'true',
+    status: status,
+    cancelReason: null,
+    appAccountToken: latestTransaction.app_account_token || null,
+    currency: latestTransaction.currency || null,
+    priceAmountMicros: latestTransaction.price ? parseFloat(latestTransaction.price) * 1000000 : null,
+    environment: receiptResponse.environment || 'Production',
+    rawData: {
+      receipt: receipt,
+      latestReceiptInfo: latestReceiptInfo,
+      pendingRenewalInfo: receiptResponse.pending_renewal_info,
+      response: receiptResponse
+    }
+  };
 }
 
 /**
