@@ -94,6 +94,9 @@ dist
 # Gatsby files
 .cache/
 
+# Google service account
+google-service-account.json
+
 # Storybook build outputs
 .out
 .storybook-out
