@@ -312,7 +312,7 @@ router.post('/reset-password', validateResetPassword, userController.resetPasswo
 // Profile routes (require authentication)
 router.get('/profile', authenticateToken, userController.getProfile);
 router.get('/profile/:id', authenticateToken, userController.getProfileById);
-router.put('/profile', authenticateToken, uploadProfileImageStreaming, validateFileSecurityMiddleware, handleUploadError, userController.updateProfile);
+router.put('/profile', authenticateToken, uploadProfileImageStreaming, handleUploadError, userController.updateProfile);
 
 // Public profile route (require authentication but allow viewing other users)
 router.get('/public-profile/:id', authenticateToken, userController.getPublicProfile);
