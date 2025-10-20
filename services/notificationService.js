@@ -88,74 +88,132 @@ async function sendPushToUser(userId, payload) {
 
 async function sendPostNotificationToAllUsers(post) {
 	try {
+		// Early return if no required skill specified - can't match any users
+		if (!post.required_skill_id) {
+			logger.info('No required skill specified for post, skipping notifications', {
+				postId: post.id,
+				requiredSkillId: post.required_skill_id
+			});
+			return { success: true, notificationsSent: 0, message: 'No required skill specified' };
+		}
+
 		// Log post creator ID for debugging
 		logger.info('Sending post notifications', {
 			postId: post.id,
 			postCreatorId: post.user_id,
-			postCreatorIdType: typeof post.user_id
+			requiredSkillId: post.required_skill_id
 		});
 
-		// Find all users with their notification settings
-		const allUsers = await db.User.findAll({
-			attributes: ['id', 'name'],
-			include: [
-				{
-					model: db.NotificationSettings,
-					as: 'notificationSettings',
-					attributes: ['push_notification']
+		// OPTIMIZED: Use database-level filtering instead of loading all users
+		// RECOMMENDATION: Add database indexes for optimal performance:
+		// 1. CREATE INDEX idx_user_profile_looking_skills_gist ON user_profile USING GIN (looking_skills);
+		// 2. CREATE INDEX idx_notification_settings_push ON notification_settings (user_id, push_notification) WHERE push_notification = true;
+		// 3. Ensure user_profile.user_id has proper foreign key index
+		let usersToNotify = [];
+		
+		try {
+			// Attempt optimized database query with PostgreSQL JSON operations
+			usersToNotify = await db.User.findAll({
+				attributes: ['id', 'name'],
+				where: {
+					id: {
+						[db.Sequelize.Op.ne]: post.user_id // Exclude post creator
+					}
 				},
-				{
-					model: db.UserProfile,
-					as: 'profile',
-					attributes: ['looking_skills'],
-					required: false // LEFT JOIN to include users even without profiles
+				include: [
+					{
+						model: db.NotificationSettings,
+						as: 'notificationSettings',
+						attributes: ['push_notification'],
+						required: true, // INNER JOIN - only users with notification settings
+						where: {
+							push_notification: true // Only users with push notifications enabled
+						}
+					},
+					{
+						model: db.UserProfile,
+						as: 'profile',
+						attributes: ['looking_skills'],
+						required: true, // INNER JOIN - only users with profiles
+						where: {
+							// Use PostgreSQL JSON operators to check if looking_skills contains the required skill
+							[db.Sequelize.Op.and]: [
+								// Check that looking_skills is not null
+								db.Sequelize.where(
+									db.Sequelize.col('UserProfile.looking_skills'),
+									db.Sequelize.Op.ne,
+									null
+								),
+								// Use PostgreSQL JSON operator to check if the array contains an object with matching id
+								db.Sequelize.literal(
+									`"UserProfile"."looking_skills"::jsonb @> '[{"id": ${post.required_skill_id}}]'::jsonb`
+								)
+							]
+						}
+					}
+				]
+			});
+
+			logger.info('Found users to notify via optimized query', {
+				postId: post.id,
+				requiredSkillId: post.required_skill_id,
+				usersFound: usersToNotify.length
+			});
+
+		} catch (dbError) {
+			logger.warn('Optimized query failed, falling back to safer approach', {
+				postId: post.id,
+				error: dbError.message
+			});
+
+			// Fallback: Get users with profiles and notification settings, then filter client-side
+			// This is better than the original approach but still not as optimal
+			const usersWithSettings = await db.User.findAll({
+				attributes: ['id', 'name'],
+				where: {
+					id: {
+						[db.Sequelize.Op.ne]: post.user_id
+					}
+				},
+				include: [
+					{
+						model: db.NotificationSettings,
+						as: 'notificationSettings',
+						attributes: ['push_notification'],
+						required: true,
+						where: {
+							push_notification: true
+						}
+					},
+					{
+						model: db.UserProfile,
+						as: 'profile',
+						attributes: ['looking_skills'],
+						required: true
+					}
+				]
+			});
+
+			// Client-side filtering for skill matching (fallback)
+			usersToNotify = usersWithSettings.filter(user => {
+				if (!user.profile || !user.profile.looking_skills) {
+					return false;
 				}
-			]
-		});
 
-		// Filter users whose looking_skills match the post's required_skill_id
-		const usersToNotify = allUsers.filter(user => {
-			// Exclude the post creator - multiple comparison methods for safety
-			const userId = parseInt(user.id);
-			const postCreatorId = parseInt(post.user_id);
-			
-			if (!user) {
+				const lookingSkills = user.profile.looking_skills;
+				if (Array.isArray(lookingSkills)) {
+					return lookingSkills.some(skill => skill.id === post.required_skill_id);
+				}
 				return false;
-			}
-			
-			// Check multiple ways to ensure exclusion
-			if (userId === postCreatorId || 
-				user.id == post.user_id || // loose equality as fallback
-				String(user.id) === String(post.user_id)) {
-				logger.info('Excluding post creator from notifications', {
-					userId: user.id,
-					postCreatorId: post.user_id,
-					userIdParsed: userId,
-					postCreatorIdParsed: postCreatorId
-				});
-				return false;
-			}
+			});
 
-			// Check notification preferences
-			const settings = user.notificationSettings;
-			if (settings && !settings.push_notification) {
-				return false;
-			}
-
-			// Check if user has a profile with looking_skills
-			if (!user.profile || !user.profile.looking_skills) {
-				return false;
-			}
-
-			// Check if the post's required_skill_id matches any skill in the user's looking_skills array
-			const lookingSkills = user.profile.looking_skills;
-			if (Array.isArray(lookingSkills)) {
-				// looking_skills format: [{ id: 1, name: "JavaScript" }, { id: 3, name: "React" }]
-				return lookingSkills.some(skill => skill.id === post.required_skill_id);
-			}
-
-			return false;
-		});
+			logger.info('Found users to notify via fallback query', {
+				postId: post.id,
+				requiredSkillId: post.required_skill_id,
+				usersFound: usersToNotify.length,
+				totalChecked: usersWithSettings.length
+			});
+		}
 
 		if (usersToNotify.length === 0) {
 			return { success: true, notificationsSent: 0 };
