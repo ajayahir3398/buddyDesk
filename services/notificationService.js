@@ -16,6 +16,21 @@ async function saveOrUpdateToken({ userId, fcmToken, platform, deviceInfo }) {
 }
 
 async function sendPushToUser(userId, payload) {
+	// Check if user has any active sessions - if all sessions are revoked/inactive, 
+	// it indicates the user's tokens are blacklisted and they shouldn't receive notifications
+	const activeSessionsCount = await db.SessionLog.count({
+		where: {
+			user_id: userId,
+			is_active: true
+		}
+	});
+
+	// If user has no active sessions, their tokens are likely blacklisted (e.g., after logout or suspension)
+	if (activeSessionsCount === 0) {
+		logger.info('Skipping notification for user with blacklisted tokens (no active sessions)', { userId });
+		return { successCount: 0, failureCount: 0, results: [] };
+	}
+
 	const tokens = await db.DeviceToken.findAll({
 		where: { user_id: userId },
 		attributes: ['id', 'fcm_token', 'platform', 'last_used_at']
