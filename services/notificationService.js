@@ -73,6 +73,13 @@ async function sendPushToUser(userId, payload) {
 
 async function sendPostNotificationToAllUsers(post) {
 	try {
+		// Log post creator ID for debugging
+		logger.info('Sending post notifications', {
+			postId: post.id,
+			postCreatorId: post.user_id,
+			postCreatorIdType: typeof post.user_id
+		});
+
 		// Find all users with their notification settings
 		const allUsers = await db.User.findAll({
 			attributes: ['id', 'name'],
@@ -93,8 +100,24 @@ async function sendPostNotificationToAllUsers(post) {
 
 		// Filter users whose looking_skills match the post's required_skill_id
 		const usersToNotify = allUsers.filter(user => {
-			// Exclude the post creator
-			if (!user || user.id === post.user_id) {
+			// Exclude the post creator - multiple comparison methods for safety
+			const userId = parseInt(user.id);
+			const postCreatorId = parseInt(post.user_id);
+			
+			if (!user) {
+				return false;
+			}
+			
+			// Check multiple ways to ensure exclusion
+			if (userId === postCreatorId || 
+				user.id == post.user_id || // loose equality as fallback
+				String(user.id) === String(post.user_id)) {
+				logger.info('Excluding post creator from notifications', {
+					userId: user.id,
+					postCreatorId: post.user_id,
+					userIdParsed: userId,
+					postCreatorIdParsed: postCreatorId
+				});
 				return false;
 			}
 
