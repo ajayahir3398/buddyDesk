@@ -446,6 +446,31 @@ const uploadProfileImageStreaming = createStreamingUploadMiddleware({
   maxFiles: 1
 });
 
+// Conditional upload middleware - only processes multipart/form-data, skips JSON
+const conditionalUploadMiddleware = (uploadMiddleware) => {
+  return (req, res, next) => {
+    const contentType = req.headers['content-type'] || '';
+    
+    // If it's JSON, skip the upload middleware
+    if (contentType.includes('application/json')) {
+      return next();
+    }
+    
+    // If it's multipart/form-data, apply the upload middleware
+    if (contentType.includes('multipart/form-data')) {
+      return uploadMiddleware(req, res, next);
+    }
+    
+    // For any other content type, proceed (let controller handle it)
+    return next();
+  };
+};
+
+// Wrapped versions that handle both JSON and multipart requests
+const uploadProfileImageConditional = conditionalUploadMiddleware(uploadProfileImageStreaming);
+const uploadSingleConditional = conditionalUploadMiddleware(uploadSingleStreaming);
+const uploadMultipleConditional = conditionalUploadMiddleware(uploadMultipleStreaming);
+
 module.exports = {
   // Original multer-based uploads (kept for backward compatibility)
   uploadSingle,
@@ -457,6 +482,12 @@ module.exports = {
   uploadSingleStreaming,
   uploadMultipleStreaming,
   uploadProfileImageStreaming,
+  
+  // Conditional uploads (handle both JSON and multipart)
+  uploadProfileImageConditional,
+  uploadSingleConditional,
+  uploadMultipleConditional,
+  conditionalUploadMiddleware,
   
   // Helper functions
   deleteFile,
